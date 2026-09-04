@@ -30,12 +30,12 @@ CUSTOM_CSS = """
         letter-spacing: -0.02em;
     }
     .hero p { color: #c9c3b4; margin: 0; font-size: 0.98rem; line-height: 1.45; }
-    .hero .by {
+    .credit-top {
         color: #E8B923;
-        font-size: 0.95rem;
-        font-weight: 600;
-        margin: 0.15rem 0 0.55rem 0;
-        letter-spacing: 0.02em;
+        font-size: 1.05rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        margin: 0 0 0.85rem 0;
     }
     .hero .badge {
         display: inline-block;
@@ -150,10 +150,10 @@ def render_feature_chips(title: str, labels: list[str]) -> None:
 def render_hero() -> None:
     st.markdown(
         """
+        <p class="credit-top">Desenvolvido por Hart Botelho</p>
         <div class="hero">
             <div class="badge">Simulador de acerto · is_legendary</div>
             <h1>Portal Interativo de Machine Learning</h1>
-            <p class="by">Desenvolvido por Hart Botelho</p>
             <p>
                 Simule a previsão de <strong>quantos Pokémon lendários</strong> existem na amostra
                 de teste. Troque método, variáveis e limiar para ver o impacto em cada métrica —

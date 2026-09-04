@@ -14,9 +14,8 @@ from src.data import FEATURE_LABELS
 from src.diagnostics import diagnostic_sections, method_narrative
 from src.modeling import EvaluationResult
 
-FONT_DIR = Path("/usr/share/fonts/truetype/dejavu")
-FONT_REG = FONT_DIR / "DejaVuSans.ttf"
-FONT_BOLD = FONT_DIR / "DejaVuSans-Bold.ttf"
+FONT_REG = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
+FONT_BOLD = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
 
 AUTHOR = "Hart Botelho"
 NAVY = (11, 16, 32)
@@ -26,129 +25,125 @@ MUTED = (90, 90, 98)
 
 
 def _plain(text: str) -> str:
-    text = text.replace("\n", " ")
+    text = str(text).replace("\n", " ")
     text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
     return text.replace("`", "")
 
 
 def _pct(value: float) -> str:
     if value is None or (isinstance(value, float) and (math.isnan(value) or math.isinf(value))):
-        return "—"
+        return "-"
     return f"{value:.1f}%"
 
 
 def _auc(value: float) -> str:
     if value is None or (isinstance(value, float) and math.isnan(value)):
-        return "—"
+        return "-"
     return f"{value:.3f}"
 
 
 class PortalPDF(FPDF):
     def header(self) -> None:
         self.set_fill_color(*NAVY)
-        self.rect(0, 0, self.w, 18, "F")
+        self.rect(0, 0, self.w, 14, "F")
         self.set_text_color(244, 241, 232)
-        self.set_font("DejaVu", "B", 10)
-        self.set_xy(12, 6)
-        self.cell(0, 6, "Portal Interativo de Machine Learning  ·  Pokémon Lendários", align="L")
-        self.set_xy(12, 6)
-        self.set_font("DejaVu", "", 9)
-        self.cell(0, 6, f"Desenvolvido por {AUTHOR}", align="R")
-        self.ln(16)
-        self.set_text_color(*INK)
+        self.set_font("DejaVu", "", 8)
+        self.set_xy(self.l_margin, 4)
+        self.cell(self.epw, 6, "Portal Interativo de Machine Learning  |  Pokémon Lendários")
+        self.set_xy(self.l_margin, 16)
 
     def footer(self) -> None:
-        self.set_y(-14)
+        self.set_y(-12)
+        self.set_x(self.l_margin)
         self.set_text_color(*MUTED)
         self.set_font("DejaVu", "", 8)
-        self.cell(
-            0,
-            8,
-            f"Página {self.page_no()}  ·  Relatório do simulador de acerto  ·  {AUTHOR}",
-            align="C",
-        )
+        self.cell(self.epw, 8, f"Página {self.page_no()}  |  {AUTHOR}", align="C")
+
+
+def _reset(pdf: PortalPDF) -> None:
+    pdf.set_x(pdf.l_margin)
 
 
 def _section(pdf: PortalPDF, title: str) -> None:
-    pdf.ln(3)
-    pdf.set_x(pdf.l_margin)
+    pdf.ln(4)
+    _reset(pdf)
     pdf.set_text_color(*GOLD)
-    pdf.set_font("DejaVu", "B", 13)
-    pdf.multi_cell(0, 8, title)
+    pdf.set_font("DejaVu", "B", 12)
+    pdf.multi_cell(pdf.epw, 7, title)
     pdf.set_draw_color(*GOLD)
-    pdf.set_line_width(0.4)
     y = pdf.get_y()
-    pdf.line(pdf.l_margin, y, pdf.w - pdf.r_margin, y)
+    pdf.line(pdf.l_margin, y, pdf.l_margin + pdf.epw, y)
     pdf.ln(3)
+    _reset(pdf)
     pdf.set_text_color(*INK)
-    pdf.set_font("DejaVu", "", 10)
 
 
 def _para(pdf: PortalPDF, text: str, size: int = 10) -> None:
-    pdf.set_x(pdf.l_margin)
+    _reset(pdf)
     pdf.set_font("DejaVu", "", size)
     pdf.set_text_color(*INK)
-    pdf.multi_cell(0, 5.2, _plain(text))
+    pdf.multi_cell(pdf.epw, 5.2, _plain(text))
     pdf.ln(1)
+    _reset(pdf)
 
 
-def _kv(pdf: PortalPDF, rows: list[tuple[str, str]]) -> None:
-    usable = pdf.w - pdf.l_margin - pdf.r_margin
-    label_w = usable * 0.34
-    value_w = usable * 0.66
-    for label, value in rows:
-        pdf.set_x(pdf.l_margin)
-        y0 = pdf.get_y()
-        if y0 > pdf.h - 28:
-            pdf.add_page()
-            y0 = pdf.get_y()
-        pdf.set_font("DejaVu", "B", 9)
-        pdf.set_text_color(*MUTED)
-        pdf.multi_cell(label_w, 6, label)
-        y1 = pdf.get_y()
-        pdf.set_xy(pdf.l_margin + label_w, y0)
-        pdf.set_font("DejaVu", "", 10)
-        pdf.set_text_color(*INK)
-        pdf.multi_cell(value_w, 6, value)
-        pdf.set_y(max(y1, pdf.get_y()))
+def _line(pdf: PortalPDF, label: str, value: str) -> None:
+    _reset(pdf)
+    if pdf.get_y() > pdf.h - 24:
+        pdf.add_page()
+        _reset(pdf)
+    pdf.set_font("DejaVu", "B", 9)
+    pdf.set_text_color(*MUTED)
+    pdf.multi_cell(pdf.epw, 5, label)
+    _reset(pdf)
+    pdf.set_font("DejaVu", "", 10)
+    pdf.set_text_color(*INK)
+    pdf.multi_cell(pdf.epw, 5.2, _plain(value))
     pdf.ln(1)
+    _reset(pdf)
+
+
+def _norm_widths(pdf: PortalPDF, n: int, widths: list[float] | None) -> list[float]:
+    epw = pdf.epw
+    if not widths:
+        w = [epw / n] * n
+    else:
+        total = sum(widths) or 1.0
+        w = [x / total * epw for x in widths]
+    w[-1] = epw - sum(w[:-1])
+    return w
 
 
 def _table(pdf: PortalPDF, headers: list[str], rows: list[list[str]], widths: list[float] | None = None) -> None:
-    usable = pdf.w - pdf.l_margin - pdf.r_margin
-    if widths is None:
-        widths = [usable / len(headers)] * len(headers)
-    pdf.set_font("DejaVu", "B", 7.5)
-    pdf.set_x(pdf.l_margin)
-    pdf.set_fill_color(*NAVY)
-    pdf.set_text_color(244, 241, 232)
-    for i, h in enumerate(headers):
-        pdf.cell(widths[i], 7, h, border=0, fill=True)
-    pdf.ln()
-    pdf.set_text_color(*INK)
-    pdf.set_font("DejaVu", "", 7.5)
+    w = _norm_widths(pdf, len(headers), widths)
+    _reset(pdf)
+
+    def header_row() -> None:
+        _reset(pdf)
+        pdf.set_font("DejaVu", "B", 7)
+        pdf.set_fill_color(*NAVY)
+        pdf.set_text_color(244, 241, 232)
+        for i, h in enumerate(headers):
+            pdf.cell(w[i], 7, _plain(h)[:28], fill=True)
+        pdf.ln()
+        _reset(pdf)
+        pdf.set_text_color(*INK)
+        pdf.set_font("DejaVu", "", 7)
+
+    header_row()
     fill = False
     for row in rows:
-        pdf.set_x(pdf.l_margin)
-        if pdf.get_y() > pdf.h - 28:
+        if pdf.get_y() > pdf.h - 24:
             pdf.add_page()
-            pdf.set_x(pdf.l_margin)
-            pdf.set_font("DejaVu", "B", 7.5)
-            pdf.set_fill_color(*NAVY)
-            pdf.set_text_color(244, 241, 232)
-            for i, h in enumerate(headers):
-                pdf.cell(widths[i], 7, h, border=0, fill=True)
-            pdf.ln()
-            pdf.set_x(pdf.l_margin)
-            pdf.set_text_color(*INK)
-            pdf.set_font("DejaVu", "", 7.5)
+            header_row()
         pdf.set_fill_color(245, 242, 232) if fill else pdf.set_fill_color(255, 255, 255)
+        _reset(pdf)
         for i, cell in enumerate(row):
-            pdf.cell(widths[i], 6.4, str(cell)[:42], border=0, fill=True)
+            pdf.cell(w[i], 6.2, _plain(cell)[:36], fill=True)
         pdf.ln()
         fill = not fill
-    pdf.set_x(pdf.l_margin)
     pdf.ln(2)
+    _reset(pdf)
 
 
 def build_pdf_report(
@@ -166,40 +161,36 @@ def build_pdf_report(
     ablation: pd.DataFrame | None,
 ) -> bytes:
     pdf = PortalPDF(orientation="P", unit="mm", format="A4")
-    pdf.set_auto_page_break(auto=True, margin=18)
-    pdf.set_margins(14, 22, 14)
+    pdf.set_auto_page_break(auto=True, margin=16)
+    pdf.set_margins(16, 20, 16)
     pdf.add_font("DejaVu", "", str(FONT_REG))
     pdf.add_font("DejaVu", "B", str(FONT_BOLD))
     pdf.add_page()
+    _reset(pdf)
 
+    pdf.set_font("DejaVu", "B", 14)
+    pdf.set_text_color(*GOLD)
+    pdf.multi_cell(pdf.epw, 8, f"Desenvolvido por {AUTHOR}")
+    pdf.ln(1)
+    _reset(pdf)
     pdf.set_font("DejaVu", "B", 18)
     pdf.set_text_color(*NAVY)
-    pdf.set_x(pdf.l_margin)
-    pdf.multi_cell(0, 8, "Relatório completo do simulador de acerto")
-    pdf.set_font("DejaVu", "", 11)
-    pdf.set_text_color(*GOLD)
-    pdf.set_x(pdf.l_margin)
-    pdf.multi_cell(0, 7, f"Desenvolvido por {AUTHOR}")
-    pdf.set_font("DejaVu", "", 9)
+    pdf.multi_cell(pdf.epw, 8, "Relatório completo do simulador de acerto")
+    _reset(pdf)
+    pdf.set_font("DejaVu", "", 10)
     pdf.set_text_color(*MUTED)
     agora = datetime.now().strftime("%d/%m/%Y %H:%M")
-    pdf.set_x(pdf.l_margin)
-    pdf.multi_cell(0, 6, f"Gerado em {agora}  ·  alvo: is_legendary  ·  seed 42")
+    pdf.multi_cell(pdf.epw, 6, f"Gerado em {agora}  |  alvo: is_legendary  |  seed 42")
     pdf.ln(2)
 
     _section(pdf, "1. Configuração do experimento")
     attrs = ", ".join(FEATURE_LABELS.get(f, f) for f in features)
-    _kv(
-        pdf,
-        [
-            ("Preset de atributos", preset_label),
-            ("Colunas no treino", attrs),
-            ("Proporção treino / teste", f"{train_pct}% / {100 - train_pct}%  (stratify=y)"),
-            ("Limiar de decisão", f"{threshold:.2f}"),
-            ("Método em destaque", focus.modelo),
-            ("Algoritmos avaliados", ", ".join(r.modelo for r in results)),
-        ],
-    )
+    _line(pdf, "Preset de atributos", preset_label)
+    _line(pdf, "Colunas no treino", attrs)
+    _line(pdf, "Proporção treino / teste", f"{train_pct}% / {100 - train_pct}% (stratify=y)")
+    _line(pdf, "Limiar de decisão", f"{threshold:.2f}")
+    _line(pdf, "Método em destaque", focus.modelo)
+    _line(pdf, "Algoritmos avaliados", ", ".join(r.modelo for r in results))
 
     _section(pdf, "2. Como a base foi preparada")
     _para(
@@ -208,23 +199,16 @@ def build_pdf_report(
         f"valor ausente nas colunas de modelagem (dropna). Foram removidos {meta['dropped']} "
         f"Pokémon. A base limpa fica com {meta['rows_clean']} registros, dos quais "
         f"{meta['legendaries']} são lendários. Treino e teste são sorteados a partir dessa "
-        f"base limpa — não de uma amostra fixa de 12 nomes.",
+        f"base limpa.",
     )
 
     _section(pdf, "3. Indicadores da amostra de teste")
-    _kv(
-        pdf,
-        [
-            ("Total de Pokémon no teste", str(n_test)),
-            ("Lendários reais (gabarito)", str(real)),
-            (f"Total predito ({focus.modelo})", str(focus.total_predito)),
-            ("Desvio relativo do real", f"{focus.margem_pct:+.1f}%"),
-        ],
-    )
+    _line(pdf, "Total de Pokémon no teste", str(n_test))
+    _line(pdf, "Lendários reais (gabarito)", str(real))
+    _line(pdf, f"Total predito ({focus.modelo})", str(focus.total_predito))
+    _line(pdf, "Desvio relativo do real", f"{focus.margem_pct:+.1f}%")
 
     _section(pdf, "4. Comparativo de desempenho por método")
-    usable = pdf.w - pdf.l_margin - pdf.r_margin
-    widths = [usable * w for w in (0.22, 0.10, 0.08, 0.08, 0.08, 0.11, 0.11, 0.10, 0.12)]
     rows = []
     for r in results:
         rows.append(
@@ -244,15 +228,15 @@ def build_pdf_report(
         pdf,
         ["Método", "Predito", "TP", "FP", "FN", "Precisão", "Captura", "F1", "Margem"],
         rows,
-        widths,
+        [24, 12, 10, 10, 10, 14, 14, 12, 16],
     )
 
     _section(pdf, "5. Relatório de cada método")
     for r in results:
+        _reset(pdf)
         pdf.set_font("DejaVu", "B", 11)
         pdf.set_text_color(*NAVY)
-        pdf.set_x(pdf.l_margin)
-        pdf.multi_cell(0, 7, r.modelo)
+        pdf.multi_cell(pdf.epw, 7, r.modelo)
         auc = _auc(r.roc_auc)
         _para(
             pdf,
@@ -263,7 +247,6 @@ def build_pdf_report(
             f"especificidade {_pct(r.especificidade * 100)} · ROC AUC {auc}.",
         )
         _para(pdf, method_narrative(r, real), size=9)
-        pdf.ln(1)
 
     _section(pdf, "6. Impacto de cada variável")
     if profile is not None and not profile.empty:
@@ -282,6 +265,7 @@ def build_pdf_report(
             pdf,
             ["Variável", "Média lendários", "Média comuns", "Diferença"],
             prof_rows,
+            [40, 35, 35, 30],
         )
     if focus.importancias:
         _para(pdf, f"Peso no método {focus.modelo}: {focus.origem_importancia}.")
@@ -292,7 +276,7 @@ def build_pdf_report(
                 sinal = focus.direcao[feat]
                 direcao = "aumenta lendário" if sinal > 0 else "diminui lendário" if sinal < 0 else "neutro"
             imp_rows.append([FEATURE_LABELS.get(feat, feat), f"{score:.4f}", direcao])
-        _table(pdf, ["Variável", "Importância", "Direção"], imp_rows)
+        _table(pdf, ["Variável", "Importância", "Direção"], imp_rows, [50, 30, 50])
     if ablation is not None and not ablation.empty:
         _para(pdf, f"Simulação: o que acontece no {focus.modelo} se a variável for removida.")
         ab_rows = []
@@ -307,22 +291,23 @@ def build_pdf_report(
                     f"{int(row['delta_predito']):+d}",
                 ]
             )
-        _table(pdf, ["Variável", "F1 sem ela", "Δ F1 (pp)", "Predito sem ela", "Δ contagem"], ab_rows)
+        _table(
+            pdf,
+            ["Variável", "F1 sem ela", "dF1 (pp)", "Predito sem ela", "d contagem"],
+            ab_rows,
+            [36, 24, 22, 30, 28],
+        )
 
     _section(pdf, "7. Diagnóstico automático e dicas")
     for title, body in diagnostic_sections(results, real, features, n_test, threshold):
-        pdf.set_x(pdf.l_margin)
+        _reset(pdf)
         pdf.set_font("DejaVu", "B", 10)
         pdf.set_text_color(*GOLD)
-        pdf.multi_cell(0, 6, title)
+        pdf.multi_cell(pdf.epw, 6, _plain(title))
         _para(pdf, body, size=9)
 
-    pdf.ln(4)
+    _reset(pdf)
     pdf.set_font("DejaVu", "", 9)
     pdf.set_text_color(*MUTED)
-    pdf.multi_cell(
-        0,
-        5,
-        f"Fim do relatório. Simulador de acerto para is_legendary. Desenvolvido por {AUTHOR}.",
-    )
+    pdf.multi_cell(pdf.epw, 5, f"Fim do relatório. Desenvolvido por {AUTHOR}.")
     return bytes(pdf.output())

@@ -112,6 +112,7 @@ def _collect_custom_features() -> list[str]:
 
 def render_sidebar(meta: dict) -> tuple[int, list[str], list[str], float]:
     with st.sidebar:
+        st.markdown("**Desenvolvido por Hart Botelho**")
         st.markdown("### Experimento")
         st.caption(
             f"Base limpa: **{meta['rows_clean']}** Pokémon · "
@@ -188,7 +189,6 @@ def render_sidebar(meta: dict) -> tuple[int, list[str], list[str], float]:
             "Alvo: `is_legendary`. Seed fixa (42) para experimentos reproduzíveis. "
             "Naive Bayes e Regressão Logística usam `StandardScaler`."
         )
-        st.caption("Desenvolvido por **Hart Botelho**.")
 
     return train_pct, selected_models, selected_features, threshold
 

@@ -7,6 +7,7 @@ import math
 import pandas as pd
 import streamlit as st
 
+from src.data import FEATURE_LABELS
 from src.modeling import EvaluationResult
 
 CUSTOM_CSS = """
@@ -225,7 +226,7 @@ def render_treatment(meta: dict, train_pct: int) -> None:
     na = meta.get("na_detail") or {}
     if na:
         motivo = ", ".join(
-            f"{k} ({v} vazios)" for k, v in na.items()
+            f"{FEATURE_LABELS.get(k, k)} ({v} vazios)" for k, v in na.items()
         )
         motivo_txt = f"Motivo: valores ausentes em {motivo}."
     else:

@@ -5,10 +5,19 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from src.data import ALL_FEATURES, FEATURE_LABELS, PRESETS, TARGET, load_pokemon_data
+from src.data import (
+    ALL_FEATURES,
+    FEATURE_LABELS,
+    PRESET_CAPTIONS,
+    PRESET_LABELS,
+    PRESET_ORDER,
+    PRESETS,
+    TARGET,
+    load_pokemon_data,
+)
 from src.diagnostics import recommend
 from src.modeling import MODEL_CATALOG, EvaluationResult, run_experiment
-from src.ui import inject_css, render_confusion, render_hero, render_kpis, results_table
+from src.ui import inject_css, render_confusion, render_feature_chips, render_hero, render_kpis, results_table
 
 st.set_page_config(
     page_title="Portal ML · Pokémon Lendários",
@@ -37,17 +46,40 @@ def cached_experiment(
 
 
 def _init_state() -> None:
+    if "feature_preset" not in st.session_state:
+        st.session_state.feature_preset = "aula"
     if "selected_features" not in st.session_state:
         st.session_state.selected_features = PRESETS["aula"].copy()
+    for feat in ALL_FEATURES:
+        key = f"feat_{feat}"
+        if key not in st.session_state:
+            st.session_state[key] = feat in PRESETS["aula"]
 
 
-def _apply_preset(key: str) -> None:
-    st.session_state.selected_features = PRESETS[key].copy()
+def _sync_feature_checkboxes(features: list[str]) -> None:
+    selected = set(features)
+    for feat in ALL_FEATURES:
+        st.session_state[f"feat_{feat}"] = feat in selected
+
+
+def _on_preset_change() -> None:
+    preset = st.session_state.feature_preset
+    if preset == "personalizado":
+        return
+    chosen = PRESETS[preset].copy()
+    st.session_state.selected_features = chosen
+    _sync_feature_checkboxes(chosen)
+
+
+def _collect_custom_features() -> list[str]:
+    picked = [feat for feat in ALL_FEATURES if st.session_state.get(f"feat_{feat}")]
+    st.session_state.selected_features = picked
+    return picked
 
 
 def render_sidebar(meta: dict) -> tuple[int, list[str], list[str], float]:
     with st.sidebar:
-        st.markdown("### Controles do experimento")
+        st.markdown("### Experimento")
         st.caption(
             f"Base limpa: **{meta['rows_clean']}** Pokémon · "
             f"**{meta['legendaries']}** lendários · "
@@ -55,6 +87,7 @@ def render_sidebar(meta: dict) -> tuple[int, list[str], list[str], float]:
         )
         st.divider()
 
+        st.markdown("**1. Treino / teste**")
         train_pct = st.slider(
             "Proporção treino / teste",
             min_value=50,
@@ -66,32 +99,49 @@ def render_sidebar(meta: dict) -> tuple[int, list[str], list[str], float]:
         st.caption(f"Treino **{train_pct}%** · Teste **{100 - train_pct}%** · `stratify=y` ativo.")
 
         st.divider()
-        st.markdown("**Algoritmos**")
+        st.markdown("**2. Algoritmos**")
         selected_models: list[str] = []
         for name in MODEL_CATALOG:
             if st.checkbox(name, value=True, key=f"model_{name}"):
                 selected_models.append(name)
 
         st.divider()
-        st.markdown("**Atributos (features)**")
-        c1, c2 = st.columns(2)
-        c1.button("Preset Aula", width="stretch", on_click=_apply_preset, args=("aula",))
-        c2.button("Preset Físicos", width="stretch", on_click=_apply_preset, args=("fisicos",))
-        c3, c4 = st.columns(2)
-        c3.button("Preset Agregado", width="stretch", on_click=_apply_preset, args=("agregado",))
-        c4.button("Preset Completo", width="stretch", on_click=_apply_preset, args=("completo",))
+        st.markdown("**3. Atributos**")
+        st.caption("Escolha um preset. As colunas usadas aparecem logo abaixo — sem um segundo menu.")
 
-        selected_features = st.multiselect(
-            "Colunas usadas no treino",
-            options=ALL_FEATURES,
-            format_func=lambda k: FEATURE_LABELS[k],
-            key="selected_features",
-            help="Apenas registros sem valores ausentes entram no treino.",
+        st.radio(
+            "Preset",
+            options=PRESET_ORDER,
+            format_func=lambda key: PRESET_LABELS[key],
+            captions=[PRESET_CAPTIONS[key] for key in PRESET_ORDER],
+            key="feature_preset",
+            on_change=_on_preset_change,
+            label_visibility="collapsed",
         )
 
+        preset = st.session_state.feature_preset
+        if preset == "personalizado":
+            st.caption("Marque as colunas que entram no treino:")
+            for feat in ALL_FEATURES:
+                st.checkbox(FEATURE_LABELS[feat], key=f"feat_{feat}")
+            selected_features = _collect_custom_features()
+            if selected_features:
+                render_feature_chips(
+                    "Colunas no treino",
+                    [FEATURE_LABELS[f] for f in selected_features],
+                )
+        else:
+            selected_features = PRESETS[preset].copy()
+            st.session_state.selected_features = selected_features
+            render_feature_chips(
+                f"Colunas do preset {PRESET_LABELS[preset]}",
+                [FEATURE_LABELS[f] for f in selected_features],
+            )
+
         st.divider()
+        st.markdown("**4. Limiar de decisão**")
         threshold = st.slider(
-            "Limiar de decisão (threshold)",
+            "Limiar de probabilidade",
             min_value=0.10,
             max_value=0.90,
             value=0.50,
@@ -140,7 +190,7 @@ def main() -> None:
         )
 
     if not selected_features:
-        st.warning("Selecione ao menos um atributo na barra lateral para treinar os modelos.")
+        st.warning("Marque ao menos uma coluna no preset Personalizado para treinar os modelos.")
         st.stop()
     if not selected_models:
         st.warning("Selecione ao menos um algoritmo na barra lateral.")

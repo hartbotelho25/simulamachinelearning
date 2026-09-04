@@ -31,6 +31,24 @@ PRESETS: dict[str, list[str]] = {
     "completo": ALL_FEATURES.copy(),
 }
 
+PRESET_ORDER: list[str] = ["aula", "fisicos", "agregado", "completo", "personalizado"]
+
+PRESET_LABELS: dict[str, str] = {
+    "aula": "Aula",
+    "fisicos": "Físicos",
+    "agregado": "Agregado",
+    "completo": "Completo",
+    "personalizado": "Personalizado",
+}
+
+PRESET_CAPTIONS: dict[str, str] = {
+    "aula": "Os 6 stats de combate (HP até Velocidade)",
+    "fisicos": "Somente altura e peso",
+    "agregado": "Somente o Total Base (soma dos 6 stats)",
+    "completo": "Stats + altura + peso + Total Base",
+    "personalizado": "Você marca cada coluna abaixo",
+}
+
 DEFAULT_CSV = Path(__file__).resolve().parent.parent / "base_pokemon.csv"
 
 

@@ -50,6 +50,7 @@ Naive Bayes e Regressão Logística passam por `StandardScaler`. A semente é fi
 - **Preset Físicos:** `height_m`, `weight_kg`
 - **Preset Agregado:** `base_total`
 - **Preset Completo:** todos os atributos acima
+- **Personalizado:** edição manual das colunas, só quando você escolhe essa opção
 
 ## Estrutura
 

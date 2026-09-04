@@ -75,12 +75,46 @@ CUSTOM_CSS = """
     @media (max-width: 560px) {
         .kpi-grid { grid-template-columns: 1fr; }
     }
+    [data-testid="stSidebarNav"] { display: none; }
+    .preset-box {
+        background: rgba(232,185,35,0.06);
+        border: 1px solid rgba(232,185,35,0.22);
+        border-radius: 12px;
+        padding: 0.7rem 0.8rem 0.75rem 0.8rem;
+        margin: 0.35rem 0 0.5rem 0;
+    }
+    .preset-box .ttl {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #E8B923;
+        font-weight: 600;
+        margin-bottom: 0.45rem;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .chip {
+        background: #1c2442;
+        border: 1px solid rgba(244,241,232,0.12);
+        color: #F4F1E8;
+        border-radius: 999px;
+        padding: 0.12rem 0.55rem;
+        font-size: 0.78rem;
+    }
 </style>
 """
 
 
 def inject_css() -> None:
     st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
+
+
+def render_feature_chips(title: str, labels: list[str]) -> None:
+    chips = "".join(f'<span class="chip">{label}</span>' for label in labels)
+    st.markdown(
+        f'<div class="preset-box"><div class="ttl">{title}</div>'
+        f'<div class="chips">{chips}</div></div>',
+        unsafe_allow_html=True,
+    )
 
 
 def render_hero() -> None:

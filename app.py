@@ -25,6 +25,17 @@ def get_data() -> tuple[pd.DataFrame, dict]:
     return load_pokemon_data()
 
 
+@st.cache_data(show_spinner=False)
+def cached_experiment(
+    features: tuple[str, ...],
+    models: tuple[str, ...],
+    train_pct: int,
+    threshold: float,
+) -> tuple[list[EvaluationResult], int, int]:
+    df, _ = get_data()
+    return run_experiment(df, list(features), list(models), train_pct, threshold)
+
+
 def _init_state() -> None:
     if "selected_features" not in st.session_state:
         st.session_state.selected_features = PRESETS["aula"].copy()
@@ -58,22 +69,17 @@ def render_sidebar(meta: dict) -> tuple[int, list[str], list[str], float]:
         st.markdown("**Algoritmos**")
         selected_models: list[str] = []
         for name in MODEL_CATALOG:
-            default_on = name in (
-                "Naive Bayes",
-                "Regressão Logística",
-                "Random Forest",
-            )
-            if st.checkbox(name, value=default_on, key=f"model_{name}"):
+            if st.checkbox(name, value=True, key=f"model_{name}"):
                 selected_models.append(name)
 
         st.divider()
         st.markdown("**Atributos (features)**")
         c1, c2 = st.columns(2)
-        c1.button("Preset Aula", use_container_width=True, on_click=_apply_preset, args=("aula",))
-        c2.button("Preset Físicos", use_container_width=True, on_click=_apply_preset, args=("fisicos",))
+        c1.button("Preset Aula", width="stretch", on_click=_apply_preset, args=("aula",))
+        c2.button("Preset Físicos", width="stretch", on_click=_apply_preset, args=("fisicos",))
         c3, c4 = st.columns(2)
-        c3.button("Preset Agregado", use_container_width=True, on_click=_apply_preset, args=("agregado",))
-        c4.button("Preset Completo", use_container_width=True, on_click=_apply_preset, args=("completo",))
+        c3.button("Preset Agregado", width="stretch", on_click=_apply_preset, args=("agregado",))
+        c4.button("Preset Completo", width="stretch", on_click=_apply_preset, args=("completo",))
 
         selected_features = st.multiselect(
             "Colunas usadas no treino",
@@ -125,7 +131,7 @@ def main() -> None:
     with st.expander("Amostra da base após o tratamento", expanded=False):
         preview_cols = ["pokedex_number", "name", "type1", "generation", *ALL_FEATURES, TARGET]
         preview_cols = [c for c in preview_cols if c in df.columns]
-        st.dataframe(df[preview_cols].head(12), use_container_width=True, hide_index=True)
+        st.dataframe(df[preview_cols].head(12), width="stretch", hide_index=True)
         st.caption(
             f"Arquivo original com {meta['rows_raw']} linhas. "
             f"`dropna()` nas colunas utilizadas removeu {meta['dropped']} Pokémon com dados vazios. "
@@ -141,8 +147,11 @@ def main() -> None:
         st.stop()
 
     with st.spinner("Treinando modelos na amostra de teste…"):
-        results, n_test, real = run_experiment(
-            df, selected_features, selected_models, train_pct, threshold
+        results, n_test, real = cached_experiment(
+            tuple(selected_features),
+            tuple(selected_models),
+            train_pct,
+            float(threshold),
         )
 
     highlight_options = ["Mais próximo da contagem real", *[r.modelo for r in results]]
@@ -164,7 +173,7 @@ def main() -> None:
     table = results_table(results)
     st.dataframe(
         table,
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
         column_config={
             "Precisão (%)": st.column_config.NumberColumn(format="%.1f"),

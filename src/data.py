@@ -66,18 +66,20 @@ def load_pokemon_data(csv_path: str | Path | None = None) -> tuple[pd.DataFrame,
     if TARGET not in df.columns:
         raise ValueError("A coluna alvo 'is_legendary' não está presente no CSV.")
 
-    used_cols = [c for c in ALL_FEATURES if c in df.columns] + [TARGET]
-    before = len(df)
-    df = df.dropna(subset=used_cols).copy()
-    dropped = before - len(df)
+    missing_features = [c for c in ALL_FEATURES if c not in df.columns]
+    if missing_features:
+        raise ValueError(
+            "O CSV não contém todas as colunas utilizadas na modelagem: "
+            + ", ".join(missing_features)
+        )
 
-    df[TARGET] = pd.to_numeric(df[TARGET], errors="coerce").fillna(0).astype(int)
+    used_cols = ALL_FEATURES + [TARGET]
     for col in used_cols:
-        if col == TARGET:
-            continue
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
+    # Elimina qualquer Pokémon com valor ausente nas colunas utilizadas.
     df = df.dropna(subset=used_cols).copy()
+    df[TARGET] = df[TARGET].astype(int)
     dropped = rows_raw - len(df)
 
     meta = {

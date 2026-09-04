@@ -30,6 +30,13 @@ CUSTOM_CSS = """
         letter-spacing: -0.02em;
     }
     .hero p { color: #c9c3b4; margin: 0; font-size: 0.98rem; line-height: 1.45; }
+    .hero .by {
+        color: #E8B923;
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin: 0.15rem 0 0.55rem 0;
+        letter-spacing: 0.02em;
+    }
     .hero .badge {
         display: inline-block;
         background: rgba(232,185,35,0.15);
@@ -146,6 +153,7 @@ def render_hero() -> None:
         <div class="hero">
             <div class="badge">Simulador de acerto · is_legendary</div>
             <h1>Portal Interativo de Machine Learning</h1>
+            <p class="by">Desenvolvido por Hart Botelho</p>
             <p>
                 Simule a previsão de <strong>quantos Pokémon lendários</strong> existem na amostra
                 de teste. Troque método, variáveis e limiar para ver o impacto em cada métrica —

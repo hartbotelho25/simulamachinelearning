@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 import pandas as pd
 import streamlit as st
 
@@ -22,6 +24,7 @@ from src.modeling import (
     variable_profile,
 )
 from src.diagnostics import diagnostic_sections, method_narrative
+from src.report_pdf import build_pdf_report
 from src.ui import (
     inject_css,
     render_confusion,
@@ -33,7 +36,7 @@ from src.ui import (
 )
 
 st.set_page_config(
-    page_title="Portal ML · Pokémon Lendários",
+    page_title="Portal ML · Hart Botelho",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -185,6 +188,7 @@ def render_sidebar(meta: dict) -> tuple[int, list[str], list[str], float]:
             "Alvo: `is_legendary`. Seed fixa (42) para experimentos reproduzíveis. "
             "Naive Bayes e Regressão Logística usam `StandardScaler`."
         )
+        st.caption("Desenvolvido por **Hart Botelho**.")
 
     return train_pct, selected_models, selected_features, threshold
 
@@ -276,6 +280,81 @@ def main() -> None:
     _render_variable_impact(focus, selected_features, train_pct, threshold, real)
     _render_method_reports(results, real)
     _render_diagnostics(results, real, selected_features, n_test, threshold)
+
+    st.markdown("#### Relatório em PDF")
+    st.caption("O arquivo reúne configuração, indicadores, comparativo, impacto das variáveis, cada método e o diagnóstico.")
+    _render_pdf_download(
+        meta,
+        train_pct,
+        threshold,
+        selected_features,
+        n_test,
+        real,
+        focus,
+        results,
+        key="pdf_main",
+    )
+    with st.sidebar:
+        st.divider()
+        st.markdown("**5. Exportar**")
+        _render_pdf_download(
+            meta,
+            train_pct,
+            threshold,
+            selected_features,
+            n_test,
+            real,
+            focus,
+            results,
+            key="pdf_sidebar",
+        )
+
+
+def _render_pdf_download(
+    meta: dict,
+    train_pct: int,
+    threshold: float,
+    features: list[str],
+    n_test: int,
+    real: int,
+    focus: EvaluationResult,
+    results: list[EvaluationResult],
+    key: str,
+) -> None:
+    preset_key = st.session_state.get("feature_preset", "aula")
+    preset_label = PRESET_LABELS.get(preset_key, str(preset_key))
+    profile = cached_profile(tuple(features))
+    ablation = None
+    if len(features) >= 2:
+        ablation = cached_ablation(tuple(features), focus.modelo, train_pct, float(threshold))
+    try:
+        pdf_bytes = build_pdf_report(
+            meta=meta,
+            train_pct=train_pct,
+            threshold=threshold,
+            features=features,
+            preset_label=preset_label,
+            n_test=n_test,
+            real=real,
+            focus=focus,
+            results=results,
+            profile=profile,
+            ablation=ablation,
+        )
+    except Exception as exc:
+        st.error(f"Não foi possível montar o PDF: {exc}")
+        return
+
+    st.download_button(
+        label="Baixar relatório completo em PDF",
+        data=pdf_bytes,
+        file_name=f"relatorio_lendarios_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+        mime="application/pdf",
+        type="primary",
+        width="stretch",
+        key=key,
+        help="Gera um PDF com configuração, KPIs, comparativo, impacto das variáveis, relatório por método e diagnóstico.",
+    )
 
 
 def _render_variable_impact(

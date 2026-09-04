@@ -100,6 +100,28 @@ CUSTOM_CSS = """
         padding: 0.12rem 0.55rem;
         font-size: 0.78rem;
     }
+    .treat {
+        background: #161d33;
+        border: 1px solid rgba(244,241,232,0.08);
+        border-radius: 14px;
+        padding: 1rem 1.15rem 0.9rem 1.15rem;
+        margin-bottom: 1rem;
+    }
+    .treat h3 { margin: 0 0 0.35rem 0; font-size: 1.05rem; color: #F4F1E8; }
+    .treat p { margin: 0 0 0.75rem 0; color: #c9c3b4; font-size: 0.92rem; line-height: 1.45; }
+    .treat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+    .treat .cell {
+        background: #12182c;
+        border-radius: 10px;
+        padding: 0.65rem 0.75rem;
+    }
+    .treat .cell .k { font-size: 0.72rem; color: #a8a296; text-transform: uppercase; letter-spacing: 0.04em; }
+    .treat .cell .n { font-size: 1.35rem; font-weight: 700; color: #F4F1E8; margin-top: 0.1rem; }
+    .treat .cell .s { font-size: 0.8rem; color: #c9c3b4; margin-top: 0.15rem; }
+    .diag-title { color: #E8B923; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; margin-bottom: 0.35rem; }
+    @media (max-width: 800px) {
+        .treat-grid { grid-template-columns: 1fr; }
+    }
 </style>
 """
 
@@ -121,12 +143,12 @@ def render_hero() -> None:
     st.markdown(
         """
         <div class="hero">
-            <div class="badge">Classificação supervisionada · is_legendary</div>
+            <div class="badge">Simulador de acerto · is_legendary</div>
             <h1>Portal Interativo de Machine Learning</h1>
             <p>
-                Teste algoritmos, atributos, proporção treino/teste e o limiar de probabilidade
-                para descobrir a forma mais assertiva de estimar
-                <strong>quantos Pokémon lendários</strong> existem na base.
+                Simule a previsão de <strong>quantos Pokémon lendários</strong> existem na amostra
+                de teste. Troque método, variáveis e limiar para ver o impacto em cada métrica —
+                contagem, captura, falsos alarmes e o peso de cada atributo.
             </p>
         </div>
         """,
@@ -196,6 +218,52 @@ def results_table(results: list[EvaluationResult]) -> pd.DataFrame:
             }
         )
     return pd.DataFrame(rows)
+
+
+def render_treatment(meta: dict, train_pct: int) -> None:
+    """Explica a limpeza da base — não é uma amostra aleatória de 12 linhas."""
+    na = meta.get("na_detail") or {}
+    if na:
+        motivo = ", ".join(
+            f"{k} ({v} vazios)" for k, v in na.items()
+        )
+        motivo_txt = f"Motivo: valores ausentes em {motivo}."
+    else:
+        motivo_txt = "Nenhuma linha tinha valor ausente nas colunas usadas."
+    teste_pct = 100 - train_pct
+    st.markdown(
+        f"""
+        <div class="treat">
+            <h3>Como a base foi preparada</h3>
+            <p>
+                O CSV original tem <strong>{meta['rows_raw']}</strong> Pokémon.
+                Antes de treinar, o portal remove qualquer registro com dado vazio
+                nas colunas de modelagem (<code>dropna</code>). {motivo_txt}
+                O que resta é a <strong>base limpa</strong> — não uma amostra de 12 nomes.
+                O treino e o teste são sorteados a partir desses
+                <strong>{meta['rows_clean']}</strong> registros ({train_pct}% / {teste_pct}%, com <code>stratify</code>).
+            </p>
+            <div class="treat-grid">
+                <div class="cell">
+                    <div class="k">CSV original</div>
+                    <div class="n">{meta['rows_raw']}</div>
+                    <div class="s">Pokémon no arquivo</div>
+                </div>
+                <div class="cell">
+                    <div class="k">Removidos na limpeza</div>
+                    <div class="n">{meta['dropped']}</div>
+                    <div class="s">Linhas com NaN</div>
+                </div>
+                <div class="cell">
+                    <div class="k">Base limpa · lendários</div>
+                    <div class="n">{meta['rows_clean']} · {meta['legendaries']}</div>
+                    <div class="s">{meta.get('comuns', meta['rows_clean'] - meta['legendaries'])} comuns seguem no treino/teste</div>
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def render_confusion(result: EvaluationResult) -> None:

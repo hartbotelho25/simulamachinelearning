@@ -79,6 +79,7 @@ def load_pokemon_data(csv_path: str | Path | None = None) -> tuple[pd.DataFrame,
 
     df = pd.read_csv(path)
     rows_raw = len(df)
+    had_base_total = "base_total" in df.columns
     df = _ensure_base_total(df)
 
     if TARGET not in df.columns:
@@ -95,6 +96,10 @@ def load_pokemon_data(csv_path: str | Path | None = None) -> tuple[pd.DataFrame,
     for col in used_cols:
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
+    na_detail = {
+        col: int(df[col].isna().sum()) for col in used_cols if int(df[col].isna().sum())
+    }
+
     # Elimina qualquer Pokémon com valor ausente nas colunas utilizadas.
     df = df.dropna(subset=used_cols).copy()
     df[TARGET] = df[TARGET].astype(int)
@@ -105,6 +110,9 @@ def load_pokemon_data(csv_path: str | Path | None = None) -> tuple[pd.DataFrame,
         "rows_clean": len(df),
         "dropped": dropped,
         "legendaries": int(df[TARGET].sum()),
+        "comuns": int((df[TARGET] == 0).sum()),
+        "na_detail": na_detail,
         "path": str(path),
+        "base_total_calculado": not had_base_total,
     }
     return df.reset_index(drop=True), meta

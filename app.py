@@ -12,12 +12,25 @@ from src.data import (
     PRESET_LABELS,
     PRESET_ORDER,
     PRESETS,
-    TARGET,
     load_pokemon_data,
 )
-from src.diagnostics import recommend
-from src.modeling import MODEL_CATALOG, EvaluationResult, run_experiment
-from src.ui import inject_css, render_confusion, render_feature_chips, render_hero, render_kpis, results_table
+from src.diagnostics import diagnostic_sections, method_narrative
+from src.modeling import (
+    MODEL_CATALOG,
+    EvaluationResult,
+    ablation_table,
+    run_experiment,
+    variable_profile,
+)
+from src.ui import (
+    inject_css,
+    render_confusion,
+    render_feature_chips,
+    render_hero,
+    render_kpis,
+    render_treatment,
+    results_table,
+)
 
 st.set_page_config(
     page_title="Portal ML · Pokémon Lendários",
@@ -32,6 +45,23 @@ inject_css()
 @st.cache_data(show_spinner=False)
 def get_data() -> tuple[pd.DataFrame, dict]:
     return load_pokemon_data()
+
+
+@st.cache_data(show_spinner=False)
+def cached_profile(features: tuple[str, ...]) -> pd.DataFrame:
+    df, _ = get_data()
+    return variable_profile(df, list(features))
+
+
+@st.cache_data(show_spinner=False)
+def cached_ablation(
+    features: tuple[str, ...],
+    model_name: str,
+    train_pct: int,
+    threshold: float,
+) -> pd.DataFrame:
+    df, _ = get_data()
+    return ablation_table(df, list(features), model_name, train_pct, threshold)
 
 
 @st.cache_data(show_spinner=False)
@@ -171,23 +201,13 @@ def main() -> None:
     render_hero()
 
     try:
-        df, meta = get_data()
+        _df, meta = get_data()
     except (FileNotFoundError, ValueError) as exc:
         st.error(str(exc))
         st.stop()
 
     train_pct, selected_models, selected_features, threshold = render_sidebar(meta)
-
-    with st.expander("Amostra da base após o tratamento", expanded=False):
-        preview_cols = ["pokedex_number", "name", "type1", "generation", *ALL_FEATURES, TARGET]
-        preview_cols = [c for c in preview_cols if c in df.columns]
-        st.dataframe(df[preview_cols].head(12), width="stretch", hide_index=True)
-        st.caption(
-            f"Arquivo original com {meta['rows_raw']} linhas. "
-            f"`dropna()` nas colunas utilizadas removeu {meta['dropped']} Pokémon com dados vazios. "
-            "Se `base_total` não existir no CSV, ele é calculado como "
-            "`hp + attack + defense + sp_attack + sp_defense + speed`."
-        )
+    render_treatment(meta, train_pct)
 
     if not selected_features:
         st.warning("Marque ao menos uma coluna no preset Personalizado para treinar os modelos.")
@@ -206,7 +226,7 @@ def main() -> None:
 
     highlight_options = ["Mais próximo da contagem real", *[r.modelo for r in results]]
     focus_choice = st.selectbox(
-        "Modelo em destaque nos cartões e na matriz de confusão",
+        "Método em destaque nos cartões, na matriz e no impacto das variáveis",
         options=highlight_options,
         index=0,
     )
@@ -219,7 +239,7 @@ def main() -> None:
         f"atributos: {', '.join(FEATURE_LABELS[f] for f in selected_features)}."
     )
 
-    st.markdown("#### Comparativo de desempenho")
+    st.markdown("#### Comparativo de desempenho por método")
     table = results_table(results)
     st.dataframe(
         table,
@@ -232,9 +252,9 @@ def main() -> None:
         },
     )
     st.caption(
-        "TP inclui a taxa de captura (recall). FP inclui o erro de palpite "
-        "(falsos positivos entre os classificados como lendários). "
-        "A margem do real compara a contagem predita com o gabarito do teste."
+        "Cada linha é um método no mesmo split e no mesmo limiar. "
+        "TP = acertos reais (+ % de captura). FP = falsos alarmes (+ % de erro de palpite). "
+        "FN = lendários perdidos. A margem compara a contagem predita com o gabarito do teste."
     )
 
     left, right = st.columns((1.15, 1), gap="large")
@@ -253,13 +273,162 @@ def main() -> None:
         render_confusion(focus)
         st.caption("Valores no conjunto de teste, já com o limiar escolhido.")
 
-    st.markdown("#### Diagnóstico automático e recomendação")
-    parecer = recommend(results, real, selected_features)
-    st.markdown(f'<div class="diag">{_md_to_html(parecer)}</div>', unsafe_allow_html=True)
+    _render_variable_impact(focus, selected_features, train_pct, threshold, real)
+    _render_method_reports(results, real)
+    _render_diagnostics(results, real, selected_features, n_test, threshold)
+
+
+def _render_variable_impact(
+    focus: EvaluationResult,
+    features: list[str],
+    train_pct: int,
+    threshold: float,
+    real: int,
+) -> None:
+    st.markdown("#### Impacto de cada variável")
+    st.caption(
+        "Primeiro a diferença na base limpa (lendários vs comuns). "
+        f"Depois o peso que **{focus.modelo}** atribuiu a cada coluna. "
+        "Por fim, o que acontece com F1 e com a contagem se essa coluna for removida."
+    )
+
+    profile = cached_profile(tuple(features)).copy()
+    profile["Variável"] = profile["atributo"].map(FEATURE_LABELS)
+    profile["Média nos lendários"] = profile["media_lendarios"].round(2)
+    profile["Média nos comuns"] = profile["media_comuns"].round(2)
+    profile["Diferença (lendário − comum)"] = profile["diferenca"].round(2)
+    st.dataframe(
+        profile[
+            [
+                "Variável",
+                "Média nos lendários",
+                "Média nos comuns",
+                "Diferença (lendário − comum)",
+            ]
+        ],
+        width="stretch",
+        hide_index=True,
+    )
+    diff_chart = profile.set_index("Variável")[["Diferença (lendário − comum)"]]
+    st.bar_chart(diff_chart, color=["#E8B923"], height=220)
+    st.caption(
+        "Valores positivos: lendários têm média maior nessa variável. "
+        "Altura e peso costumam ter diferença, mas isso não significa que sejam bons preditores."
+    )
+
+    if focus.importancias:
+        st.markdown(f"**Peso no método {focus.modelo}**")
+        st.caption(focus.origem_importancia or "Importância estimada no treino.")
+        imp_rows = []
+        for feat, score in sorted(
+            focus.importancias.items(), key=lambda kv: kv[1], reverse=True
+        ):
+            row = {
+                "Variável": FEATURE_LABELS.get(feat, feat),
+                "Importância": round(score, 4),
+            }
+            if feat in focus.direcao:
+                sinal = focus.direcao[feat]
+                row["Direção"] = (
+                    "↑ aumenta chance de lendário"
+                    if sinal > 0
+                    else "↓ diminui chance de lendário"
+                    if sinal < 0
+                    else "neutro"
+                )
+            imp_rows.append(row)
+        imp_df = pd.DataFrame(imp_rows)
+        left, right = st.columns((1.2, 1), gap="large")
+        with left:
+            st.dataframe(imp_df, width="stretch", hide_index=True)
+        with right:
+            chart = pd.DataFrame(
+                {"Importância": [r["Importância"] for r in imp_rows]},
+                index=[r["Variável"] for r in imp_rows],
+            )
+            st.bar_chart(chart, color=["#c084fc"], height=240)
+
+    if len(features) >= 2:
+        st.markdown(f"**Simulação: e se tirar a variável? ({focus.modelo})**")
+        with st.spinner("Retreinando o método sem cada atributo…"):
+            ab = cached_ablation(
+                tuple(features), focus.modelo, train_pct, float(threshold)
+            )
+        if not ab.empty:
+            show = ab.copy()
+            show["Variável"] = show["atributo"].map(FEATURE_LABELS)
+            show["F1 sem ela (%)"] = show["f1_sem"].round(1)
+            show["Δ F1 (pp)"] = show["delta_f1"].map(lambda v: f"{v:+.1f}")
+            show["Predito sem ela"] = show["predito_sem"].astype(int)
+            show["Δ contagem"] = show["delta_predito"].map(lambda v: f"{v:+.0f}")
+            show["Captura sem ela (%)"] = show["recall_sem"].round(1)
+            st.dataframe(
+                show[
+                    [
+                        "Variável",
+                        "F1 sem ela (%)",
+                        "Δ F1 (pp)",
+                        "Predito sem ela",
+                        "Δ contagem",
+                        "Captura sem ela (%)",
+                    ]
+                ],
+                width="stretch",
+                hide_index=True,
+            )
+            st.caption(
+                f"Gabarito do teste: **{real}** lendários. "
+                "Δ F1 negativo = a variável estava ajudando o método. "
+                "Δ contagem mostra se removê-la deixa o simulador mais conservador ou mais agressivo."
+            )
+    else:
+        st.caption("Com uma só variável não há simulação de remoção — experimente o preset Aula ou Completo.")
+
+
+def _render_method_reports(results: list[EvaluationResult], real: int) -> None:
+    st.markdown("#### Relatório de cada método")
+    st.caption(
+        "Abra a aba do algoritmo para ver as métricas daquele método, exemplos de acerto e erro, "
+        "e uma dica de como ele toma a decisão."
+    )
+    tabs = st.tabs([r.modelo for r in results])
+    for tab, result in zip(tabs, results):
+        with tab:
+            k1, k2, k3, k4 = st.columns(4)
+            k1.metric("Predito", result.total_predito, f"{result.margem_pct:+.1f}% vs real")
+            k2.metric("F1-Score", f"{result.f1 * 100:.1f}%")
+            k3.metric("Precisão", f"{result.precisao * 100:.1f}%")
+            k4.metric("Captura", f"{result.captura_pct:.1f}%")
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Acurácia", f"{result.acuracia * 100:.1f}%")
+            m2.metric("Especificidade", f"{result.especificidade * 100:.1f}%")
+            auc = "—" if result.roc_auc != result.roc_auc else f"{result.roc_auc:.3f}"
+            m3.metric("ROC AUC", auc)
+            render_confusion(result)
+            st.markdown(
+                f'<div class="diag">{_md_to_html(method_narrative(result, real))}</div>',
+                unsafe_allow_html=True,
+            )
+
+
+def _render_diagnostics(
+    results: list[EvaluationResult],
+    real: int,
+    features: list[str],
+    n_test: int,
+    threshold: float,
+) -> None:
+    st.markdown("#### Diagnóstico automático, dicas e próximo passo")
+    for title, body in diagnostic_sections(results, real, features, n_test, threshold):
+        st.markdown(
+            f'<div class="diag"><div class="diag-title">{title}</div>{_md_to_html(body)}</div>',
+            unsafe_allow_html=True,
+        )
+        st.write("")
 
 
 def _md_to_html(text: str) -> str:
-    """Converte negrito markdown simples em HTML para o card de diagnóstico."""
+    """Converte negrito markdown simples em HTML para os cards de diagnóstico."""
     import re
 
     html = text.replace("\n\n", "<br><br>")

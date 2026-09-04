@@ -8,7 +8,7 @@ O portal permite testar algoritmos, combinações flexíveis de atributos, a pro
 
 1. **Tratamento da base** — ao carregar o CSV, linhas com valores ausentes nas colunas utilizadas são eliminadas (`dropna`). Se `base_total` não existir, ele é calculado como `hp + attack + defense + sp_attack + sp_defense + speed`.
 2. **Experimentos interativos** na barra lateral: split 50/50 até 90/10 (padrão 70/30, com `stratify=y`), seleção de algoritmos, presets de atributos e limiar de 0,10 a 0,90.
-3. **Painel de resultados** com KPIs da amostra de teste, tabela comparativa (TP, FP, FN, precisão, recall, F1, ROC AUC e margem do real) e diagnóstico automático do sistema.
+3. **Painel de resultados** com KPIs da amostra de teste, tabela comparativa por método, impacto de cada variável (perfil, importância e simulação ao remover), relatório individual de cada algoritmo e diagnóstico com dicas e próximo experimento.
 
 ## Instalação
 

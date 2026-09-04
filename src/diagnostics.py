@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from src.data import FEATURE_LABELS
-from src.modeling import EvaluationResult
+
+if TYPE_CHECKING:
+    from src.modeling import EvaluationResult
 
 METHOD_TIPS: dict[str, str] = {
     "Naive Bayes": (

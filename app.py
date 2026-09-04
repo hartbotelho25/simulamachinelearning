@@ -14,7 +14,6 @@ from src.data import (
     PRESETS,
     load_pokemon_data,
 )
-from src.diagnostics import diagnostic_sections, method_narrative
 from src.modeling import (
     MODEL_CATALOG,
     EvaluationResult,
@@ -22,6 +21,7 @@ from src.modeling import (
     run_experiment,
     variable_profile,
 )
+from src.diagnostics import diagnostic_sections, method_narrative
 from src.ui import (
     inject_css,
     render_confusion,

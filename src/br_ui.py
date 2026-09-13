@@ -124,7 +124,7 @@ def _fmt(v: float) -> str:
     return f"{v:+.1f}%"
 
 
-def render_kpis(n_test, real):
+def render_kpis(n_test, real, predito=None, margem=None):
     st.markdown(
         f"""
         <div class="kpi-grid">

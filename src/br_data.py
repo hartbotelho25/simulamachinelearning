@@ -7,7 +7,6 @@ from pathlib import Path
 import pandas as pd
 
 DEFAULT_CSV = Path(__file__).resolve().parent.parent / "data" / "brasileirao.csv"
-GUIDE_PDF = Path(__file__).resolve().parent.parent / "data" / "guia-ml-brasileirao.pdf"
 
 COL_CLUB = "Time"
 
@@ -27,9 +26,6 @@ TARGET_ORDER: list[str] = [
     "multicampeao",
 ]
 
-GUIDE_TARGETS = frozenset({"campeao", "rebaixado"})
-CHALLENGE_TARGETS = frozenset({"recorrente", "artilheiro", "multicampeao"})
-
 TARGET_LABELS: dict[str, str] = {
     "campeao": "Já foi campeão?",
     "rebaixado": "Já foi rebaixado?",
@@ -39,11 +35,11 @@ TARGET_LABELS: dict[str, str] = {
 }
 
 TARGET_HELP: dict[str, str] = {
-    "campeao": "Guia · 9/45. Quase se separa por volume de jogos — vários modelos batem 100% no teste. Use para ver a armadilha.",
-    "rebaixado": "Guia · 40/45. Chutar SIM já acerta ~89%. Compare acurácia com F1.",
-    "recorrente": "Desafio · 24/45, quase equilibrado. No teste os F1 ficam ~67–77% e os métodos discordam.",
-    "artilheiro": "Desafio · 15/45. A coluna ‘vezes com artilheiro’ sai do treino (ela define o alvo).",
-    "multicampeao": "Desafio · 6/45, classe rara. Árvore e boosting erram; a logística às vezes acerta. Compare F1, não acurácia.",
+    "campeao": "9 de 45 clubes com pelo menos um título (2003–2025).",
+    "rebaixado": "40 de 45 clubes caíram ao menos uma vez.",
+    "recorrente": "24 de 45 clubes com dois ou mais rebaixamentos.",
+    "artilheiro": "15 de 45 clubes tiveram o artilheiro da Série A. A coluna de vezes com artilheiro sai do treino.",
+    "multicampeao": "6 de 45 clubes com dois ou mais títulos.",
 }
 
 # Atributos selecionáveis pedidos — Títulos e Rebaixamentos ficam de fora (vazamento).
@@ -79,29 +75,20 @@ BLOCKED_FEATURES: dict[str, list[str]] = {
     "multicampeao": [],
 }
 
-PRESET_ORDER = ["aula", "ataque", "solidez", "completo", "personalizado"]
+PRESET_ORDER = ["completo", "personalizado"]
 
 PRESET_LABELS = {
-    "aula": "Aula",
-    "ataque": "Ataque",
-    "solidez": "Solidez",
     "completo": "Completo",
     "personalizado": "Personalizado",
 }
 
 PRESET_BASE: dict[str, list[str]] = {
-    "aula": ["Jogos", "Vitorias", "Empates", "Derrotas", "Saldo de Gols"],
-    "ataque": ["Gols Feitos", "Vezes com Artilheiro", "Saldo de Gols", "Aproveitamento (%)"],
-    "solidez": ["Gols Sofridos", "Derrotas", "Cartoes Vermelhos (2014-25)", "Jogos"],
     "completo": ALL_FEATURES.copy(),
     "personalizado": ALL_FEATURES.copy(),
 }
 
 PRESET_CAPTIONS = {
-    "aula": "Jogos, V/E/D e saldo — recorte didático",
-    "ataque": "Gols, saldo, artilheiros e aproveitamento",
-    "solidez": "Gols sofridos, derrotas, cartões e jogos",
-    "completo": "Os 10 atributos selecionáveis",
+    "completo": "Todos os atributos permitidos neste alvo",
     "personalizado": "Você marca cada coluna",
 }
 
@@ -112,11 +99,6 @@ BANK_MAP = {
     "artilheiro": "Cliente que já contratou um produto premium",
     "multicampeao": "Cliente private recorrente (mais de um ciclo de alto valor)",
 }
-
-
-def target_choice_label(key: str) -> str:
-    prefix = "Guia · " if key in GUIDE_TARGETS else "Desafio · "
-    return prefix + TARGET_LABELS[key]
 
 
 def allowed_features(target_key: str | None = None) -> list[str]:

@@ -76,9 +76,8 @@ def render_hero() -> None:
             <div class="badge">Simulador de acerto · Brasileirão 2003–2025 · CAIXA</div>
             <h1>Machine Learning na prática</h1>
             <p>
-                Os alvos do <strong>guia</strong> (campeão / rebaixado) separam demais — vários
-                modelos batem 100%. Os alvos <strong>desafio</strong> (caiu 2+ vezes, artilheiro,
-                multicampeão) fazem os métodos discordarem. Mesmos tijolos: VP, VN, FP, FN, limiar, F1.
+                Escolha o alvo, os atributos e o limiar. Compare os métodos com
+                VP, VN, FP, FN, precisão, recall e F1 — Série A 2003–2025, 45 clubes.
             </p>
         </div>
         """,
@@ -107,11 +106,11 @@ def render_treatment(meta: dict, target_label: str, n_pos: int) -> None:
             <div class="treat-grid">
                 <div class="cell"><div class="k">Clubes</div><div class="n">{meta['rows_clean']}</div>
                 <div class="s">Era dos pontos corridos</div></div>
-                <div class="cell"><div class="k">Guia · desafio</div>
-                <div class="n">{meta['n_campeoes']} · {meta.get('n_recorrentes', 24)}</div>
-                <div class="s">Campeões (fácil) · caiu 2+ (desafio)</div></div>
-                <div class="cell"><div class="k">Teste pequeno</div><div class="n">~14</div>
-                <div class="s">Com 70/30 o teste tem poucas linhas — use a validação cruzada</div></div>
+                <div class="cell"><div class="k">Positivos neste alvo</div>
+                <div class="n">{n_pos}</div>
+                <div class="s">{target_label}</div></div>
+                <div class="cell"><div class="k">Teste (70/30)</div><div class="n">~14</div>
+                <div class="s">Poucas linhas — compare também o F1 CV</div></div>
             </div>
         </div>
         """,

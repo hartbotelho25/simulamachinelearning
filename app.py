@@ -9,9 +9,7 @@ import streamlit as st
 
 from src.br_data import (
     ALL_FEATURES,
-    CHALLENGE_TARGETS,
     FEATURE_LABELS,
-    GUIDE_PDF,
     LEAKAGE_NOTE,
     PRESET_CAPTIONS,
     PRESET_LABELS,
@@ -23,9 +21,8 @@ from src.br_data import (
     allowed_features,
     load_brasileirao,
     preset_features,
-    target_choice_label,
 )
-from src.br_diagnostics import diagnostic_sections, method_narrative, small_sample_note
+from src.br_diagnostics import diagnostic_sections, method_narrative
 from src.br_modeling import (
     MODEL_CATALOG,
     EvaluationResult,
@@ -78,14 +75,14 @@ def cached_ablation(features, target_col, model, train_pct, threshold, k):
 
 
 def _init():
-    if "br_preset" not in st.session_state:
-        st.session_state.br_preset = "aula"
+    if "br_preset" not in st.session_state or st.session_state.br_preset not in PRESET_ORDER:
+        st.session_state.br_preset = "completo"
     if "br_target" not in st.session_state:
         st.session_state.br_target = "recorrente"
     for feat in ALL_FEATURES:
         key = f"brfeat_{feat}"
         if key not in st.session_state:
-            st.session_state[key] = feat in preset_features("aula", st.session_state.br_target)
+            st.session_state[key] = feat in preset_features("completo", st.session_state.br_target)
 
 
 def _on_preset():
@@ -108,11 +105,10 @@ def render_sidebar(meta):
         st.caption(f"{meta['rows_clean']} clubes · Série A 2003–2025")
         st.divider()
         st.markdown("**1. Pergunta (alvo)**")
-        st.caption("Guia = fácil demais (muitos 100%). Desafio = métodos discordam.")
         st.radio(
             "Alvo",
             options=TARGET_ORDER,
-            format_func=target_choice_label,
+            format_func=lambda k: TARGET_LABELS[k],
             key="br_target",
             on_change=_on_target,
             label_visibility="collapsed",
@@ -131,7 +127,6 @@ def render_sidebar(meta):
 
         st.divider()
         st.markdown("**3. Algoritmos**")
-        st.caption("Mesmos métodos do piloto Pokémon, mais o KNN do guia.")
         models = []
         for name in MODEL_CATALOG:
             if st.checkbox(name, value=True, key=f"brm_{name}"):
@@ -157,7 +152,7 @@ def render_sidebar(meta):
         else:
             feats = preset_features(st.session_state.br_preset, st.session_state.br_target)
             if feats:
-                render_chips("Colunas neste preset (já sem vazamento)", [FEATURE_LABELS[f] for f in feats])
+                render_chips("Atributos no treino", [FEATURE_LABELS[f] for f in feats])
 
         st.divider()
         st.markdown("**5. Limiar**")
@@ -179,35 +174,6 @@ def _md(text: str) -> str:
     return html.replace("`", "")
 
 
-def _study():
-    with st.expander("Caderno do guia — 5 exercícios com gabarito", expanded=False):
-        st.markdown(
-            """
-**1. Classifique VP / VN / FP / FN** (alvo: já foi rebaixado?)  
-1) Vitória — previu CAIU · real caiu → **VP**  
-2) Palmeiras — previu NÃO · real não caiu → **VN**  
-3) São Paulo — previu CAIU · real não caiu → **FP**  
-4) Coritiba — previu NÃO · real caiu → **FN**  
-5) Sport — previu CAIU · real caiu → **VP**
-
-**2. Calcule as métricas** (VP=7, FN=2, FP=3, VN=33)  
-Acurácia 40/45 = **88,9%** · Precisão 7/10 = **70%** · Recall 7/9 = **77,8%** · F1 **73,7%**.  
-A acurácia está inflada pelos 33 “não campeão”. O F1 é mais honesto.
-
-**3. Qual modelo?**  
-Explicar ao cliente → **Árvore**. Poucos dados → **Naive Bayes**. Estável → **Random Forest**.  
-Direção do saldo de gols → **Regressão Logística**.
-
-**4. Qual métrica no banco?**  
-Jamais aprovar mau pagador → **precisão**. Alcance máximo → **recall**. Avaliação geral → **F1**.
-
-**5. V ou F?**  
-90% de acurácia sempre ótimo? **F**. Usar Rebaixamentos para prever rebaixado? **F** (leakage).  
-100% no treino e 55% no teste? **V** (overfitting).
-            """
-        )
-
-
 def main():
     _init()
     render_hero()
@@ -222,24 +188,6 @@ def main():
     target_col = TARGETS[tgt]
     n_pos = int(df[target_col].sum())
     render_treatment(meta, TARGET_LABELS[tgt], n_pos)
-    if tgt in CHALLENGE_TARGETS:
-        st.info(
-            "Alvo desafio: a classe não se separa só por ‘clube grande’. "
-            "Compare F1 entre os métodos — o placar não deveria ser 100% para todos."
-        )
-    else:
-        st.warning(
-            "Alvo do guia: fácil demais nesta base. Para ter disputa entre algoritmos, "
-            "escolha um item **Desafio** no menu da esquerda."
-        )
-    if GUIDE_PDF.exists():
-        st.download_button(
-            "Baixar o guia de estudo (PDF)",
-            data=GUIDE_PDF.read_bytes(),
-            file_name="Guia-ML-Brasileirao-Premium.pdf",
-            mime="application/pdf",
-        )
-    _study()
 
     if not features:
         st.warning("Selecione ao menos um atributo permitido.")
@@ -266,12 +214,7 @@ def main():
     st.markdown("#### Indicadores da amostra de teste")
     render_kpis(n_test, real, focus.total_predito, focus.margem_pct)
     st.caption(
-        f"Destaque **{focus.modelo}** · {TARGET_LABELS[tgt]} · limiar {threshold:.2f} · "
-        f"{', '.join(FEATURE_LABELS[f] for f in features)}"
-    )
-    st.markdown(
-        f'<div class="warn">{_md(small_sample_note(results, n_test, real, features, tgt))}</div>',
-        unsafe_allow_html=True,
+        f"KPIs do método em destaque: **{focus.modelo}** · {TARGET_LABELS[tgt]} · limiar {threshold:.2f}"
     )
 
     st.markdown("#### Comparativo por método")
@@ -279,8 +222,6 @@ def main():
     if use_cv and any(r.cv_f1 is not None for r in results):
         table["F1 CV"] = [f"{r.cv_f1*100:.1f}%" if r.cv_f1 is not None else "—" for r in results]
     st.dataframe(table, width="stretch", hide_index=True)
-    st.caption("Olhe o F1, não só a acurácia. Com 45 clubes o teste é pequeno — a coluna F1 CV estabiliza a leitura.")
-
     c1, c2 = st.columns((1.15, 1), gap="large")
     with c1:
         st.markdown("#### Contagem predita vs gabarito")
@@ -293,15 +234,23 @@ def main():
         st.markdown(f"#### Matriz · {focus.modelo}")
         render_confusion(focus)
 
-    st.markdown("#### Impacto de cada variável")
+    st.markdown(f"#### Impacto de cada variável · {focus.modelo}")
+    st.caption(
+        f"Troque o **método em destaque** acima para ver outro algoritmo. "
+        f"Agora: **{focus.modelo}**."
+    )
+
+    st.markdown("**Na base (todos os clubes, sem modelo)**")
+    st.caption("Média de cada atributo no SIM versus no NÃO — retrato descritivo da amostra.")
     prof = cached_profile(tuple(features), target_col).copy()
     prof["Variável"] = prof["atributo"].map(FEATURE_LABELS)
     showp = prof.rename(columns={"media_sim": "Média no SIM", "media_nao": "Média no NÃO", "diferenca": "Diferença"})
     st.dataframe(showp[["Variável", "Média no SIM", "Média no NÃO", "Diferença"]].round(2), width="stretch", hide_index=True)
     st.bar_chart(showp.set_index("Variável")[["Diferença"]], color=["#E8B923"], height=200)
 
+    st.markdown(f"**O que o {focus.modelo} está usando**")
     if focus.importancias:
-        st.caption(f"Peso em {focus.modelo}: {focus.origem_importancia}")
+        st.caption(f"{focus.origem_importancia} — pesos deste modelo, não dos outros.")
         imp = pd.DataFrame(
             [
                 {"Variável": FEATURE_LABELS.get(f, f), "Importância": round(s, 4)}
@@ -309,8 +258,11 @@ def main():
             ]
         )
         st.dataframe(imp, width="stretch", hide_index=True)
+    else:
+        st.caption("Este método não devolveu pesos interpretáveis neste recorte.")
 
     if len(features) >= 2:
+        st.markdown(f"**Se retirar uma variável do {focus.modelo}**")
         with st.spinner("Simulando a remoção de cada variável…"):
             ab = cached_ablation(tuple(features), target_col, focus.modelo, train_pct, float(threshold), int(k_nn))
         if not ab.empty:

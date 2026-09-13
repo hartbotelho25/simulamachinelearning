@@ -150,7 +150,7 @@ def _feature_impact(estimator, features, X_test, y_test):
         return {}, "", direcao
 
 
-def _names(mask, names, limit=8) -> list[str]:
+def _names(mask, names, limit=20) -> list[str]:
     return [str(n) for n in names[mask][:limit]]
 
 

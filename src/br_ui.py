@@ -120,10 +120,10 @@ def render_hero() -> None:
         <p class="credit-top">Desenvolvido por Hart Botelho</p>
         <div class="hero">
             <div class="badge">Simulador de acerto · Brasileirão 2003–2025</div>
-            <h1>Machine Learning na prática</h1>
+            <h1>Machine Learning &amp; Análise Preditiva</h1>
             <p>
-                Escolha o alvo, os atributos e o limiar. Compare os métodos com
-                VP, VN, FP, FN, precisão, recall e F1 — Série A 2003–2025, 45 clubes.
+                Simule cenários, ajuste limiares e compare a performance de
+                múltiplos algoritmos de classificação em tempo real.
             </p>
         </div>
         """,

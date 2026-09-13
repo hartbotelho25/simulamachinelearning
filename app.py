@@ -21,7 +21,7 @@ from src.br_data import (
     load_brasileirao,
     preset_features,
 )
-from src.br_diagnostics import diagnostic_sections, method_narrative
+from src.br_diagnostics import diagnostic_sections, method_narrative, small_sample_note
 from src.br_modeling import (
     MODEL_CATALOG,
     EvaluationResult,
@@ -252,6 +252,10 @@ def main():
     st.caption(
         f"Destaque **{focus.modelo}** · {TARGET_LABELS[tgt]} · limiar {threshold:.2f} · "
         f"{', '.join(FEATURE_LABELS[f] for f in features)}"
+    )
+    st.markdown(
+        f'<div class="warn">{_md(small_sample_note(results, n_test, real, features, tgt))}</div>',
+        unsafe_allow_html=True,
     )
 
     st.markdown("#### Comparativo por método")

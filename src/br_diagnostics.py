@@ -53,6 +53,35 @@ def _names(xs: list[str]) -> str:
     return ", ".join(xs[:6]) + ("…" if len(xs) > 6 else "")
 
 
+def small_sample_note(results, n_test: int, real: int, features: list[str], target_key: str) -> str:
+    """Explica por que 100% no teste desta base não significa modelo perfeito."""
+    perfect = [r.modelo for r in results if r.acuracia >= 0.999 or r.f1 >= 0.999]
+    tem_jogos = "Jogos" in features
+    if target_key == "campeao":
+        sep = (
+            "Os 9 campeões têm **772–894 jogos**; a maioria dos outros tem bem menos. "
+            "Com **Jogos** (e vitórias/saldo) no treino, o modelo quase lê 'é clube grande histórico' "
+            "em vez de aprender um padrão fino."
+        )
+    else:
+        sep = (
+            "Só **5 clubes nunca caíram**. Chutar SIM para quase todo mundo já acerta ~89% "
+            "(armadilha da acurácia do guia). 100% no teste ainda pode ser sorte em 14 linhas."
+        )
+    extra = ""
+    if perfect:
+        extra = f" Neste recorte, {', '.join(perfect)} bateu **100%** no teste — isso é frágil."
+    return (
+        f"A base tem **45 clubes**. No split 70/30 o teste fica com **{n_test}** times e só "
+        f"**{real}** positivos. Errar 1 clube já derruba o F1; acertar 14 seguidos é fácil de "
+        f"parecer 'perfeito'.{extra} {sep} "
+        f"Por isso o guia pede **F1 + validação cruzada**, não a acurácia de um teste minúsculo. "
+        f"Marque **F1 CV** na barra: no mesmo experimento o F1 cai para a faixa de 0,5–0,9 — "
+        f"o 100% do teste não sobrevive quando as dobras rotacionam."
+        f"{' Vitórias, saldo e gols também carregam o mesmo sinal de “clube grande”; tirar só Jogos quase não muda o teste.' if tem_jogos else ''}"
+    )
+
+
 def diagnostic_sections(results, real, features, n_test, threshold, target_key: str):
     if not results:
         return [("Nenhum modelo", "Marque ao menos um algoritmo.")]
@@ -65,6 +94,12 @@ def diagnostic_sections(results, real, features, n_test, threshold, target_key: 
     alvo = TARGET_LABELS[target_key]
     banco = BANK_MAP[target_key]
     secs = []
+    secs.append(
+        (
+            "Por que vários modelos chegam a 100%",
+            small_sample_note(results, n_test, real, features, target_key),
+        )
+    )
     secs.append(
         (
             "Quem chegou mais perto da contagem real",

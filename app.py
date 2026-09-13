@@ -25,7 +25,6 @@ from src.br_data import (
 from src.br_diagnostics import method_narrative
 from src.br_modeling import (
     MODEL_CATALOG,
-    crossval_f1,
     impact_rank,
     run_experiment,
 )
@@ -109,8 +108,6 @@ def render_sidebar(meta):
         st.markdown("**2. Treino / teste**")
         train_pct = st.slider("Proporção treino", 50, 90, 70, 5)
         st.caption(f"Treino {train_pct}% · teste {100-train_pct}% · stratify se possível. Base pequena: o teste tem poucos clubes.")
-        use_cv = st.checkbox("Mostrar F1 de validação cruzada (até 5 folds)", value=True)
-
         st.divider()
         st.markdown("**3. Algoritmos**")
         models = []
@@ -145,7 +142,7 @@ def render_sidebar(meta):
         threshold = st.slider("Limiar de probabilidade", 0.10, 0.90, 0.50, 0.05)
         st.caption(f"SIM se P ≥ {threshold:.2f}. Baixar sobe recall; subir sobe precisão.")
         st.caption("Seed 42. NB, KNN e LR usam StandardScaler.")
-    return train_pct, models, feats, threshold, k_nn, use_cv
+    return train_pct, models, feats, threshold, k_nn
 
 
 def _md(text: str) -> str:
@@ -163,7 +160,7 @@ def main():
         st.error(str(exc))
         st.stop()
 
-    train_pct, models, features, threshold, k_nn, use_cv = render_sidebar(meta)
+    train_pct, models, features, threshold, k_nn = render_sidebar(meta)
     tgt = st.session_state.br_target
     target_col = TARGETS[tgt]
     n_pos = int(df[target_col].sum())
@@ -181,19 +178,13 @@ def main():
             tuple(features), tuple(models), target_col, train_pct, float(threshold), int(k_nn)
         )
 
-    if use_cv:
-        for r in results:
-            r.cv_f1 = crossval_f1(df, features, target_col, r.modelo, k_nn)
-
     st.markdown("#### Indicadores da amostra de teste")
     render_kpis(n_test, real)
     st.caption(f"{TARGET_LABELS[tgt]} · limiar {threshold:.2f}")
 
     st.markdown("#### Comparativo por método")
-    table = results_table(results)
-    if use_cv and any(r.cv_f1 is not None for r in results):
-        table["F1 CV"] = [f"{r.cv_f1*100:.1f}%" if r.cv_f1 is not None else "—" for r in results]
-    st.dataframe(table, width="stretch", hide_index=True)
+    st.caption("Ordenado por ROC AUC, depois F1.")
+    st.dataframe(results_table(results), width="stretch", hide_index=True)
 
     st.markdown("#### Relatório de cada método")
     tabs = st.tabs([r.modelo for r in results])

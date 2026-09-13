@@ -139,22 +139,28 @@ def render_kpis(n_test, real, predito=None, margem=None):
 
 
 def results_table(results: list[EvaluationResult]) -> pd.DataFrame:
+    ranked = sorted(
+        results,
+        key=lambda r: (
+            r.roc_auc if r.roc_auc == r.roc_auc else -1.0,
+            r.f1,
+            r.acuracia,
+        ),
+        reverse=True,
+    )
     rows = []
-    for r in results:
-        auc = "—" if math.isnan(r.roc_auc) else f"{r.roc_auc:.3f}"
+    for r in ranked:
+        auc = None if math.isnan(r.roc_auc) else round(r.roc_auc, 3)
         rows.append(
             {
                 "Modelo": r.modelo,
-                "Total Predito": r.total_predito,
-                "VP (captura)": f"{r.tp}  ({r.captura_pct:.1f}%)",
-                "FP (alarme)": f"{r.fp}  ({r.erro_palpite_pct:.1f}%)",
-                "FN (perdidos)": r.fn,
+                "ROC AUC": auc,
+                "F1-Score (%)": round(r.f1 * 100, 1),
                 "Acurácia (%)": round(r.acuracia * 100, 1),
                 "Precisão (%)": round(r.precisao * 100, 1),
                 "Recall (%)": round(r.recall * 100, 1),
-                "F1-Score (%)": round(r.f1 * 100, 1),
-                "ROC AUC": auc,
-                "Margem (%)": _fmt(r.margem_pct),
+                "FP (alarme)": r.fp,
+                "FN (perdidos)": r.fn,
             }
         )
     return pd.DataFrame(rows)

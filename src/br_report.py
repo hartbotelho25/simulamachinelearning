@@ -152,23 +152,29 @@ def build_pdf_report(*, meta, target_key, train_pct, threshold, features, preset
     _h(pdf, "3. Indicadores do teste")
     _p(pdf, f"Teste {n_test} clubes · SIM reais {real}.")
     _h(pdf, "4. Comparativo")
+    ranked = sorted(
+        results,
+        key=lambda r: (r.roc_auc if r.roc_auc == r.roc_auc else -1.0, r.f1, r.acuracia),
+        reverse=True,
+    )
     rows = [
         [
             r.modelo,
-            str(r.total_predito),
-            str(r.tp),
+            "—" if r.roc_auc != r.roc_auc else f"{r.roc_auc:.3f}",
+            f"{r.f1 * 100:.1f}",
+            f"{r.acuracia * 100:.1f}",
+            f"{r.precisao * 100:.1f}",
+            f"{r.recall * 100:.1f}",
             str(r.fp),
             str(r.fn),
-            f"{r.precisao * 100:.1f}",
-            f"{r.f1 * 100:.1f}",
         ]
-        for r in results
+        for r in ranked
     ]
     _table(
         pdf,
-        ["Modelo", "Pred", "VP", "FP", "FN", "Prec", "F1"],
+        ["Modelo", "AUC", "F1", "Acur", "Prec", "Rec", "FP", "FN"],
         rows,
-        widths=[3.2, 1, 1, 1, 1, 1, 1],
+        widths=[2.6, 1, 1, 1, 1, 1, 0.8, 0.8],
     )
     _h(pdf, "5. Cada método")
     for r in results:

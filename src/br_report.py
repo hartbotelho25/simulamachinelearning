@@ -10,8 +10,8 @@ from pathlib import Path
 from fpdf import FPDF
 
 from src.br_data import FEATURE_LABELS, TARGET_LABELS
-from src.br_diagnostics import impact_rank, method_narrative
-from src.br_modeling import EvaluationResult
+from src.br_diagnostics import method_narrative
+from src.br_modeling import EvaluationResult, impact_rank
 
 FONT_REG = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
 FONT_BOLD = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")

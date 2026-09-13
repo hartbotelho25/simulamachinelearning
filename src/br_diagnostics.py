@@ -50,6 +50,3 @@ def method_narrative(result, real: int, target_key: str) -> str:
         f"{METHOD_TIPS.get(result.modelo, '')}"
     )
 
-
-def impact_rank(result) -> list[tuple[str, float]]:
-    return sorted(result.importancias.items(), key=lambda kv: (kv[1], kv[0]), reverse=True)

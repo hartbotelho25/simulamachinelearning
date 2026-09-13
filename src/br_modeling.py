@@ -57,6 +57,10 @@ class EvaluationResult:
     cv_f1: float | None = None
 
 
+def impact_rank(result: EvaluationResult) -> list[tuple[str, float]]:
+    return sorted(result.importancias.items(), key=lambda kv: (kv[1], kv[0]), reverse=True)
+
+
 def build_estimator(key: str, k_neighbors: int = 5):
     if key == "nb":
         return Pipeline([("scaler", StandardScaler()), ("clf", GaussianNB())])

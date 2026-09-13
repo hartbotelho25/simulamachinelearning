@@ -22,10 +22,11 @@ from src.br_data import (
     load_brasileirao,
     preset_features,
 )
-from src.br_diagnostics import impact_rank, method_narrative
+from src.br_diagnostics import method_narrative
 from src.br_modeling import (
     MODEL_CATALOG,
     crossval_f1,
+    impact_rank,
     run_experiment,
 )
 from src.br_report import build_pdf_report

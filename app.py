@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from datetime import datetime
 
-import pandas as pd
 import streamlit as st
 
 from src.br_data import (
@@ -25,7 +24,6 @@ from src.br_data import (
 from src.br_diagnostics import method_narrative
 from src.br_modeling import (
     MODEL_CATALOG,
-    impact_rank,
     run_experiment,
 )
 from src.br_report import build_pdf_report
@@ -34,7 +32,9 @@ from src.br_ui import (
     render_chips,
     render_confusion,
     render_hero,
+    render_impact,
     render_kpis,
+    render_method_kpis,
     render_treatment,
     results_table,
 )
@@ -190,29 +190,10 @@ def main():
     tabs = st.tabs([r.modelo for r in results])
     for tab, r in zip(tabs, results):
         with tab:
-            a, b, c, d = st.columns(4)
-            a.metric("Predito", r.total_predito, f"{r.margem_pct:+.1f}%")
-            b.metric("F1", f"{r.f1*100:.1f}%")
-            c.metric("Precisão", f"{r.precisao*100:.1f}%")
-            d.metric("Recall", f"{r.captura_pct:.1f}%")
+            render_method_kpis(r)
             render_confusion(r)
-            ranked = impact_rank(r)
-            if ranked:
-                mais, menos = ranked[0], ranked[-1]
-                i1, i2 = st.columns(2)
-                i1.metric("Mais impacto", FEATURE_LABELS.get(mais[0], mais[0]), f"{mais[1]:.3f}")
-                i2.metric("Menos impacto", FEATURE_LABELS.get(menos[0], menos[0]), f"{menos[1]:.3f}")
-                if r.origem_importancia:
-                    st.caption(f"Neste modelo: {r.origem_importancia}.")
-                imp = pd.DataFrame(
-                    [
-                        {"Variável": FEATURE_LABELS.get(f, f), "Importância": round(s, 4)}
-                        for f, s in ranked
-                    ]
-                )
-                st.dataframe(imp, width="stretch", hide_index=True)
-            else:
-                st.caption("Este método não devolveu pesos interpretáveis neste recorte.")
+            st.markdown("**Impacto das variáveis**")
+            render_impact(r)
             st.markdown(f'<div class="diag">{_md(method_narrative(r, real, tgt))}</div>', unsafe_allow_html=True)
 
     st.markdown("#### Relatório em PDF")

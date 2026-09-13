@@ -1,69 +1,38 @@
-# Portal Interativo de Machine Learning — Pokémon Lendários
+# Simulador de Machine Learning — Brasileirão
 
-Aplicação **Streamlit** para analisar o dataset `base_pokemon.csv` e descobrir a forma mais assertiva de prever **quantos Pokémon lendários** existem na base (`is_legendary`).
+Portal **Streamlit** no mesmo molde do piloto dos Pokémon lendários, agora com a base `brasileirao-simulador-DEFINITO` (Série A 2003–2025, 45 clubes).
 
-O portal permite testar algoritmos, combinações flexíveis de atributos, a proporção treino/teste e o limiar de probabilidade da classificação.
+Desenvolvido por **Hart Botelho**.
 
 ## O que o portal faz
 
-1. **Tratamento da base** — ao carregar o CSV, linhas com valores ausentes nas colunas utilizadas são eliminadas (`dropna`). Se `base_total` não existir, ele é calculado como `hp + attack + defense + sp_attack + sp_defense + speed`.
-2. **Experimentos interativos** na barra lateral: split 50/50 até 90/10 (padrão 70/30, com `stratify=y`), seleção de algoritmos, presets de atributos e limiar de 0,10 a 0,90.
-3. **Painel de resultados** com KPIs da amostra de teste, tabela comparativa por método, impacto de cada variável, relatório individual de cada algoritmo, diagnóstico com dicas e exportação do **relatório completo em PDF**.
+1. Você escolhe o **alvo**: *já foi campeão?* ou *já foi rebaixado?*
+2. Escolhe os **atributos**: Jogos, Vitórias, Empates, Derrotas, Aproveitamento, Gols feitos, Gols sofridos, Saldo de gols, Vezes com artilheiro, Cartões vermelhos.
+3. Testa algoritmos (Naive Bayes, KNN, Regressão Logística, Árvore, Random Forest, Gradient Boosting), o split treino/teste e o **limiar**.
+4. Compara VP, VN, FP, FN, precisão, recall, F1 e o impacto de cada variável.
+5. Lê o **guia de estudo** (PDF) e os exercícios com gabarito.
 
-## Instalação
+**Anti-leakage:** `Títulos` não entra para prever campeão; `Rebaixamentos` não entra para prever rebaixado.
 
-```bash
-pip install streamlit pandas scikit-learn fpdf2
-```
-
-Ou, a partir do repositório:
+## Instalação e execução
 
 ```bash
 pip install -r requirements.txt
-```
-
-## Execução
-
-Na raiz do projeto (onde estão `app.py` e `base_pokemon.csv`):
-
-```bash
 streamlit run app.py
 ```
 
-A interface abre no navegador. Coloque o CSV na raiz se for substituir a base inclusa.
-
-## Algoritmos
-
-| Nome no portal        | Implementação scikit-learn        |
-|-----------------------|-----------------------------------|
-| Naive Bayes           | `GaussianNB`                      |
-| Regressão Logística   | `LogisticRegression`              |
-| Árvore de Decisão     | `DecisionTreeClassifier`          |
-| Random Forest         | `RandomForestClassifier`          |
-| Gradient Boosting     | `GradientBoostingClassifier`      |
-
-Naive Bayes e Regressão Logística passam por `StandardScaler`. A semente é fixa (`random_state=42`) para reproduzir o mesmo split.
-
-## Presets de atributos
-
-- **Preset Aula:** `hp`, `attack`, `defense`, `sp_attack`, `sp_defense`, `speed`
-- **Preset Físicos:** `height_m`, `weight_kg`
-- **Preset Agregado:** `base_total`
-- **Preset Completo:** todos os atributos acima
-- **Personalizado:** edição manual das colunas, só quando você escolhe essa opção
+Dependências: `streamlit pandas scikit-learn numpy fpdf2`.
 
 ## Estrutura
 
 ```
-app.py                 # interface Streamlit
-base_pokemon.csv       # dataset (Gens I–VII)
-src/data.py            # carga, base_total e dropna
-src/modeling.py        # split, treino, limiar e métricas
-src/diagnostics.py     # parecer automático
-src/report_pdf.py      # relatório completo em PDF
-src/ui.py              # layout e cartões
+app.py                      # interface
+data/brasileirao.csv        # 45 clubes
+data/brasileirao.xlsx       # planilha original
+data/guia-ml-brasileirao.pdf
+src/br_data.py
+src/br_modeling.py
+src/br_diagnostics.py
+src/br_ui.py
+src/br_report.py
 ```
-
-## Base
-
-O arquivo `base_pokemon.csv` reúne 801 Pokémon (até a 7ª geração), com stats de combate, altura, peso, `base_total` e o alvo `is_legendary`. Cerca de 20 registros não têm altura/peso e são removidos na limpeza.

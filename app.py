@@ -183,7 +183,6 @@ def main():
     st.caption(f"{TARGET_LABELS[tgt]} · limiar {threshold:.2f}")
 
     st.markdown("#### Comparativo por método")
-    st.caption("Ordenado por ROC AUC, depois F1.")
     st.dataframe(results_table(results), width="stretch", hide_index=True)
 
     st.markdown("#### Relatório de cada método")

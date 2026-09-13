@@ -148,12 +148,6 @@ def render_sidebar(meta):
     return train_pct, models, feats, threshold, k_nn, use_cv
 
 
-def _pick(results, real, choice):
-    if choice == "Mais próximo da contagem real":
-        return min(results, key=lambda r: (abs(r.total_predito - real), -r.f1))
-    return {r.modelo: r for r in results}.get(choice, results[0])
-
-
 def _md(text: str) -> str:
     import re
     html = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
@@ -191,17 +185,9 @@ def main():
         for r in results:
             r.cv_f1 = crossval_f1(df, features, target_col, r.modelo, k_nn)
 
-    choice = st.selectbox(
-        "Método em destaque",
-        ["Mais próximo da contagem real", *[r.modelo for r in results]],
-    )
-    focus = _pick(results, real, choice)
-
     st.markdown("#### Indicadores da amostra de teste")
-    render_kpis(n_test, real, focus.total_predito, focus.margem_pct)
-    st.caption(
-        f"KPIs do método em destaque: **{focus.modelo}** · {TARGET_LABELS[tgt]} · limiar {threshold:.2f}"
-    )
+    render_kpis(n_test, real)
+    st.caption(f"{TARGET_LABELS[tgt]} · limiar {threshold:.2f}")
 
     st.markdown("#### Comparativo por método")
     table = results_table(results)
@@ -249,7 +235,6 @@ def main():
             preset_label=PRESET_LABELS[st.session_state.br_preset],
             n_test=n_test,
             real=real,
-            focus=focus,
             results=results,
         )
         st.download_button(

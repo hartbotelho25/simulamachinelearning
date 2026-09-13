@@ -2,69 +2,78 @@
 
 from __future__ import annotations
 
-import math
 import re
 from datetime import datetime
 from pathlib import Path
 
 from fpdf import FPDF
+from fpdf.enums import XPos, YPos
 
 from src.br_data import FEATURE_LABELS, TARGET_LABELS
 from src.br_diagnostics import method_narrative
-from src.br_modeling import EvaluationResult, impact_rank
+from src.br_modeling import impact_rank
 
 FONT_REG = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
 FONT_BOLD = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
 AUTHOR = "Hart Botelho"
+HEADER_H = 16
 
 
 def _plain(text: str) -> str:
     text = str(text).replace("\n", " ")
     text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
-    return text.replace("`", "")
+    return (
+        text.replace("`", "")
+        .replace("—", "-")
+        .replace("–", "-")
+        .replace("“", '"')
+        .replace("”", '"')
+        .replace("‘", "'")
+        .replace("’", "'")
+    )
 
 
 class PDF(FPDF):
     def header(self):
         self.set_fill_color(11, 28, 20)
-        self.rect(0, 0, self.w, 14, "F")
+        self.rect(0, 0, self.w, HEADER_H, "F")
         self.set_text_color(244, 241, 232)
         self.set_font("DejaVu", "", 8)
-        self.set_xy(self.l_margin, 4)
-        self.cell(self.epw, 6, "Simulador ML Brasileirão")
-        self.set_xy(self.l_margin, 16)
+        self.set_xy(self.l_margin, 5)
+        self.cell(self.epw, 6, "Simulador ML Brasileirão", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        self.set_y(HEADER_H + 6)
 
     def footer(self):
         self.set_y(-12)
         self.set_x(self.l_margin)
         self.set_font("DejaVu", "", 8)
         self.set_text_color(90, 90, 98)
-        self.cell(self.epw, 8, f"Página {self.page_no()}  |  {AUTHOR}", align="C")
+        self.cell(self.epw, 8, f"Página {self.page_no()}  |  {AUTHOR}", align="C", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
 
-def _reset(pdf):
+def _reset(pdf: PDF) -> None:
     pdf.set_x(pdf.l_margin)
 
 
-def _h(pdf, title):
+def _h(pdf: PDF, title: str) -> None:
     pdf.ln(3)
     _reset(pdf)
     pdf.set_font("DejaVu", "B", 12)
     pdf.set_text_color(184, 140, 20)
-    pdf.multi_cell(pdf.epw, 7, title)
+    pdf.multi_cell(pdf.epw, 7, _plain(title))
     _reset(pdf)
 
 
-def _p(pdf, text, size=10):
+def _p(pdf: PDF, text: str, size: int = 10) -> None:
     _reset(pdf)
     pdf.set_font("DejaVu", "", size)
     pdf.set_text_color(28, 32, 44)
-    pdf.multi_cell(pdf.epw, 5.2, _plain(text))
+    pdf.multi_cell(pdf.epw, 5.4, _plain(text))
     pdf.ln(1)
     _reset(pdf)
 
 
-def _table(pdf, headers, rows, widths=None):
+def _table(pdf: PDF, headers: list[str], rows: list[list[str]], widths: list[float] | None = None) -> None:
     n = len(headers)
     epw = pdf.epw
     if not widths:
@@ -80,8 +89,9 @@ def _table(pdf, headers, rows, widths=None):
         pdf.set_fill_color(11, 28, 20)
         pdf.set_text_color(244, 241, 232)
         for i, h in enumerate(headers):
-            pdf.cell(w[i], 7, _plain(h)[:28], fill=True)
-        pdf.ln()
+            nxt = XPos.RIGHT if i < n - 1 else XPos.LMARGIN
+            nyt = YPos.TOP if i < n - 1 else YPos.NEXT
+            pdf.cell(w[i], 7, _plain(h), fill=True, new_x=nxt, new_y=nyt)
         _reset(pdf)
         pdf.set_font("DejaVu", "", 7)
         pdf.set_text_color(28, 32, 44)
@@ -95,28 +105,34 @@ def _table(pdf, headers, rows, widths=None):
         pdf.set_fill_color(245, 242, 232) if fill else pdf.set_fill_color(255, 255, 255)
         _reset(pdf)
         for i, c in enumerate(row):
-            pdf.cell(w[i], 6.2, _plain(c)[:36], fill=True)
-        pdf.ln()
+            nxt = XPos.RIGHT if i < n - 1 else XPos.LMARGIN
+            nyt = YPos.TOP if i < n - 1 else YPos.NEXT
+            pdf.cell(w[i], 6.2, _plain(c), fill=True, new_x=nxt, new_y=nyt)
         fill = not fill
     pdf.ln(2)
     _reset(pdf)
 
 
 def build_pdf_report(*, meta, target_key, train_pct, threshold, features, preset_label,
-                     n_test, real, focus: EvaluationResult, results) -> bytes:
+                     n_test, real, results) -> bytes:
     pdf = PDF()
-    pdf.set_auto_page_break(True, 16)
-    pdf.set_margins(16, 20, 16)
+    pdf.set_auto_page_break(True, 18)
+    pdf.set_margins(16, HEADER_H + 8, 16)
     pdf.add_font("DejaVu", "", str(FONT_REG))
     pdf.add_font("DejaVu", "B", str(FONT_BOLD))
     pdf.add_page()
     _reset(pdf)
-    pdf.set_font("DejaVu", "B", 14)
+    pdf.set_font("DejaVu", "B", 13)
     pdf.set_text_color(184, 140, 20)
-    pdf.multi_cell(pdf.epw, 8, f"Desenvolvido por {AUTHOR}")
+    pdf.multi_cell(pdf.epw, 7, f"Desenvolvido por {AUTHOR}")
+    _reset(pdf)
     pdf.set_font("DejaVu", "B", 16)
     pdf.set_text_color(11, 28, 20)
-    pdf.multi_cell(pdf.epw, 8, "Relatório — Simulador ML do Brasileirão")
+    pdf.multi_cell(pdf.epw, 8, "Relatório")
+    _reset(pdf)
+    pdf.set_font("DejaVu", "B", 14)
+    pdf.multi_cell(pdf.epw, 7, "Simulador ML do Brasileirão")
+    _reset(pdf)
     pdf.set_font("DejaVu", "", 10)
     pdf.set_text_color(90, 90, 98)
     pdf.multi_cell(pdf.epw, 6, f"{datetime.now():%d/%m/%Y %H:%M}  |  {TARGET_LABELS[target_key]}")
@@ -124,22 +140,45 @@ def build_pdf_report(*, meta, target_key, train_pct, threshold, features, preset
     _h(pdf, "1. Configuração")
     _p(pdf, f"Alvo: {TARGET_LABELS[target_key]}. Preset: {preset_label}.")
     _p(pdf, "Colunas: " + ", ".join(FEATURE_LABELS.get(f, f) for f in features))
-    _p(pdf, f"Treino/teste {train_pct}/{100-train_pct}% · limiar {threshold:.2f} · destaque {focus.modelo}")
+    _p(pdf, f"Treino/teste {train_pct}/{100 - train_pct}% · limiar {threshold:.2f}.")
     _h(pdf, "2. Base")
-    _p(pdf, f"{meta['rows_clean']} clubes limpos. Campeões {meta['n_campeoes']}, "
-            f"rebaixados {meta['n_rebaixados']}, caiu 2+ {meta.get('n_recorrentes', '—')}, "
-            f"artilheiro {meta.get('n_artilheiros', '—')}, multicampeões {meta.get('n_multicampeoes', '—')}.")
+    _p(
+        pdf,
+        f"{meta['rows_clean']} clubes. Rebaixados {meta['n_rebaixados']}, "
+        f"caiu 2+ {meta.get('n_recorrentes', '—')}, "
+        f"artilheiro {meta.get('n_artilheiros', '—')}, "
+        f"multicampeões {meta.get('n_multicampeoes', '—')}.",
+    )
     _h(pdf, "3. Indicadores do teste")
-    _p(pdf, f"Teste {n_test} · SIM reais {real} · predito {focus.total_predito} · "
-            f"desvio {focus.margem_pct:+.1f}%")
+    _p(pdf, f"Teste {n_test} clubes · SIM reais {real}.")
     _h(pdf, "4. Comparativo")
-    rows = [[r.modelo, str(r.total_predito), str(r.tp), str(r.fp), str(r.fn),
-             f"{r.precisao*100:.1f}", f"{r.f1*100:.1f}", f"{r.margem_pct:+.1f}"] for r in results]
-    _table(pdf, ["Modelo", "Pred", "VP", "FP", "FN", "Prec", "F1", "Margem"], rows)
+    rows = [
+        [
+            r.modelo,
+            str(r.total_predito),
+            str(r.tp),
+            str(r.fp),
+            str(r.fn),
+            f"{r.precisao * 100:.1f}",
+            f"{r.f1 * 100:.1f}",
+        ]
+        for r in results
+    ]
+    _table(
+        pdf,
+        ["Modelo", "Pred", "VP", "FP", "FN", "Prec", "F1"],
+        rows,
+        widths=[3.2, 1, 1, 1, 1, 1, 1],
+    )
     _h(pdf, "5. Cada método")
     for r in results:
+        if pdf.get_y() > pdf.h - 40:
+            pdf.add_page()
+        _reset(pdf)
         pdf.set_font("DejaVu", "B", 11)
-        pdf.multi_cell(pdf.epw, 7, r.modelo)
+        pdf.set_text_color(11, 28, 20)
+        pdf.multi_cell(pdf.epw, 7, _plain(r.modelo))
+        _reset(pdf)
         ranked = impact_rank(r)
         if ranked:
             _p(

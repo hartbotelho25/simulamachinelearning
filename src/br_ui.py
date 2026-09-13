@@ -29,7 +29,7 @@ CUSTOM_CSS = """
         padding: 0.15rem 0.7rem; font-size: 0.75rem; font-weight: 600;
         text-transform: uppercase; margin-bottom: 0.5rem;
     }
-    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin: 0.4rem 0 1rem; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin: 0.4rem 0 1rem; }
     .kpi { background: #163024; border: 1px solid rgba(244,241,232,0.08); border-radius: 14px;
            padding: 0.85rem 1rem; border-top: 3px solid var(--accent, #E8B923); }
     .kpi .lbl { font-size: 0.76rem; color: #a8a296; text-transform: uppercase; letter-spacing: 0.04em; }
@@ -124,8 +124,7 @@ def _fmt(v: float) -> str:
     return f"{v:+.1f}%"
 
 
-def render_kpis(n_test, real, predito, margem):
-    tone = "#3dd68c" if abs(margem) < 15 else "#E8B923" if abs(margem) < 40 else "#ff6b6b"
+def render_kpis(n_test, real):
     st.markdown(
         f"""
         <div class="kpi-grid">
@@ -133,10 +132,6 @@ def render_kpis(n_test, real, predito, margem):
             <div class="val">{n_test}</div><div class="sub">Amostra avaliada</div></div>
             <div class="kpi" style="--accent:#E8B923"><div class="lbl">SIM reais no teste</div>
             <div class="val">{real}</div><div class="sub">Gabarito</div></div>
-            <div class="kpi" style="--accent:#c084fc"><div class="lbl">SIM preditos</div>
-            <div class="val">{predito}</div><div class="sub">No limiar atual</div></div>
-            <div class="kpi" style="--accent:{tone}"><div class="lbl">Desvio do real</div>
-            <div class="val">{_fmt(margem)}</div><div class="sub">Contagem vs gabarito</div></div>
         </div>
         """,
         unsafe_allow_html=True,

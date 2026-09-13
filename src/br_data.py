@@ -11,7 +11,6 @@ DEFAULT_CSV = Path(__file__).resolve().parent.parent / "data" / "brasileirao.csv
 COL_CLUB = "Time"
 
 TARGETS: dict[str, str] = {
-    "campeao": "Ja foi Campeao",
     "rebaixado": "Ja foi Rebaixado",
     "recorrente": "Rebaixado Recorrente",
     "artilheiro": "Teve Artilheiro",
@@ -19,7 +18,6 @@ TARGETS: dict[str, str] = {
 }
 
 TARGET_ORDER: list[str] = [
-    "campeao",
     "rebaixado",
     "recorrente",
     "artilheiro",
@@ -27,7 +25,6 @@ TARGET_ORDER: list[str] = [
 ]
 
 TARGET_LABELS: dict[str, str] = {
-    "campeao": "Já foi campeão?",
     "rebaixado": "Já foi rebaixado?",
     "recorrente": "Caiu duas vezes ou mais?",
     "artilheiro": "Já teve artilheiro da Série A?",
@@ -35,7 +32,6 @@ TARGET_LABELS: dict[str, str] = {
 }
 
 TARGET_HELP: dict[str, str] = {
-    "campeao": "9 de 45 clubes com pelo menos um título (2003–2025).",
     "rebaixado": "40 de 45 clubes caíram ao menos uma vez.",
     "recorrente": "24 de 45 clubes com dois ou mais rebaixamentos.",
     "artilheiro": "15 de 45 clubes tiveram o artilheiro da Série A. A coluna de vezes com artilheiro sai do treino.",
@@ -59,7 +55,6 @@ FEATURE_LABELS: dict[str, str] = {
 ALL_FEATURES: list[str] = list(FEATURE_LABELS.keys())
 
 LEAKAGE_NOTE: dict[str, str] = {
-    "campeao": "A coluna Títulos não entra no treino: ela define o alvo e o modelo colaria.",
     "rebaixado": "A coluna Rebaixamentos não entra no treino: ela define o alvo e o modelo colaria.",
     "recorrente": "Rebaixamentos (contagem) não entra no treino: o alvo é ‘caiu 2+ vezes’.",
     "artilheiro": "Vezes com artilheiro não entra no treino: ela é a definição do alvo.",
@@ -68,7 +63,6 @@ LEAKAGE_NOTE: dict[str, str] = {
 
 # Colunas dos 10 atributos que colariam neste alvo.
 BLOCKED_FEATURES: dict[str, list[str]] = {
-    "campeao": [],
     "rebaixado": [],
     "recorrente": [],
     "artilheiro": ["Vezes com Artilheiro"],
@@ -91,15 +85,6 @@ PRESET_CAPTIONS = {
     "completo": "Todos os atributos permitidos neste alvo",
     "personalizado": "Você marca cada coluna",
 }
-
-BANK_MAP = {
-    "campeao": "Identificar cliente de alto valor (private)",
-    "rebaixado": "Prever inadimplência (primeira ocorrência)",
-    "recorrente": "Prever inadimplência reincidente",
-    "artilheiro": "Cliente que já contratou um produto premium",
-    "multicampeao": "Cliente private recorrente (mais de um ciclo de alto valor)",
-}
-
 
 def allowed_features(target_key: str | None = None) -> list[str]:
     blocked = set(BLOCKED_FEATURES.get(target_key or "", []))

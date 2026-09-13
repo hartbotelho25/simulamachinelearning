@@ -22,14 +22,11 @@ from src.br_data import (
     load_brasileirao,
     preset_features,
 )
-from src.br_diagnostics import diagnostic_sections, method_narrative
+from src.br_diagnostics import impact_rank, method_narrative
 from src.br_modeling import (
     MODEL_CATALOG,
-    EvaluationResult,
-    ablation_table,
     crossval_f1,
     run_experiment,
-    variable_profile,
 )
 from src.br_report import build_pdf_report
 from src.br_ui import (
@@ -62,22 +59,10 @@ def cached_experiment(features, models, target_col, train_pct, threshold, k):
     return run_experiment(df, list(features), target_col, list(models), train_pct, threshold, k)
 
 
-@st.cache_data(show_spinner=False)
-def cached_profile(features, target_col):
-    df, _ = get_data()
-    return variable_profile(df, list(features), target_col)
-
-
-@st.cache_data(show_spinner=False)
-def cached_ablation(features, target_col, model, train_pct, threshold, k):
-    df, _ = get_data()
-    return ablation_table(df, list(features), target_col, model, train_pct, threshold, k)
-
-
 def _init():
     if "br_preset" not in st.session_state or st.session_state.br_preset not in PRESET_ORDER:
         st.session_state.br_preset = "completo"
-    if "br_target" not in st.session_state:
+    if "br_target" not in st.session_state or st.session_state.br_target not in TARGET_ORDER:
         st.session_state.br_target = "recorrente"
     for feat in ALL_FEATURES:
         key = f"brfeat_{feat}"
@@ -222,58 +207,6 @@ def main():
     if use_cv and any(r.cv_f1 is not None for r in results):
         table["F1 CV"] = [f"{r.cv_f1*100:.1f}%" if r.cv_f1 is not None else "—" for r in results]
     st.dataframe(table, width="stretch", hide_index=True)
-    c1, c2 = st.columns((1.15, 1), gap="large")
-    with c1:
-        st.markdown("#### Contagem predita vs gabarito")
-        chart = pd.DataFrame(
-            {"Predito": [r.total_predito for r in results], "SIM reais": [real] * len(results)},
-            index=[r.modelo for r in results],
-        )
-        st.bar_chart(chart, color=["#c084fc", "#E8B923"], height=260)
-    with c2:
-        st.markdown(f"#### Matriz · {focus.modelo}")
-        render_confusion(focus)
-
-    st.markdown(f"#### Impacto de cada variável · {focus.modelo}")
-    st.caption(
-        f"Troque o **método em destaque** acima para ver outro algoritmo. "
-        f"Agora: **{focus.modelo}**."
-    )
-
-    st.markdown("**Na base (todos os clubes, sem modelo)**")
-    st.caption("Média de cada atributo no SIM versus no NÃO — retrato descritivo da amostra.")
-    prof = cached_profile(tuple(features), target_col).copy()
-    prof["Variável"] = prof["atributo"].map(FEATURE_LABELS)
-    showp = prof.rename(columns={"media_sim": "Média no SIM", "media_nao": "Média no NÃO", "diferenca": "Diferença"})
-    st.dataframe(showp[["Variável", "Média no SIM", "Média no NÃO", "Diferença"]].round(2), width="stretch", hide_index=True)
-    st.bar_chart(showp.set_index("Variável")[["Diferença"]], color=["#E8B923"], height=200)
-
-    st.markdown(f"**O que o {focus.modelo} está usando**")
-    if focus.importancias:
-        st.caption(f"{focus.origem_importancia} — pesos deste modelo, não dos outros.")
-        imp = pd.DataFrame(
-            [
-                {"Variável": FEATURE_LABELS.get(f, f), "Importância": round(s, 4)}
-                for f, s in sorted(focus.importancias.items(), key=lambda kv: kv[1], reverse=True)
-            ]
-        )
-        st.dataframe(imp, width="stretch", hide_index=True)
-    else:
-        st.caption("Este método não devolveu pesos interpretáveis neste recorte.")
-
-    if len(features) >= 2:
-        st.markdown(f"**Se retirar uma variável do {focus.modelo}**")
-        with st.spinner("Simulando a remoção de cada variável…"):
-            ab = cached_ablation(tuple(features), target_col, focus.modelo, train_pct, float(threshold), int(k_nn))
-        if not ab.empty:
-            ab2 = ab.copy()
-            ab2["Variável"] = ab2["atributo"].map(FEATURE_LABELS)
-            ab2["F1 sem ela"] = ab2["f1_sem"].round(1)
-            ab2["Δ F1"] = ab2["delta_f1"].map(lambda v: f"{v:+.1f}")
-            ab2["Predito sem ela"] = ab2["predito_sem"]
-            st.dataframe(ab2[["Variável", "F1 sem ela", "Δ F1", "Predito sem ela"]], width="stretch", hide_index=True)
-    else:
-        ab = pd.DataFrame()
 
     st.markdown("#### Relatório de cada método")
     tabs = st.tabs([r.modelo for r in results])
@@ -285,14 +218,24 @@ def main():
             c.metric("Precisão", f"{r.precisao*100:.1f}%")
             d.metric("Recall", f"{r.captura_pct:.1f}%")
             render_confusion(r)
+            ranked = impact_rank(r)
+            if ranked:
+                mais, menos = ranked[0], ranked[-1]
+                i1, i2 = st.columns(2)
+                i1.metric("Mais impacto", FEATURE_LABELS.get(mais[0], mais[0]), f"{mais[1]:.3f}")
+                i2.metric("Menos impacto", FEATURE_LABELS.get(menos[0], menos[0]), f"{menos[1]:.3f}")
+                if r.origem_importancia:
+                    st.caption(f"Neste modelo: {r.origem_importancia}.")
+                imp = pd.DataFrame(
+                    [
+                        {"Variável": FEATURE_LABELS.get(f, f), "Importância": round(s, 4)}
+                        for f, s in ranked
+                    ]
+                )
+                st.dataframe(imp, width="stretch", hide_index=True)
+            else:
+                st.caption("Este método não devolveu pesos interpretáveis neste recorte.")
             st.markdown(f'<div class="diag">{_md(method_narrative(r, real, tgt))}</div>', unsafe_allow_html=True)
-
-    st.markdown("#### Diagnóstico, dicas e ponte para a CAIXA")
-    for title, body in diagnostic_sections(results, real, features, n_test, threshold, tgt):
-        st.markdown(
-            f'<div class="diag"><div class="diag-title">{title}</div>{_md(body)}</div>',
-            unsafe_allow_html=True,
-        )
 
     st.markdown("#### Relatório em PDF")
     try:
@@ -307,8 +250,6 @@ def main():
             real=real,
             focus=focus,
             results=results,
-            profile=prof,
-            ablation=ab if len(features) >= 2 else None,
         )
         st.download_button(
             "Baixar relatório completo em PDF",

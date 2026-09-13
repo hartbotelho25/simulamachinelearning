@@ -7,11 +7,10 @@ import re
 from datetime import datetime
 from pathlib import Path
 
-import pandas as pd
 from fpdf import FPDF
 
 from src.br_data import FEATURE_LABELS, TARGET_LABELS
-from src.br_diagnostics import diagnostic_sections, method_narrative
+from src.br_diagnostics import impact_rank, method_narrative
 from src.br_modeling import EvaluationResult
 
 FONT_REG = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
@@ -32,7 +31,7 @@ class PDF(FPDF):
         self.set_text_color(244, 241, 232)
         self.set_font("DejaVu", "", 8)
         self.set_xy(self.l_margin, 4)
-        self.cell(self.epw, 6, "Simulador ML Brasileirão  |  CAIXA")
+        self.cell(self.epw, 6, "Simulador ML Brasileirão")
         self.set_xy(self.l_margin, 16)
 
     def footer(self):
@@ -104,7 +103,7 @@ def _table(pdf, headers, rows, widths=None):
 
 
 def build_pdf_report(*, meta, target_key, train_pct, threshold, features, preset_label,
-                     n_test, real, focus: EvaluationResult, results, profile, ablation) -> bytes:
+                     n_test, real, focus: EvaluationResult, results) -> bytes:
     pdf = PDF()
     pdf.set_auto_page_break(True, 16)
     pdf.set_margins(16, 20, 16)
@@ -141,28 +140,14 @@ def build_pdf_report(*, meta, target_key, train_pct, threshold, features, preset
     for r in results:
         pdf.set_font("DejaVu", "B", 11)
         pdf.multi_cell(pdf.epw, 7, r.modelo)
+        ranked = impact_rank(r)
+        if ranked:
+            _p(
+                pdf,
+                f"Mais impacto: {FEATURE_LABELS.get(ranked[0][0], ranked[0][0])}. "
+                f"Menos impacto: {FEATURE_LABELS.get(ranked[-1][0], ranked[-1][0])}.",
+                9,
+            )
         _p(pdf, method_narrative(r, real, target_key), 9)
-    _h(pdf, "6. Variáveis")
-    if profile is not None and not profile.empty:
-        pr = [
-            [
-                FEATURE_LABELS.get(row.atributo, row.atributo),
-                f"{row.media_sim:.2f}",
-                f"{row.media_nao:.2f}",
-                f"{row.diferenca:+.2f}",
-            ]
-            for row in profile.itertuples()
-        ]
-        _table(pdf, ["Variável", "Média SIM", "Média NÃO", "Dif"], pr)
-    if ablation is not None and not ablation.empty:
-        ab = [[FEATURE_LABELS.get(a.atributo, a.atributo), f"{a.f1_sem:.1f}", f"{a.delta_f1:+.1f}",
-               str(int(a.predito_sem))] for a in ablation.itertuples()]
-        _table(pdf, ["Variável", "F1 sem", "dF1", "Pred sem"], ab)
-    _h(pdf, "7. Diagnóstico")
-    for title, body in diagnostic_sections(results, real, features, n_test, threshold, target_key):
-        pdf.set_font("DejaVu", "B", 10)
-        pdf.set_text_color(184, 140, 20)
-        pdf.multi_cell(pdf.epw, 6, _plain(title))
-        _p(pdf, body, 9)
     _p(pdf, f"Fim do relatório. Desenvolvido por {AUTHOR}.")
     return bytes(pdf.output())

@@ -76,9 +76,9 @@ def render_hero() -> None:
             <div class="badge">Simulador de acerto · Brasileirão 2003–2025 · CAIXA</div>
             <h1>Machine Learning na prática</h1>
             <p>
-                Preveja se o clube <strong>já foi campeão</strong> ou <strong>já foi rebaixado</strong>.
-                Mesmos tijolos do piloto Pokémon (VP, VN, FP, FN, limiar, F1) — agora com 45 clubes
-                da Série A e a ponte para crédito.
+                Os alvos do <strong>guia</strong> (campeão / rebaixado) separam demais — vários
+                modelos batem 100%. Os alvos <strong>desafio</strong> (caiu 2+ vezes, artilheiro,
+                multicampeão) fazem os métodos discordarem. Mesmos tijolos: VP, VN, FP, FN, limiar, F1.
             </p>
         </div>
         """,
@@ -107,9 +107,9 @@ def render_treatment(meta: dict, target_label: str, n_pos: int) -> None:
             <div class="treat-grid">
                 <div class="cell"><div class="k">Clubes</div><div class="n">{meta['rows_clean']}</div>
                 <div class="s">Era dos pontos corridos</div></div>
-                <div class="cell"><div class="k">Campeões · rebaixados</div>
-                <div class="n">{meta['n_campeoes']} · {meta['n_rebaixados']}</div>
-                <div class="s">Positivos na base inteira</div></div>
+                <div class="cell"><div class="k">Guia · desafio</div>
+                <div class="n">{meta['n_campeoes']} · {meta.get('n_recorrentes', 24)}</div>
+                <div class="s">Campeões (fácil) · caiu 2+ (desafio)</div></div>
                 <div class="cell"><div class="k">Teste pequeno</div><div class="n">~14</div>
                 <div class="s">Com 70/30 o teste tem poucas linhas — use a validação cruzada</div></div>
             </div>

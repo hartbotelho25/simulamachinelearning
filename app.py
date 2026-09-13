@@ -9,6 +9,7 @@ import streamlit as st
 
 from src.br_data import (
     ALL_FEATURES,
+    CHALLENGE_TARGETS,
     FEATURE_LABELS,
     GUIDE_PDF,
     LEAKAGE_NOTE,
@@ -17,9 +18,12 @@ from src.br_data import (
     PRESET_ORDER,
     TARGET_HELP,
     TARGET_LABELS,
+    TARGET_ORDER,
     TARGETS,
+    allowed_features,
     load_brasileirao,
     preset_features,
+    target_choice_label,
 )
 from src.br_diagnostics import diagnostic_sections, method_narrative, small_sample_note
 from src.br_modeling import (
@@ -77,11 +81,11 @@ def _init():
     if "br_preset" not in st.session_state:
         st.session_state.br_preset = "aula"
     if "br_target" not in st.session_state:
-        st.session_state.br_target = "campeao"
+        st.session_state.br_target = "recorrente"
     for feat in ALL_FEATURES:
         key = f"brfeat_{feat}"
         if key not in st.session_state:
-            st.session_state[key] = feat in preset_features("aula", "campeao")
+            st.session_state[key] = feat in preset_features("aula", st.session_state.br_target)
 
 
 def _on_preset():
@@ -104,10 +108,11 @@ def render_sidebar(meta):
         st.caption(f"{meta['rows_clean']} clubes · Série A 2003–2025")
         st.divider()
         st.markdown("**1. Pergunta (alvo)**")
+        st.caption("Guia = fácil demais (muitos 100%). Desafio = métodos discordam.")
         st.radio(
             "Alvo",
-            options=list(TARGET_LABELS),
-            format_func=lambda k: TARGET_LABELS[k],
+            options=TARGET_ORDER,
+            format_func=target_choice_label,
             key="br_target",
             on_change=_on_target,
             label_visibility="collapsed",
@@ -144,10 +149,11 @@ def render_sidebar(meta):
             on_change=_on_preset,
             label_visibility="collapsed",
         )
+        allowed = allowed_features(st.session_state.br_target)
         if st.session_state.br_preset == "personalizado":
-            for feat in ALL_FEATURES:
+            for feat in allowed:
                 st.checkbox(FEATURE_LABELS[feat], key=f"brfeat_{feat}")
-            feats = [f for f in ALL_FEATURES if st.session_state.get(f"brfeat_{f}")]
+            feats = [f for f in allowed if st.session_state.get(f"brfeat_{f}")]
         else:
             feats = preset_features(st.session_state.br_preset, st.session_state.br_target)
             if feats:
@@ -216,6 +222,16 @@ def main():
     target_col = TARGETS[tgt]
     n_pos = int(df[target_col].sum())
     render_treatment(meta, TARGET_LABELS[tgt], n_pos)
+    if tgt in CHALLENGE_TARGETS:
+        st.info(
+            "Alvo desafio: a classe não se separa só por ‘clube grande’. "
+            "Compare F1 entre os métodos — o placar não deveria ser 100% para todos."
+        )
+    else:
+        st.warning(
+            "Alvo do guia: fácil demais nesta base. Para ter disputa entre algoritmos, "
+            "escolha um item **Desafio** no menu da esquerda."
+        )
     if GUIDE_PDF.exists():
         st.download_button(
             "Baixar o guia de estudo (PDF)",

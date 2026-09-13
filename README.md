@@ -6,13 +6,15 @@ Desenvolvido por **Hart Botelho**.
 
 ## O que o portal faz
 
-1. Você escolhe o **alvo**: *já foi campeão?* ou *já foi rebaixado?*
+1. Você escolhe o **alvo**:
+   - **Guia (fáceis):** já foi campeão? / já foi rebaixado? — vários modelos batem 100% no teste.
+   - **Desafio:** caiu duas vezes ou mais? (24/45) · já teve artilheiro? (15/45) · foi multicampeão? (6/45).
 2. Escolhe os **atributos**: Jogos, Vitórias, Empates, Derrotas, Aproveitamento, Gols feitos, Gols sofridos, Saldo de gols, Vezes com artilheiro, Cartões vermelhos.
 3. Testa algoritmos (Naive Bayes, KNN, Regressão Logística, Árvore, Random Forest, Gradient Boosting), o split treino/teste e o **limiar**.
 4. Compara VP, VN, FP, FN, precisão, recall, F1 e o impacto de cada variável.
 5. Lê o **guia de estudo** (PDF) e os exercícios com gabarito.
 
-**Anti-leakage:** `Títulos` não entra para prever campeão; `Rebaixamentos` não entra para prever rebaixado.
+**Anti-leakage:** `Títulos` não entra para campeão/multicampeão; `Rebaixamentos` não entra para rebaixado/recorrente; `Vezes com artilheiro` não entra no alvo artilheiro.
 
 ## Instalação e execução
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from src.br_data import BANK_MAP, FEATURE_LABELS, TARGET_LABELS
+from src.br_data import BANK_MAP, CHALLENGE_TARGETS, FEATURE_LABELS, TARGET_LABELS
 
 if TYPE_CHECKING:
     from src.br_modeling import EvaluationResult
@@ -54,32 +54,43 @@ def _names(xs: list[str]) -> str:
 
 
 def small_sample_note(results, n_test: int, real: int, features: list[str], target_key: str) -> str:
-    """Explica por que 100% no teste desta base não significa modelo perfeito."""
+    """Explica o tamanho do teste e, nos alvos fáceis, o 100% enganoso."""
     perfect = [r.modelo for r in results if r.acuracia >= 0.999 or r.f1 >= 0.999]
-    tem_jogos = "Jogos" in features
-    if target_key == "campeao":
-        sep = (
-            "Os 9 campeões têm **772–894 jogos**; a maioria dos outros tem bem menos. "
-            "Com **Jogos** (e vitórias/saldo) no treino, o modelo quase lê 'é clube grande histórico' "
-            "em vez de aprender um padrão fino."
-        )
-    else:
-        sep = (
-            "Só **5 clubes nunca caíram**. Chutar SIM para quase todo mundo já acerta ~89% "
-            "(armadilha da acurácia do guia). 100% no teste ainda pode ser sorte em 14 linhas."
-        )
     extra = ""
     if perfect:
         extra = f" Neste recorte, {', '.join(perfect)} bateu **100%** no teste — isso é frágil."
-    return (
-        f"A base tem **45 clubes**. No split 70/30 o teste fica com **{n_test}** times e só "
-        f"**{real}** positivos. Errar 1 clube já derruba o F1; acertar 14 seguidos é fácil de "
-        f"parecer 'perfeito'.{extra} {sep} "
-        f"Por isso o guia pede **F1 + validação cruzada**, não a acurácia de um teste minúsculo. "
-        f"Marque **F1 CV** na barra: no mesmo experimento o F1 cai para a faixa de 0,5–0,9 — "
-        f"o 100% do teste não sobrevive quando as dobras rotacionam."
-        f"{' Vitórias, saldo e gols também carregam o mesmo sinal de “clube grande”; tirar só Jogos quase não muda o teste.' if tem_jogos else ''}"
+    base = (
+        f"A base tem **45 clubes**. No split 70/30 o teste fica com **{n_test}** times e "
+        f"**{real}** positivos."
     )
+    if target_key == "campeao":
+        return (
+            f"{base} Os 9 campeões têm **772–894 jogos**; o modelo lê ‘clube grande’.{extra} "
+            f"Troque para um alvo **Desafio** (caiu 2+ vezes, artilheiro ou multicampeão) "
+            f"para os métodos deixarem de empatar em 100%."
+        )
+    if target_key == "rebaixado":
+        return (
+            f"{base} Só **5 clubes nunca caíram**. Chutar SIM já acerta ~89% "
+            f"(armadilha da acurácia).{extra} No **Desafio · caiu duas vezes** a classe "
+            f"fica ~24/45 e a acurácia cai para a casa dos 70%."
+        )
+    if target_key == "recorrente":
+        return (
+            f"{base} Quase metade da base é SIM (24/45). Esperado: acurácia ~70–80% e "
+            f"F1 diferentes entre Naive Bayes, KNN e florestas. Se aparecer 100%, mude o split."
+        )
+    if target_key == "artilheiro":
+        return (
+            f"{base} 15 clubes tiveram artilheiro. Sem a coluna que define o alvo, "
+            f"os F1 no teste costumam ficar ~60–89% — dá para eleger um vencedor."
+        )
+    if target_key == "multicampeao":
+        return (
+            f"{base} Só **6** multicampeões. Classe rara: um modelo que chuta NÃO infla "
+            f"a acurácia e zera o F1. Compare F1 e F1 CV, não o percentual de acerto."
+        )
+    return f"{base}{extra} Olhe F1 + validação cruzada."
 
 
 def diagnostic_sections(results, real, features, n_test, threshold, target_key: str):
@@ -94,12 +105,11 @@ def diagnostic_sections(results, real, features, n_test, threshold, target_key: 
     alvo = TARGET_LABELS[target_key]
     banco = BANK_MAP[target_key]
     secs = []
-    secs.append(
-        (
-            "Por que vários modelos chegam a 100%",
-            small_sample_note(results, n_test, real, features, target_key),
-        )
-    )
+    if target_key in CHALLENGE_TARGETS:
+        titulo_amostra = "Por que este alvo é o desafio"
+    else:
+        titulo_amostra = "Por que vários modelos chegam a 100%"
+    secs.append((titulo_amostra, small_sample_note(results, n_test, real, features, target_key)))
     secs.append(
         (
             "Quem chegou mais perto da contagem real",
@@ -163,8 +173,9 @@ def diagnostic_sections(results, real, features, n_test, threshold, target_key: 
     secs.append(
         (
             "Próximo experimento",
+            "Se o placar estiver 100% para todo mundo, mude para um alvo **Desafio**. "
             "Trave o alvo e varra o limiar (0,35 / 0,50 / 0,70). "
-            "Depois compare Naive Bayes (poucos dados) com Regressão Logística (explicável) "
+            "Compare Naive Bayes (poucos dados) com Regressão Logística (explicável) "
             "e Random Forest (estável). Não ligue a coluna proibida do alvo.",
         )
     )

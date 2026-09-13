@@ -128,7 +128,8 @@ def build_pdf_report(*, meta, target_key, train_pct, threshold, features, preset
     _p(pdf, f"Treino/teste {train_pct}/{100-train_pct}% · limiar {threshold:.2f} · destaque {focus.modelo}")
     _h(pdf, "2. Base")
     _p(pdf, f"{meta['rows_clean']} clubes limpos. Campeões {meta['n_campeoes']}, "
-            f"rebaixados {meta['n_rebaixados']}.")
+            f"rebaixados {meta['n_rebaixados']}, caiu 2+ {meta.get('n_recorrentes', '—')}, "
+            f"artilheiro {meta.get('n_artilheiros', '—')}, multicampeões {meta.get('n_multicampeoes', '—')}.")
     _h(pdf, "3. Indicadores do teste")
     _p(pdf, f"Teste {n_test} · SIM reais {real} · predito {focus.total_predito} · "
             f"desvio {focus.margem_pct:+.1f}%")

@@ -12,8 +12,12 @@ from fpdf.enums import XPos, YPos
 from src.br_data import FEATURE_LABELS, TARGET_LABELS
 from src.br_diagnostics import METHOD_TIPS
 
-FONT_REG = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
-FONT_BOLD = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
+_FONT_DIR = Path(__file__).resolve().parent.parent / "fonts"
+FONT_REG = _FONT_DIR / "DejaVuSans.ttf"
+FONT_BOLD = _FONT_DIR / "DejaVuSans-Bold.ttf"
+if not FONT_REG.exists():
+    FONT_REG = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
+    FONT_BOLD = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
 AUTHOR = "Hart Botelho"
 HEADER_H = 38
 
@@ -175,7 +179,7 @@ def _box(pdf: PDF, text: str) -> None:
     pdf.set_text_color(28, 32, 44)
     body = _plain(text)
     h = pdf.get_string_width(body) / max(pdf.epw - 6, 1) * 5.2 + 12
-    if pdf.get_y() + h > pdf.h - 20:
+    if pdf.get_y() + max(h, 22) > pdf.h - 20:
         pdf.add_page()
     x, y = pdf.l_margin, pdf.get_y()
     pdf.set_fill_color(245, 242, 232)
@@ -250,8 +254,7 @@ def build_pdf_report(*, meta, target_key, train_pct, threshold, features, preset
 
     _h(pdf, "5. Cada método")
     for r in results:
-        need = 62
-        if pdf.get_y() > pdf.h - need:
+        if pdf.get_y() > pdf.h - 78:
             pdf.add_page()
         _reset(pdf)
         pdf.set_fill_color(11, 28, 20)

@@ -15,9 +15,9 @@ Portal **Streamlit** com dois estudos, desenvolvido por **Hart Botelho**.
 
 ## O que o Comitê de Crédito faz
 
-O menu abre um relato de cima a baixo: livro sintético, quatro modelos (regressão logística, Random Forest, XGBoost e rede neural), ROC, faixas de alerta, peso dos blocos e o scorecard. A barra ao lado calcula a chance e sorteia um cliente novo no mesmo processo da base.
+O menu abre o relato estático (grupos, acurácia, itens de cada modelo e combinações críticas) e, na mesma página, o simulador com a chance ao vivo. A página não oferece download da base.
 
-A base completa não vai no Git. Para gerá-la de novo e retreinar, na raiz do repositório:
+O CSV completo está em `data/credito/clientes_credito_50k.csv`. Para gerá-lo de novo e retreinar, na raiz do repositório:
 
 ```bash
 python -m src.credito.pipeline

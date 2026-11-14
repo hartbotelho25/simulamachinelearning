@@ -15,11 +15,13 @@ from pathlib import Path
 
 import joblib
 import numpy as np
+import pandas as pd
 
-from .caminhos import ARTEFATOS, GRAFICOS
+from .caminhos import ARTEFATOS, CSV_CLIENTES, GRAFICOS
+from .combinacoes import medir_combinacoes, sinais_das_colunas
 from .dataset import COLUNAS, conferir_esquema, gerar_base, perfil_controles, salvar_parametros
-from .graficos import gerar_todos
-from .importancia import explicar_logistica, pacote_importancia, spearman_blocos
+from .graficos import combinacoes_barras, gerar_todos
+from .importancia import explicar_logistica, pacote_importancia, ranking_itens, spearman_blocos
 from .metricas import avaliar, faixas_alerta, leituras, modelo_referencia
 from .politica import AMARELO_MAX, CORTE_MATRIZ, N_CLIENTES, SEMENTE, VERDE_MAX
 from .treino import CATALOGO, fatiar, treinar_todos
@@ -108,7 +110,12 @@ def main() -> None:
     conferir_esquema(df)
     if len(df) != N_CLIENTES:
         raise SystemExit(f"a base saiu com {len(df)} linhas")
-    df.to_csv(ARTEFATOS / "dataset_sintetico.csv", index=False)
+    livro = df.copy()
+    for coluna in livro.columns:
+        if coluna != "id_cliente" and pd.api.types.is_float_dtype(livro[coluna]):
+            livro[coluna] = livro[coluna].round(4)
+    livro.to_csv(CSV_CLIENTES, index=False)
+    livro.head(200).to_csv(ARTEFATOS / "amostra_clientes.csv", index=False)
     salvar_parametros(ARTEFATOS / "gerador.json", parametros)
     (ARTEFATOS / "perfil.json").write_text(
         json.dumps(perfil_controles(df), ensure_ascii=False),
@@ -137,6 +144,19 @@ def main() -> None:
         next(m["nome"] for m in avaliados if m["slug"] == referencia),
     )
 
+    print("combinações", flush=True)
+    combinacoes = medir_combinacoes(X_te, y_te, probas, referencia)
+    for combo in combinacoes:
+        print(
+            combo["id"],
+            combo["n"],
+            f"obs {combo['taxa_observada']:.3f}",
+            f"prev {combo['prevista_referencia']:.3f}",
+            "critica" if combo["critica"] else "abaixo",
+            flush=True,
+        )
+    sinais = sinais_das_colunas(X_te, y_te)
+
     print("gráficos", flush=True)
     figuras = gerar_todos(
         avaliados,
@@ -148,6 +168,8 @@ def main() -> None:
         referencia,
         GRAFICOS,
     )
+    nome_ref = next(m["nome"] for m in avaliados if m["slug"] == referencia)
+    figuras["combinacoes"] = Path(combinacoes_barras(combinacoes, GRAFICOS, nome_ref)).name
     for item in avaliados:
         item.pop("roc", None)
 
@@ -183,9 +205,15 @@ def main() -> None:
             "amostra": importancia["amostra"],
             "repeticoes": importancia["repeticoes"],
             "por_modelo": {slug: pacote["blocos"] for slug, pacote in importancia["medido"].items()},
+            "itens": {
+                slug: ranking_itens(pacote["colunas"])
+                for slug, pacote in importancia["medido"].items()
+            },
+            "sinais": sinais,
             "plantado": importancia["plantado"],
             "spearman_referencia": rho,
         },
+        "combinacoes": combinacoes,
         "explicacao": explicacao,
         "textos": textos,
         "figuras": figuras,

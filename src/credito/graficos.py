@@ -243,6 +243,30 @@ def visao_modelo(modelo: dict, y: np.ndarray, proba: np.ndarray, pasta: Path) ->
     return _salvar(fig, pasta, f"visao_{modelo['slug']}.png")
 
 
+def combinacoes_barras(combos: list[dict], pasta: Path, nome_ref: str) -> str:
+    criticas = [item for item in combos if item.get("critica")] or list(combos)
+    if not criticas:
+        fig, ax = _fig(11.2, 2.2)
+        _eixo(ax, "Nenhuma combinação com amostra suficiente")
+        return _salvar(fig, pasta, "combinacoes.png")
+    fig, ax = _fig(11.2, 0.72 * len(criticas) + 1.6)
+    _eixo(ax, "Inadimplência quando a combinação aparece")
+    y = np.arange(len(criticas))
+    altura = 0.24
+    base = [item["taxa_base"] for item in criticas]
+    observada = [item["taxa_observada"] for item in criticas]
+    prevista = [item["prevista_referencia"] for item in criticas]
+    ax.barh(y + altura, base, height=altura, color=MUDO, label="Base do teste")
+    ax.barh(y, observada, height=altura, color=CORAL, label="Observada na combinação")
+    ax.barh(y - altura, prevista, height=altura, color=OURO, label=f"Prevista · {nome_ref}")
+    ax.set_yticks(y, [item["titulo"] for item in criticas], color=CREAM, fontsize=8)
+    ax.set_xlim(0, 1)
+    ax.set_xlabel("Taxa", color=CREAM)
+    ax.legend(facecolor=PAINEL, edgecolor="#2a4a38", labelcolor=CREAM, fontsize=8, loc="lower right")
+    ax.invert_yaxis()
+    return _salvar(fig, pasta, "combinacoes.png")
+
+
 def gerar_todos(
     modelos: list[dict],
     probas: dict[str, np.ndarray],

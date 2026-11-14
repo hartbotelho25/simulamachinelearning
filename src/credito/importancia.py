@@ -44,6 +44,25 @@ def permutar(modelo, X: pd.DataFrame, y: np.ndarray) -> dict[str, float]:
     return {coluna: float(valor) for coluna, valor in zip(Xs.columns, bruto.importances_mean)}
 
 
+def ranking_itens(importancias: dict[str, float]) -> list[dict]:
+    itens = []
+    for coluna, valor in importancias.items():
+        if valor <= 0:
+            continue
+        bloco = next(nome for nome, cols in BLOCOS.items() if coluna in cols)
+        itens.append(
+            {
+                "variavel": coluna,
+                "rotulo": ROTULOS.get(coluna, coluna),
+                "bloco": bloco,
+                "bloco_nome": BLOCO_NOME[bloco],
+                "queda_auc": round(float(valor), 5),
+            }
+        )
+    itens.sort(key=lambda item: item["queda_auc"], reverse=True)
+    return itens
+
+
 def por_bloco(importancias: dict[str, float]) -> list[dict]:
     somas = {bloco: 0.0 for bloco in BLOCOS}
     for coluna, valor in importancias.items():

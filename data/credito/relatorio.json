@@ -112,7 +112,7 @@
     },
     {
       "faixa": "amarelo",
-      "acao": "Condicionar garantia",
+      "acao": "Exigir garantia",
       "de": 0.08,
       "ate": 0.2,
       "n": 2428,
@@ -312,6 +312,938 @@
         }
       ]
     },
+    "itens": {
+      "logistica": [
+        {
+          "variavel": "comprometimento_renda_efetivo",
+          "rotulo": "Comprometimento da renda efetiva",
+          "bloco": "endividamento",
+          "bloco_nome": "Endividamento e empréstimos",
+          "queda_auc": 0.00728
+        },
+        {
+          "variavel": "qtd_ocorrencias_atraso_30_60d_12m",
+          "rotulo": "Ocorrências de 30 a 60 dias, 12 meses",
+          "bloco": "regua",
+          "bloco_nome": "Régua interna de atrasos",
+          "queda_auc": 0.00647
+        },
+        {
+          "variavel": "flag_historico_fpd",
+          "rotulo": "Histórico de primeiro atraso",
+          "bloco": "regua",
+          "bloco_nome": "Régua interna de atrasos",
+          "queda_auc": 0.00637
+        },
+        {
+          "variavel": "fatura_media_3m",
+          "rotulo": "Fatura média, 3 meses",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00506
+        },
+        {
+          "variavel": "possui_renegociacao_ativa",
+          "rotulo": "Renegociação ativa",
+          "bloco": "regua",
+          "bloco_nome": "Régua interna de atrasos",
+          "queda_auc": 0.00472
+        },
+        {
+          "variavel": "score_bureau_atual",
+          "rotulo": "Score de bureau",
+          "bloco": "bureau",
+          "bloco_nome": "Mercado externo e bureau",
+          "queda_auc": 0.00463
+        },
+        {
+          "variavel": "fatura_media_12m",
+          "rotulo": "Fatura média, 12 meses",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00379
+        },
+        {
+          "variavel": "qtd_cheques_devolvidos_12m",
+          "rotulo": "Cheques devolvidos, 12 meses",
+          "bloco": "cheque",
+          "bloco_nome": "Conta corrente e cheque especial",
+          "queda_auc": 0.00334
+        },
+        {
+          "variavel": "fluxo_medio_entradas_3m",
+          "rotulo": "Fluxo médio de entradas, 3 meses",
+          "bloco": "fluxo",
+          "bloco_nome": "Fluxo de caixa e liquidez",
+          "queda_auc": 0.00291
+        },
+        {
+          "variavel": "possui_imovel_proprio",
+          "rotulo": "Imóvel próprio",
+          "bloco": "cadastral",
+          "bloco_nome": "Cadastral e sociodemográfico",
+          "queda_auc": 0.00189
+        },
+        {
+          "variavel": "qtd_protestos_historico",
+          "rotulo": "Protestos",
+          "bloco": "bureau",
+          "bloco_nome": "Mercado externo e bureau",
+          "queda_auc": 0.00181
+        },
+        {
+          "variavel": "qtd_vezes_atraso_cartao_30d_12m",
+          "rotulo": "Atrasos de 30 dias no cartão, 12 meses",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00154
+        },
+        {
+          "variavel": "tipo_ocupacao",
+          "rotulo": "Ocupação",
+          "bloco": "cadastral",
+          "bloco_nome": "Cadastral e sociodemográfico",
+          "queda_auc": 0.00118
+        },
+        {
+          "variavel": "valor_total_inadimplencia_outros_mercados",
+          "rotulo": "Inadimplência em outros mercados",
+          "bloco": "bureau",
+          "bloco_nome": "Mercado externo e bureau",
+          "queda_auc": 0.00116
+        },
+        {
+          "variavel": "utilizacao_cheque_especial_atual",
+          "rotulo": "Uso atual do cheque especial",
+          "bloco": "cheque",
+          "bloco_nome": "Conta corrente e cheque especial",
+          "queda_auc": 0.00113
+        },
+        {
+          "variavel": "escolaridade",
+          "rotulo": "Escolaridade",
+          "bloco": "cadastral",
+          "bloco_nome": "Cadastral e sociodemográfico",
+          "queda_auc": 0.00112
+        },
+        {
+          "variavel": "saldo_medio_conta_12m",
+          "rotulo": "Saldo médio da conta, 12 meses",
+          "bloco": "fluxo",
+          "bloco_nome": "Fluxo de caixa e liquidez",
+          "queda_auc": 0.00108
+        },
+        {
+          "variavel": "flag_pagamento_cartao_com_cheque_especial",
+          "rotulo": "Pagou cartão com cheque especial",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00102
+        },
+        {
+          "variavel": "taxa_crescimento_gastos_cartao",
+          "rotulo": "Crescimento dos gastos no cartão",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00048
+        },
+        {
+          "variavel": "max_atraso_emprestimos_historico",
+          "rotulo": "Maior atraso em empréstimos (dias)",
+          "bloco": "endividamento",
+          "bloco_nome": "Endividamento e empréstimos",
+          "queda_auc": 0.00044
+        },
+        {
+          "variavel": "renda_declarada",
+          "rotulo": "Renda declarada",
+          "bloco": "fluxo",
+          "bloco_nome": "Fluxo de caixa e liquidez",
+          "queda_auc": 0.0004
+        },
+        {
+          "variavel": "limite_cheque_especial",
+          "rotulo": "Limite do cheque especial",
+          "bloco": "cheque",
+          "bloco_nome": "Conta corrente e cheque especial",
+          "queda_auc": 0.00033
+        },
+        {
+          "variavel": "valor_saque_cartao_credito_6m",
+          "rotulo": "Saque no cartão, 6 meses",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00031
+        },
+        {
+          "variavel": "saldo_medio_conta_3m",
+          "rotulo": "Saldo médio da conta, 3 meses",
+          "bloco": "fluxo",
+          "bloco_nome": "Fluxo de caixa e liquidez",
+          "queda_auc": 0.0003
+        },
+        {
+          "variavel": "limite_total_cartao",
+          "rotulo": "Limite total do cartão",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 4e-05
+        },
+        {
+          "variavel": "taxa_juros_media_contratos_ativos",
+          "rotulo": "Juros médio dos contratos ativos",
+          "bloco": "endividamento",
+          "bloco_nome": "Endividamento e empréstimos",
+          "queda_auc": 3e-05
+        }
+      ],
+      "floresta": [
+        {
+          "variavel": "max_atraso_emprestimos_historico",
+          "rotulo": "Maior atraso em empréstimos (dias)",
+          "bloco": "endividamento",
+          "bloco_nome": "Endividamento e empréstimos",
+          "queda_auc": 0.0143
+        },
+        {
+          "variavel": "utilizacao_cheque_especial_atual",
+          "rotulo": "Uso atual do cheque especial",
+          "bloco": "cheque",
+          "bloco_nome": "Conta corrente e cheque especial",
+          "queda_auc": 0.00597
+        },
+        {
+          "variavel": "qtd_ocorrencias_atraso_30_60d_12m",
+          "rotulo": "Ocorrências de 30 a 60 dias, 12 meses",
+          "bloco": "regua",
+          "bloco_nome": "Régua interna de atrasos",
+          "queda_auc": 0.00447
+        },
+        {
+          "variavel": "dias_utilizando_cheque_especial_30d",
+          "rotulo": "Dias no cheque especial, 30 dias",
+          "bloco": "cheque",
+          "bloco_nome": "Conta corrente e cheque especial",
+          "queda_auc": 0.00399
+        },
+        {
+          "variavel": "comprometimento_renda_efetivo",
+          "rotulo": "Comprometimento da renda efetiva",
+          "bloco": "endividamento",
+          "bloco_nome": "Endividamento e empréstimos",
+          "queda_auc": 0.00359
+        },
+        {
+          "variavel": "flag_historico_fpd",
+          "rotulo": "Histórico de primeiro atraso",
+          "bloco": "regua",
+          "bloco_nome": "Régua interna de atrasos",
+          "queda_auc": 0.00352
+        },
+        {
+          "variavel": "dias_utilizando_cheque_especial_12m",
+          "rotulo": "Dias no cheque especial, 12 meses",
+          "bloco": "cheque",
+          "bloco_nome": "Conta corrente e cheque especial",
+          "queda_auc": 0.00307
+        },
+        {
+          "variavel": "qtd_cheques_devolvidos_12m",
+          "rotulo": "Cheques devolvidos, 12 meses",
+          "bloco": "cheque",
+          "bloco_nome": "Conta corrente e cheque especial",
+          "queda_auc": 0.00251
+        },
+        {
+          "variavel": "score_bureau_atual",
+          "rotulo": "Score de bureau",
+          "bloco": "bureau",
+          "bloco_nome": "Mercado externo e bureau",
+          "queda_auc": 0.00221
+        },
+        {
+          "variavel": "fluxo_medio_entradas_3m",
+          "rotulo": "Fluxo médio de entradas, 3 meses",
+          "bloco": "fluxo",
+          "bloco_nome": "Fluxo de caixa e liquidez",
+          "queda_auc": 0.00193
+        },
+        {
+          "variavel": "possui_renegociacao_ativa",
+          "rotulo": "Renegociação ativa",
+          "bloco": "regua",
+          "bloco_nome": "Régua interna de atrasos",
+          "queda_auc": 0.0013
+        },
+        {
+          "variavel": "valor_total_inadimplencia_outros_mercados",
+          "rotulo": "Inadimplência em outros mercados",
+          "bloco": "bureau",
+          "bloco_nome": "Mercado externo e bureau",
+          "queda_auc": 0.00118
+        },
+        {
+          "variavel": "idade",
+          "rotulo": "Idade",
+          "bloco": "cadastral",
+          "bloco_nome": "Cadastral e sociodemográfico",
+          "queda_auc": 0.00088
+        },
+        {
+          "variavel": "parcela_total_comprometida",
+          "rotulo": "Parcela total comprometida",
+          "bloco": "endividamento",
+          "bloco_nome": "Endividamento e empréstimos",
+          "queda_auc": 0.00082
+        },
+        {
+          "variavel": "qtd_consultas_bureau_3m",
+          "rotulo": "Consultas ao bureau, 3 meses",
+          "bloco": "bureau",
+          "bloco_nome": "Mercado externo e bureau",
+          "queda_auc": 0.00078
+        },
+        {
+          "variavel": "qtd_vezes_atraso_cartao_30d_12m",
+          "rotulo": "Atrasos de 30 dias no cartão, 12 meses",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00074
+        },
+        {
+          "variavel": "renda_declarada",
+          "rotulo": "Renda declarada",
+          "bloco": "fluxo",
+          "bloco_nome": "Fluxo de caixa e liquidez",
+          "queda_auc": 0.00062
+        },
+        {
+          "variavel": "fatura_media_12m",
+          "rotulo": "Fatura média, 12 meses",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00053
+        },
+        {
+          "variavel": "qtd_protestos_historico",
+          "rotulo": "Protestos",
+          "bloco": "bureau",
+          "bloco_nome": "Mercado externo e bureau",
+          "queda_auc": 0.00051
+        },
+        {
+          "variavel": "valor_saque_cartao_credito_6m",
+          "rotulo": "Saque no cartão, 6 meses",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.0003
+        },
+        {
+          "variavel": "possui_imovel_proprio",
+          "rotulo": "Imóvel próprio",
+          "bloco": "cadastral",
+          "bloco_nome": "Cadastral e sociodemográfico",
+          "queda_auc": 0.00022
+        },
+        {
+          "variavel": "escolaridade",
+          "rotulo": "Escolaridade",
+          "bloco": "cadastral",
+          "bloco_nome": "Cadastral e sociodemográfico",
+          "queda_auc": 0.00021
+        },
+        {
+          "variavel": "pagamento_fatura_predominante",
+          "rotulo": "Pagamento predominante da fatura",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00015
+        },
+        {
+          "variavel": "limite_total_cartao",
+          "rotulo": "Limite total do cartão",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00013
+        },
+        {
+          "variavel": "qtd_novos_emprestimos_ultimos_6m",
+          "rotulo": "Empréstimos novos, 6 meses",
+          "bloco": "endividamento",
+          "bloco_nome": "Endividamento e empréstimos",
+          "queda_auc": 3e-05
+        },
+        {
+          "variavel": "fatura_media_3m",
+          "rotulo": "Fatura média, 3 meses",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 2e-05
+        }
+      ],
+      "boosting": [
+        {
+          "variavel": "max_atraso_emprestimos_historico",
+          "rotulo": "Maior atraso em empréstimos (dias)",
+          "bloco": "endividamento",
+          "bloco_nome": "Endividamento e empréstimos",
+          "queda_auc": 0.01742
+        },
+        {
+          "variavel": "qtd_ocorrencias_atraso_30_60d_12m",
+          "rotulo": "Ocorrências de 30 a 60 dias, 12 meses",
+          "bloco": "regua",
+          "bloco_nome": "Régua interna de atrasos",
+          "queda_auc": 0.0064
+        },
+        {
+          "variavel": "comprometimento_renda_efetivo",
+          "rotulo": "Comprometimento da renda efetiva",
+          "bloco": "endividamento",
+          "bloco_nome": "Endividamento e empréstimos",
+          "queda_auc": 0.00609
+        },
+        {
+          "variavel": "fluxo_medio_entradas_3m",
+          "rotulo": "Fluxo médio de entradas, 3 meses",
+          "bloco": "fluxo",
+          "bloco_nome": "Fluxo de caixa e liquidez",
+          "queda_auc": 0.00581
+        },
+        {
+          "variavel": "flag_historico_fpd",
+          "rotulo": "Histórico de primeiro atraso",
+          "bloco": "regua",
+          "bloco_nome": "Régua interna de atrasos",
+          "queda_auc": 0.00575
+        },
+        {
+          "variavel": "utilizacao_cheque_especial_atual",
+          "rotulo": "Uso atual do cheque especial",
+          "bloco": "cheque",
+          "bloco_nome": "Conta corrente e cheque especial",
+          "queda_auc": 0.00377
+        },
+        {
+          "variavel": "possui_renegociacao_ativa",
+          "rotulo": "Renegociação ativa",
+          "bloco": "regua",
+          "bloco_nome": "Régua interna de atrasos",
+          "queda_auc": 0.0035
+        },
+        {
+          "variavel": "score_bureau_atual",
+          "rotulo": "Score de bureau",
+          "bloco": "bureau",
+          "bloco_nome": "Mercado externo e bureau",
+          "queda_auc": 0.00347
+        },
+        {
+          "variavel": "taxa_crescimento_gastos_cartao",
+          "rotulo": "Crescimento dos gastos no cartão",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00281
+        },
+        {
+          "variavel": "dias_utilizando_cheque_especial_12m",
+          "rotulo": "Dias no cheque especial, 12 meses",
+          "bloco": "cheque",
+          "bloco_nome": "Conta corrente e cheque especial",
+          "queda_auc": 0.0018
+        },
+        {
+          "variavel": "qtd_protestos_historico",
+          "rotulo": "Protestos",
+          "bloco": "bureau",
+          "bloco_nome": "Mercado externo e bureau",
+          "queda_auc": 0.00167
+        },
+        {
+          "variavel": "qtd_cheques_devolvidos_12m",
+          "rotulo": "Cheques devolvidos, 12 meses",
+          "bloco": "cheque",
+          "bloco_nome": "Conta corrente e cheque especial",
+          "queda_auc": 0.00145
+        },
+        {
+          "variavel": "valor_saque_cartao_credito_6m",
+          "rotulo": "Saque no cartão, 6 meses",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00142
+        },
+        {
+          "variavel": "tempo_relacionamento_meses",
+          "rotulo": "Tempo de relacionamento (meses)",
+          "bloco": "cadastral",
+          "bloco_nome": "Cadastral e sociodemográfico",
+          "queda_auc": 0.00132
+        },
+        {
+          "variavel": "possui_imovel_proprio",
+          "rotulo": "Imóvel próprio",
+          "bloco": "cadastral",
+          "bloco_nome": "Cadastral e sociodemográfico",
+          "queda_auc": 0.00132
+        },
+        {
+          "variavel": "qtd_vezes_atraso_cartao_30d_12m",
+          "rotulo": "Atrasos de 30 dias no cartão, 12 meses",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00131
+        },
+        {
+          "variavel": "saldo_medio_conta_3m",
+          "rotulo": "Saldo médio da conta, 3 meses",
+          "bloco": "fluxo",
+          "bloco_nome": "Fluxo de caixa e liquidez",
+          "queda_auc": 0.00118
+        },
+        {
+          "variavel": "idade",
+          "rotulo": "Idade",
+          "bloco": "cadastral",
+          "bloco_nome": "Cadastral e sociodemográfico",
+          "queda_auc": 0.00096
+        },
+        {
+          "variavel": "flag_pagamento_cartao_com_cheque_especial",
+          "rotulo": "Pagou cartão com cheque especial",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00094
+        },
+        {
+          "variavel": "qtd_consultas_bureau_3m",
+          "rotulo": "Consultas ao bureau, 3 meses",
+          "bloco": "bureau",
+          "bloco_nome": "Mercado externo e bureau",
+          "queda_auc": 0.00089
+        },
+        {
+          "variavel": "limite_total_cartao",
+          "rotulo": "Limite total do cartão",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00075
+        },
+        {
+          "variavel": "valor_total_inadimplencia_outros_mercados",
+          "rotulo": "Inadimplência em outros mercados",
+          "bloco": "bureau",
+          "bloco_nome": "Mercado externo e bureau",
+          "queda_auc": 0.0007
+        },
+        {
+          "variavel": "limite_cheque_especial",
+          "rotulo": "Limite do cheque especial",
+          "bloco": "cheque",
+          "bloco_nome": "Conta corrente e cheque especial",
+          "queda_auc": 0.00065
+        },
+        {
+          "variavel": "fatura_media_12m",
+          "rotulo": "Fatura média, 12 meses",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00058
+        },
+        {
+          "variavel": "saldo_medio_conta_12m",
+          "rotulo": "Saldo médio da conta, 12 meses",
+          "bloco": "fluxo",
+          "bloco_nome": "Fluxo de caixa e liquidez",
+          "queda_auc": 0.00044
+        },
+        {
+          "variavel": "qtd_emprestimos_ativos",
+          "rotulo": "Empréstimos ativos",
+          "bloco": "endividamento",
+          "bloco_nome": "Endividamento e empréstimos",
+          "queda_auc": 0.00041
+        },
+        {
+          "variavel": "tipo_ocupacao",
+          "rotulo": "Ocupação",
+          "bloco": "cadastral",
+          "bloco_nome": "Cadastral e sociodemográfico",
+          "queda_auc": 0.00038
+        },
+        {
+          "variavel": "escolaridade",
+          "rotulo": "Escolaridade",
+          "bloco": "cadastral",
+          "bloco_nome": "Cadastral e sociodemográfico",
+          "queda_auc": 0.00036
+        },
+        {
+          "variavel": "dias_utilizando_cheque_especial_30d",
+          "rotulo": "Dias no cheque especial, 30 dias",
+          "bloco": "cheque",
+          "bloco_nome": "Conta corrente e cheque especial",
+          "queda_auc": 0.0003
+        },
+        {
+          "variavel": "fatura_media_3m",
+          "rotulo": "Fatura média, 3 meses",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00029
+        }
+      ],
+      "mlp": [
+        {
+          "variavel": "flag_historico_fpd",
+          "rotulo": "Histórico de primeiro atraso",
+          "bloco": "regua",
+          "bloco_nome": "Régua interna de atrasos",
+          "queda_auc": 0.00751
+        },
+        {
+          "variavel": "qtd_ocorrencias_atraso_30_60d_12m",
+          "rotulo": "Ocorrências de 30 a 60 dias, 12 meses",
+          "bloco": "regua",
+          "bloco_nome": "Régua interna de atrasos",
+          "queda_auc": 0.00748
+        },
+        {
+          "variavel": "comprometimento_renda_efetivo",
+          "rotulo": "Comprometimento da renda efetiva",
+          "bloco": "endividamento",
+          "bloco_nome": "Endividamento e empréstimos",
+          "queda_auc": 0.00624
+        },
+        {
+          "variavel": "possui_renegociacao_ativa",
+          "rotulo": "Renegociação ativa",
+          "bloco": "regua",
+          "bloco_nome": "Régua interna de atrasos",
+          "queda_auc": 0.0052
+        },
+        {
+          "variavel": "score_bureau_atual",
+          "rotulo": "Score de bureau",
+          "bloco": "bureau",
+          "bloco_nome": "Mercado externo e bureau",
+          "queda_auc": 0.0044
+        },
+        {
+          "variavel": "qtd_cheques_devolvidos_12m",
+          "rotulo": "Cheques devolvidos, 12 meses",
+          "bloco": "cheque",
+          "bloco_nome": "Conta corrente e cheque especial",
+          "queda_auc": 0.00419
+        },
+        {
+          "variavel": "tipo_ocupacao",
+          "rotulo": "Ocupação",
+          "bloco": "cadastral",
+          "bloco_nome": "Cadastral e sociodemográfico",
+          "queda_auc": 0.00353
+        },
+        {
+          "variavel": "dias_utilizando_cheque_especial_12m",
+          "rotulo": "Dias no cheque especial, 12 meses",
+          "bloco": "cheque",
+          "bloco_nome": "Conta corrente e cheque especial",
+          "queda_auc": 0.00348
+        },
+        {
+          "variavel": "max_atraso_emprestimos_historico",
+          "rotulo": "Maior atraso em empréstimos (dias)",
+          "bloco": "endividamento",
+          "bloco_nome": "Endividamento e empréstimos",
+          "queda_auc": 0.00322
+        },
+        {
+          "variavel": "qtd_vezes_atraso_cartao_30d_12m",
+          "rotulo": "Atrasos de 30 dias no cartão, 12 meses",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00318
+        },
+        {
+          "variavel": "fluxo_medio_entradas_3m",
+          "rotulo": "Fluxo médio de entradas, 3 meses",
+          "bloco": "fluxo",
+          "bloco_nome": "Fluxo de caixa e liquidez",
+          "queda_auc": 0.00318
+        },
+        {
+          "variavel": "qtd_protestos_historico",
+          "rotulo": "Protestos",
+          "bloco": "bureau",
+          "bloco_nome": "Mercado externo e bureau",
+          "queda_auc": 0.00294
+        },
+        {
+          "variavel": "valor_saque_cartao_credito_6m",
+          "rotulo": "Saque no cartão, 6 meses",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00197
+        },
+        {
+          "variavel": "flag_pagamento_cartao_com_cheque_especial",
+          "rotulo": "Pagou cartão com cheque especial",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00195
+        },
+        {
+          "variavel": "taxa_crescimento_gastos_cartao",
+          "rotulo": "Crescimento dos gastos no cartão",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00187
+        },
+        {
+          "variavel": "limite_cheque_especial",
+          "rotulo": "Limite do cheque especial",
+          "bloco": "cheque",
+          "bloco_nome": "Conta corrente e cheque especial",
+          "queda_auc": 0.00185
+        },
+        {
+          "variavel": "valor_total_inadimplencia_outros_mercados",
+          "rotulo": "Inadimplência em outros mercados",
+          "bloco": "bureau",
+          "bloco_nome": "Mercado externo e bureau",
+          "queda_auc": 0.00158
+        },
+        {
+          "variavel": "utilizacao_cheque_especial_atual",
+          "rotulo": "Uso atual do cheque especial",
+          "bloco": "cheque",
+          "bloco_nome": "Conta corrente e cheque especial",
+          "queda_auc": 0.00136
+        },
+        {
+          "variavel": "fatura_media_3m",
+          "rotulo": "Fatura média, 3 meses",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.0012
+        },
+        {
+          "variavel": "pagamento_fatura_predominante",
+          "rotulo": "Pagamento predominante da fatura",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00119
+        },
+        {
+          "variavel": "possui_imovel_proprio",
+          "rotulo": "Imóvel próprio",
+          "bloco": "cadastral",
+          "bloco_nome": "Cadastral e sociodemográfico",
+          "queda_auc": 0.00106
+        },
+        {
+          "variavel": "renda_declarada",
+          "rotulo": "Renda declarada",
+          "bloco": "fluxo",
+          "bloco_nome": "Fluxo de caixa e liquidez",
+          "queda_auc": 0.00086
+        },
+        {
+          "variavel": "dias_utilizando_cheque_especial_30d",
+          "rotulo": "Dias no cheque especial, 30 dias",
+          "bloco": "cheque",
+          "bloco_nome": "Conta corrente e cheque especial",
+          "queda_auc": 0.00085
+        },
+        {
+          "variavel": "limite_total_cartao",
+          "rotulo": "Limite total do cartão",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00079
+        },
+        {
+          "variavel": "escolaridade",
+          "rotulo": "Escolaridade",
+          "bloco": "cadastral",
+          "bloco_nome": "Cadastral e sociodemográfico",
+          "queda_auc": 0.00049
+        },
+        {
+          "variavel": "idade",
+          "rotulo": "Idade",
+          "bloco": "cadastral",
+          "bloco_nome": "Cadastral e sociodemográfico",
+          "queda_auc": 0.00041
+        },
+        {
+          "variavel": "taxa_juros_media_contratos_ativos",
+          "rotulo": "Juros médio dos contratos ativos",
+          "bloco": "endividamento",
+          "bloco_nome": "Endividamento e empréstimos",
+          "queda_auc": 0.00034
+        },
+        {
+          "variavel": "qtd_vezes_pagamento_minimo_12m",
+          "rotulo": "Vezes no pagamento mínimo, 12 meses",
+          "bloco": "cartao",
+          "bloco_nome": "Cartão de crédito e consumo",
+          "queda_auc": 6e-05
+        }
+      ]
+    },
+    "sinais": {
+      "idade": {
+        "sentido": "desce",
+        "corr": -0.0027
+      },
+      "tempo_relacionamento_meses": {
+        "sentido": "desce",
+        "corr": -0.0016
+      },
+      "tipo_ocupacao": {
+        "sentido": "categoria",
+        "nivel": "informal",
+        "taxa": 0.145,
+        "acima_da_base": true
+      },
+      "escolaridade": {
+        "sentido": "categoria",
+        "nivel": "fundamental",
+        "taxa": 0.1278,
+        "acima_da_base": false
+      },
+      "possui_imovel_proprio": {
+        "sentido": "desce",
+        "corr": -0.0609
+      },
+      "renda_declarada": {
+        "sentido": "desce",
+        "corr": -0.0126
+      },
+      "fluxo_medio_entradas_3m": {
+        "sentido": "desce",
+        "corr": -0.0713
+      },
+      "saldo_medio_conta_12m": {
+        "sentido": "desce",
+        "corr": -0.1449
+      },
+      "saldo_medio_conta_3m": {
+        "sentido": "desce",
+        "corr": -0.1588
+      },
+      "limite_cheque_especial": {
+        "sentido": "sobe",
+        "corr": 0.0053
+      },
+      "dias_utilizando_cheque_especial_30d": {
+        "sentido": "sobe",
+        "corr": 0.3896
+      },
+      "dias_utilizando_cheque_especial_12m": {
+        "sentido": "sobe",
+        "corr": 0.4043
+      },
+      "utilizacao_cheque_especial_atual": {
+        "sentido": "sobe",
+        "corr": 0.3588
+      },
+      "qtd_cheques_devolvidos_12m": {
+        "sentido": "sobe",
+        "corr": 0.3192
+      },
+      "limite_total_cartao": {
+        "sentido": "desce",
+        "corr": -0.0114
+      },
+      "fatura_media_3m": {
+        "sentido": "sobe",
+        "corr": 0.1328
+      },
+      "fatura_media_12m": {
+        "sentido": "sobe",
+        "corr": 0.1179
+      },
+      "taxa_crescimento_gastos_cartao": {
+        "sentido": "sobe",
+        "corr": 0.1044
+      },
+      "pagamento_fatura_predominante": {
+        "sentido": "categoria",
+        "nivel": "minimo",
+        "taxa": 0.2317,
+        "acima_da_base": true
+      },
+      "qtd_vezes_pagamento_minimo_12m": {
+        "sentido": "sobe",
+        "corr": 0.3634
+      },
+      "qtd_vezes_atraso_cartao_30d_12m": {
+        "sentido": "sobe",
+        "corr": 0.3602
+      },
+      "valor_saque_cartao_credito_6m": {
+        "sentido": "sobe",
+        "corr": 0.2285
+      },
+      "flag_pagamento_cartao_com_cheque_especial": {
+        "sentido": "sobe",
+        "corr": 0.0853
+      },
+      "qtd_emprestimos_ativos": {
+        "sentido": "sobe",
+        "corr": 0.1502
+      },
+      "qtd_novos_emprestimos_ultimos_6m": {
+        "sentido": "sobe",
+        "corr": 0.1538
+      },
+      "parcela_total_comprometida": {
+        "sentido": "sobe",
+        "corr": 0.1862
+      },
+      "comprometimento_renda_efetivo": {
+        "sentido": "sobe",
+        "corr": 0.3114
+      },
+      "max_atraso_emprestimos_historico": {
+        "sentido": "sobe",
+        "corr": 0.4676
+      },
+      "taxa_juros_media_contratos_ativos": {
+        "sentido": "sobe",
+        "corr": 0.3418
+      },
+      "qtd_ocorrencias_atraso_30_60d_12m": {
+        "sentido": "sobe",
+        "corr": 0.3788
+      },
+      "flag_historico_fpd": {
+        "sentido": "sobe",
+        "corr": 0.1847
+      },
+      "possui_renegociacao_ativa": {
+        "sentido": "sobe",
+        "corr": 0.1796
+      },
+      "score_bureau_atual": {
+        "sentido": "desce",
+        "corr": -0.3464
+      },
+      "qtd_consultas_bureau_3m": {
+        "sentido": "sobe",
+        "corr": 0.3061
+      },
+      "qtd_protestos_historico": {
+        "sentido": "sobe",
+        "corr": 0.2263
+      },
+      "valor_total_inadimplencia_outros_mercados": {
+        "sentido": "sobe",
+        "corr": 0.2512
+      }
+    },
     "plantado": [
       {
         "bloco": "regua",
@@ -358,6 +1290,123 @@
     ],
     "spearman_referencia": 0.8571428571428571
   },
+  "combinacoes": [
+    {
+      "id": "renda_e_minimo",
+      "titulo": "Renda comprometida e fatura no mínimo",
+      "sinais": [
+        "Comprometimento da renda de 40% ou mais",
+        "3 ou mais pagamentos mínimos no ano"
+      ],
+      "n": 529,
+      "taxa_base": 0.119,
+      "taxa_observada": 0.5066,
+      "previstas": {
+        "logistica": 0.5183,
+        "floresta": 0.46,
+        "boosting": 0.5059,
+        "mlp": 0.4919
+      },
+      "prevista_referencia": 0.5183,
+      "critica": true
+    },
+    {
+      "id": "especial_e_minimo",
+      "titulo": "Especial estourado e mínimo recorrente",
+      "sinais": [
+        "Uso atual do cheque especial de 60% ou mais",
+        "4 ou mais pagamentos mínimos no ano"
+      ],
+      "n": 1962,
+      "taxa_base": 0.119,
+      "taxa_observada": 0.421,
+      "previstas": {
+        "logistica": 0.4218,
+        "floresta": 0.3991,
+        "boosting": 0.4115,
+        "mlp": 0.4185
+      },
+      "prevista_referencia": 0.4218,
+      "critica": true
+    },
+    {
+      "id": "atraso_e_bureau",
+      "titulo": "Atraso curto ou FPD com bureau fraco",
+      "sinais": [
+        "FPD ou ocorrência de 30 a 60 dias",
+        "Score até 550 ou ao menos 1 protesto"
+      ],
+      "n": 1842,
+      "taxa_base": 0.119,
+      "taxa_observada": 0.4164,
+      "previstas": {
+        "logistica": 0.3996,
+        "floresta": 0.3634,
+        "boosting": 0.3954,
+        "mlp": 0.4016
+      },
+      "prevista_referencia": 0.3996,
+      "critica": true
+    },
+    {
+      "id": "trio_cheque_cartao_atraso",
+      "titulo": "Cheque sem fundo, cartão no especial e atraso de 30 a 60 dias",
+      "sinais": [
+        "Ao menos 1 cheque devolvido",
+        "Pagou a fatura com cheque especial",
+        "Ao menos 1 ocorrência de 30 a 60 dias"
+      ],
+      "n": 1161,
+      "taxa_base": 0.119,
+      "taxa_observada": 0.3902,
+      "previstas": {
+        "logistica": 0.3625,
+        "floresta": 0.3186,
+        "boosting": 0.353,
+        "mlp": 0.3695
+      },
+      "prevista_referencia": 0.3625,
+      "critica": true
+    },
+    {
+      "id": "cheque_sem_fundo",
+      "titulo": "Cheque devolvido e uso contínuo do especial",
+      "sinais": [
+        "Ao menos 1 cheque devolvido em 12 meses",
+        "60 dias ou mais no cheque especial no ano"
+      ],
+      "n": 4924,
+      "taxa_base": 0.119,
+      "taxa_observada": 0.2667,
+      "previstas": {
+        "logistica": 0.2536,
+        "floresta": 0.2488,
+        "boosting": 0.255,
+        "mlp": 0.2625
+      },
+      "prevista_referencia": 0.2536,
+      "critica": true
+    },
+    {
+      "id": "cartao_pago_com_especial",
+      "titulo": "Cartão pago com cheque especial e atraso recente",
+      "sinais": [
+        "Pagou a fatura com cheque especial",
+        "Ao menos 1 atraso de 30 dias no cartão"
+      ],
+      "n": 2220,
+      "taxa_base": 0.119,
+      "taxa_observada": 0.2617,
+      "previstas": {
+        "logistica": 0.2471,
+        "floresta": 0.2269,
+        "boosting": 0.2425,
+        "mlp": 0.2552
+      },
+      "prevista_referencia": 0.2471,
+      "critica": true
+    }
+  ],
   "explicacao": [
     {
       "variavel": "score_bureau_atual",
@@ -460,7 +1509,8 @@
     "visao_logistica": "visao_logistica.png",
     "visao_floresta": "visao_floresta.png",
     "visao_boosting": "visao_boosting.png",
-    "visao_mlp": "visao_mlp.png"
+    "visao_mlp": "visao_mlp.png",
+    "combinacoes": "combinacoes.png"
   },
   "leituras": {
     "referencia": "logistica",

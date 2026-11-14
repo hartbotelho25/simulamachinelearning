@@ -6,10 +6,13 @@ import json
 from pathlib import Path
 
 import joblib
+import numpy as np
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
-from .caminhos import ARTEFATOS
+from .caminhos import ARTEFATOS, CSV_CLIENTES
 from .dataset import FEATURES, gerar_cliente, ler_parametros
+from .politica import FRACAO_TESTE, SEMENTE
 
 
 class ModelosIncompativeis(RuntimeError):
@@ -81,3 +84,16 @@ def cliente_novo(seed: int) -> dict:
 
 def figura(nome: str) -> Path:
     return ARTEFATOS / "graficos" / nome
+
+
+def amostra_teste() -> pd.DataFrame:
+    df = pd.read_csv(CSV_CLIENTES)
+    y = df["inadimplente_90d"].to_numpy(dtype=int)
+    indice = np.arange(len(df))
+    _, indice_teste = train_test_split(
+        indice,
+        test_size=FRACAO_TESTE,
+        stratify=y,
+        random_state=SEMENTE,
+    )
+    return df.iloc[indice_teste].reset_index(drop=True)

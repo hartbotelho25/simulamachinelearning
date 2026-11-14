@@ -15,7 +15,7 @@ AMARELO_MAX = 0.20
 
 FAIXAS = (
     ("verde", "Aprovar", 0.0, VERDE_MAX),
-    ("amarelo", "Condicionar garantia", VERDE_MAX, AMARELO_MAX),
+    ("amarelo", "Exigir garantia", VERDE_MAX, AMARELO_MAX),
     ("vermelho", "Recusar", AMARELO_MAX, 1.01),
 )
 

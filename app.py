@@ -1,224 +1,163 @@
-"""Simulador de Machine Learning — Brasileirão (piloto após o portal Pokémon)."""
+"""Menu do simulador: Simula Brasileirão e Comitê de Crédito."""
 
 from __future__ import annotations
 
-from datetime import datetime
-
 import streamlit as st
 
-from src.br_data import (
-    ALL_FEATURES,
-    FEATURE_LABELS,
-    LEAKAGE_NOTE,
-    PRESET_CAPTIONS,
-    PRESET_LABELS,
-    PRESET_ORDER,
-    TARGET_HELP,
-    TARGET_LABELS,
-    TARGET_ORDER,
-    TARGETS,
-    allowed_features,
-    load_brasileirao,
-    preset_features,
-)
-from src.br_diagnostics import method_narrative
-from src.br_modeling import (
-    MODEL_CATALOG,
-    run_experiment,
-)
-from src.br_report import build_pdf_report
-from src.br_ui import (
-    inject_css,
-    render_chips,
-    render_confusion,
-    render_hero,
-    render_impact,
-    render_kpis,
-    render_method_kpis,
-    render_treatment,
-    results_table,
-)
+from src.br_ui import inject_css, render_chips
 
 st.set_page_config(
-    page_title="ML Brasileirão · Hart Botelho",
-    page_icon="⚽",
+    page_title="Simulador de Machine Learning · Hart Botelho",
+    page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded",
 )
-inject_css()
+
+MENU_CSS = """
+<style>
+    .entry {
+        background: radial-gradient(420px 160px at 0% 0%, rgba(232,185,35,0.12), transparent),
+                    linear-gradient(180deg, #163024 0%, #10261c 100%);
+        border-radius: 18px;
+        padding: 1.15rem 1.2rem 1rem;
+        min-height: 248px;
+        border: 1px solid rgba(244,241,232,0.08);
+    }
+    .entry.br { border-top: 3px solid #3dd68c; }
+    .entry.credito { border-top: 3px solid #E8B923; }
+    .entry h2 { color: #F4F1E8; font-size: 1.35rem; margin: 0.45rem 0 0.4rem; }
+    .entry p { color: #c9c3b4; margin: 0; line-height: 1.45; font-size: 0.95rem; }
+    .entry ul { margin: 0.75rem 0 0; padding-left: 1.1rem; color: #F4F1E8; }
+    .entry li { margin: 0.22rem 0; font-size: 0.9rem; }
+    .pill {
+        display: inline-block; border-radius: 999px; padding: 0.12rem 0.65rem;
+        font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .pill.br { background: rgba(61,214,140,0.14); color: #3dd68c; border: 1px solid rgba(61,214,140,0.45); }
+    .pill.credito { background: rgba(232,185,35,0.12); color: #E8B923; border: 1px solid rgba(232,185,35,0.45); }
+</style>
+"""
+
+_DESTINOS = {"home", "br", "credito"}
 
 
-@st.cache_data(show_spinner=False)
-def get_data():
-    return load_brasileirao()
+def _estudo() -> str:
+    bruto = st.query_params.get("estudo", "home")
+    if isinstance(bruto, (list, tuple)):
+        bruto = bruto[0] if bruto else "home"
+    bruto = str(bruto)
+    return bruto if bruto in _DESTINOS else "home"
 
 
-@st.cache_data(show_spinner=False)
-def cached_experiment(features, models, target_col, train_pct, threshold, k):
-    df, _ = get_data()
-    return run_experiment(df, list(features), target_col, list(models), train_pct, threshold, k)
+def _ir(destino: str) -> None:
+    st.query_params["estudo"] = destino
+    st.rerun()
 
 
-def _init():
-    if "br_preset" not in st.session_state or st.session_state.br_preset not in PRESET_ORDER:
-        st.session_state.br_preset = "completo"
-    if "br_target" not in st.session_state or st.session_state.br_target not in TARGET_ORDER:
-        st.session_state.br_target = "recorrente"
-    for feat in ALL_FEATURES:
-        key = f"brfeat_{feat}"
-        if key not in st.session_state:
-            st.session_state[key] = feat in preset_features("completo", st.session_state.br_target)
+def _cartao(classe: str, selo: str, titulo: str, texto: str, itens: list[str]) -> None:
+    lis = "".join(f"<li>{item}</li>" for item in itens)
+    st.markdown(
+        f"""
+        <div class="entry {classe}">
+            <span class="pill {classe}">{selo}</span>
+            <h2>{titulo}</h2>
+            <p>{texto}</p>
+            <ul>{lis}</ul>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
-def _on_preset():
-    tgt = st.session_state.br_target
-    preset = st.session_state.br_preset
-    if preset == "personalizado":
-        return
-    chosen = set(preset_features(preset, tgt))
-    for feat in ALL_FEATURES:
-        st.session_state[f"brfeat_{feat}"] = feat in chosen
-
-
-def _on_target():
-    _on_preset()
-
-
-def render_sidebar(meta):
+def render_home() -> None:
     with st.sidebar:
         st.markdown("**Desenvolvido por Hart Botelho**")
-        st.caption(f"{meta['rows_clean']} clubes · Série A 2003–2025")
+        st.caption("Dois estudos no mesmo portal.")
         st.divider()
-        st.markdown("**1. Pergunta (alvo)**")
-        st.radio(
-            "Alvo",
-            options=TARGET_ORDER,
-            format_func=lambda k: TARGET_LABELS[k],
-            key="br_target",
-            on_change=_on_target,
-            label_visibility="collapsed",
+        st.markdown("**Simula Brasileirão**")
+        st.caption("Série A 2003–2025, com treino ao vivo e PDF.")
+        st.markdown("**Comitê de Crédito**")
+        st.caption("Base sintética corporativa: 50.000 clientes e 38 colunas. Relatório e simulador.")
+
+    st.markdown('<p class="credit-top">Desenvolvido por Hart Botelho</p>', unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class="hero">
+            <div class="badge">Menu inicial</div>
+            <h1>Por onde você entra?</h1>
+            <p>
+                Dois caminhos, o mesmo visual. Simula Brasileirão abre a Série A.
+                Comitê de Crédito abre o relatório em base sintética corporativa,
+                com 50.000 clientes e 38 colunas, e um simulador ao lado.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    esquerda, direita = st.columns(2, gap="large")
+    with esquerda:
+        _cartao(
+            "br",
+            "Série A",
+            "Simula Brasileirão",
+            "Série A 2003–2025. A tela seguinte traz o hero, a barra, o treino e o PDF deste estudo.",
+            [
+                "Alvo, atributos, algoritmos e limiar",
+                "Comparativo e PDF com a base real",
+                "Volta ao menu quando quiser",
+            ],
         )
-        st.caption(TARGET_HELP[st.session_state.br_target])
-        st.markdown(
-            f'<div class="warn">{LEAKAGE_NOTE[st.session_state.br_target]}</div>',
-            unsafe_allow_html=True,
+        if st.button("Entrar em Simula Brasileirão", type="primary", width="stretch", key="go_br"):
+            _ir("br")
+    with direita:
+        _cartao(
+            "credito",
+            "Base sintética",
+            "Comitê de Crédito",
+            "Relatório lido de cima a baixo. A base sintética corporativa tem 50.000 clientes, 38 colunas e alvo de 90 dias.",
+            [
+                "Quatro modelos, entre eles uma rede neural",
+                "Matriz, ROC, blocos e faixas de alerta",
+                "Simulador ao lado: chance e cliente novo",
+            ],
         )
+        if st.button("Entrar no Comitê de Crédito", type="primary", width="stretch", key="go_credito"):
+            _ir("credito")
 
-        st.divider()
-        st.markdown("**2. Treino / teste**")
-        train_pct = st.slider("Proporção treino", 50, 90, 70, 5)
-        st.caption(f"Treino {train_pct}% · teste {100-train_pct}% · stratify se possível. Base pequena: o teste tem poucos clubes.")
-        st.divider()
-        st.markdown("**3. Algoritmos**")
-        models = []
-        for name in MODEL_CATALOG:
-            if st.checkbox(name, value=True, key=f"brm_{name}"):
-                models.append(name)
-        k_nn = st.slider("K do KNN (vizinhos)", 3, 7, 5, 2)
-
-        st.divider()
-        st.markdown("**4. Atributos**")
-        st.radio(
-            "Preset",
-            options=PRESET_ORDER,
-            format_func=lambda k: PRESET_LABELS[k],
-            captions=[PRESET_CAPTIONS[k] for k in PRESET_ORDER],
-            key="br_preset",
-            on_change=_on_preset,
-            label_visibility="collapsed",
-        )
-        allowed = allowed_features(st.session_state.br_target)
-        if st.session_state.br_preset == "personalizado":
-            for feat in allowed:
-                st.checkbox(FEATURE_LABELS[feat], key=f"brfeat_{feat}")
-            feats = [f for f in allowed if st.session_state.get(f"brfeat_{f}")]
-        else:
-            feats = preset_features(st.session_state.br_preset, st.session_state.br_target)
-            if feats:
-                render_chips("Atributos no treino", [FEATURE_LABELS[f] for f in feats])
-
-        st.divider()
-        st.markdown("**5. Limiar**")
-        threshold = st.slider("Limiar de probabilidade", 0.10, 0.90, 0.50, 0.05)
-        st.caption(f"SIM se P ≥ {threshold:.2f}. Baixar sobe recall; subir sobe precisão.")
-        st.caption("Seed 42. NB, KNN e LR usam StandardScaler.")
-    return train_pct, models, feats, threshold, k_nn
+    render_chips(
+        "Comitê de Crédito",
+        ["Base sintética", "50.000 clientes", "38 colunas", "Quatro modelos", "Simulador"],
+    )
 
 
-def _md(text: str) -> str:
-    import re
-    html = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
-    return html.replace("`", "")
+def render_br() -> None:
+    from src import br_app
+
+    with st.sidebar:
+        if st.button("Voltar ao menu", key="voltar_br", width="stretch"):
+            _ir("home")
+    br_app.main()
 
 
-def main():
-    _init()
-    render_hero()
-    try:
-        df, meta = get_data()
-    except (FileNotFoundError, ValueError) as exc:
-        st.error(str(exc))
-        st.stop()
+def render_credito() -> None:
+    from src.credito.relato import render_relato
 
-    train_pct, models, features, threshold, k_nn = render_sidebar(meta)
-    tgt = st.session_state.br_target
-    target_col = TARGETS[tgt]
-    n_pos = int(df[target_col].sum())
-    render_treatment(meta, TARGET_LABELS[tgt], n_pos)
-
-    if not features:
-        st.warning("Selecione ao menos um atributo permitido.")
-        st.stop()
-    if not models:
-        st.warning("Selecione ao menos um algoritmo.")
-        st.stop()
-
-    with st.spinner("Treinando na amostra de teste…"):
-        results, n_test, real = cached_experiment(
-            tuple(features), tuple(models), target_col, train_pct, float(threshold), int(k_nn)
-        )
-
-    st.markdown("#### Indicadores da amostra de teste")
-    render_kpis(n_test, real)
-    st.caption(f"{TARGET_LABELS[tgt]} · limiar {threshold:.2f}")
-
-    st.markdown("#### Comparativo por método")
-    st.dataframe(results_table(results), width="stretch", hide_index=True)
-
-    st.markdown("#### Relatório de cada método")
-    tabs = st.tabs([r.modelo for r in results])
-    for tab, r in zip(tabs, results):
-        with tab:
-            render_method_kpis(r)
-            render_confusion(r)
-            st.markdown("**Impacto das variáveis**")
-            render_impact(r)
-            st.markdown(f'<div class="diag">{_md(method_narrative(r, real, tgt))}</div>', unsafe_allow_html=True)
-
-    st.markdown("#### Relatório em PDF")
-    try:
-        pdf_bytes = build_pdf_report(
-            meta=meta,
-            target_key=tgt,
-            train_pct=train_pct,
-            threshold=threshold,
-            features=features,
-            preset_label=PRESET_LABELS[st.session_state.br_preset],
-            n_test=n_test,
-            real=real,
-            results=results,
-        )
-        st.download_button(
-            "Baixar relatório completo em PDF",
-            data=pdf_bytes,
-            file_name=f"relatorio_brasileirao_{datetime.now():%Y%m%d_%H%M}.pdf",
-            mime="application/pdf",
-            type="primary",
-            width="stretch",
-        )
-    except Exception as exc:
-        st.error(f"Não foi possível montar o PDF: {exc}")
+    inject_css()
+    render_relato(_ir)
 
 
-if __name__ == "__main__":
-    main()
+def main() -> None:
+    destino = _estudo()
+    if destino == "br":
+        render_br()
+        return
+    if destino == "credito":
+        render_credito()
+        return
+    inject_css()
+    st.markdown(MENU_CSS, unsafe_allow_html=True)
+    render_home()
+
+
+main()

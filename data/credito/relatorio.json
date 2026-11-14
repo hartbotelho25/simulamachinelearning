@@ -1,0 +1,487 @@
+{
+  "sintetico": true,
+  "seed": 42,
+  "n_colunas": 38,
+  "corte_matriz": 0.5,
+  "verde_max": 0.08,
+  "amarelo_max": 0.2,
+  "referencia": "logistica",
+  "mlp_epocas": 11,
+  "base": {
+    "n": 50000,
+    "n_colunas": 38,
+    "taxa": 0.11898,
+    "positivos": 5949,
+    "idade_mediana": 42.0,
+    "renda_mediana": 4383.335,
+    "fluxo_mediano": 4068.285,
+    "score_mediano": 690.0,
+    "n_treino": 35000,
+    "n_teste": 15000,
+    "taxa_teste": 0.119,
+    "positivos_teste": 1785
+  },
+  "modelos": [
+    {
+      "slug": "logistica",
+      "nome": "Regressão logística",
+      "papel": "Baseline e scorecard. O peso de cada variável fica visível.",
+      "tecnica": "Modelo linear. Os números entram padronizados e as categorias abrem em colunas. Cada peso se lê com sinal: empurra para o calote ou afasta dele. É a peça que o comitê consegue auditar variável a variável.",
+      "roc_auc": 0.863326391472215,
+      "brier": 0.07512471141145455,
+      "matriz": {
+        "corte": 0.5,
+        "tn": 12951,
+        "fp": 264,
+        "fn": 1236,
+        "tp": 549,
+        "precisao": 0.6752767527675276,
+        "recall": 0.30756302521008405,
+        "f1": 0.4226327944572748,
+        "acuracia": 0.9
+      }
+    },
+    {
+      "slug": "floresta",
+      "nome": "Random Forest",
+      "papel": "Ensemble de árvores, estável diante de relação não linear.",
+      "tecnica": "Duzentas árvores. Cada uma vê uma amostra e um subconjunto de colunas. A chance é a média dos votos. A floresta não entrega um peso único por variável; a leitura dela, aqui, é a curva, a matriz e a importância por permutação.",
+      "roc_auc": 0.8581792399138998,
+      "brier": 0.07693477378059639,
+      "matriz": {
+        "corte": 0.5,
+        "tn": 13024,
+        "fp": 191,
+        "fn": 1365,
+        "tp": 420,
+        "precisao": 0.6873977086743044,
+        "recall": 0.23529411764705882,
+        "f1": 0.35058430717863104,
+        "acuracia": 0.8962666666666667
+      }
+    },
+    {
+      "slug": "boosting",
+      "nome": "Gradient Boosting (XGBoost)",
+      "papel": "Árvores em sequência, o padrão forte em tabela de crédito.",
+      "tecnica": "XGBoost com árvores rasas. A árvore seguinte corrige o erro da anterior. Captura não linearidade sem virar uma rede. Os ganhos internos não substituem a explicação do scorecard; a comparação com a logística mostra o que a não linearidade acrescenta.",
+      "roc_auc": 0.8585616463762956,
+      "brier": 0.0765017494559288,
+      "matriz": {
+        "corte": 0.5,
+        "tn": 12939,
+        "fp": 276,
+        "fn": 1265,
+        "tp": 520,
+        "precisao": 0.6532663316582915,
+        "recall": 0.2913165266106443,
+        "f1": 0.40294459511817127,
+        "acuracia": 0.8972666666666667
+      }
+    },
+    {
+      "slug": "mlp",
+      "nome": "Rede neural MLP",
+      "papel": "Interações entre os blocos, em camadas densas.",
+      "tecnica": "Perceptron de duas camadas ocultas, 64 e 32 neurônios, ativação ReLU. Os números entram padronizados. Dez por cento do treino servem só para parar cedo. Os pesos internos não se apresentam ao comitê; a rede entra pela curva, pela matriz e pela permutação.",
+      "roc_auc": 0.8591709404155156,
+      "brier": 0.07652375012684755,
+      "matriz": {
+        "corte": 0.5,
+        "tn": 12912,
+        "fp": 303,
+        "fn": 1227,
+        "tp": 558,
+        "precisao": 0.6480836236933798,
+        "recall": 0.3126050420168067,
+        "f1": 0.4217687074829932,
+        "acuracia": 0.898
+      }
+    }
+  ],
+  "faixas": [
+    {
+      "faixa": "verde",
+      "acao": "Aprovar",
+      "de": 0.0,
+      "ate": 0.08,
+      "n": 10064,
+      "fatia": 0.6709333333333334,
+      "taxa_observada": 0.030604133545310015,
+      "prob_media": 0.032035221556264704
+    },
+    {
+      "faixa": "amarelo",
+      "acao": "Condicionar garantia",
+      "de": 0.08,
+      "ate": 0.2,
+      "n": 2428,
+      "fatia": 0.16186666666666666,
+      "taxa_observada": 0.14085667215815487,
+      "prob_media": 0.1272671489154501
+    },
+    {
+      "faixa": "vermelho",
+      "acao": "Recusar",
+      "de": 0.2,
+      "ate": 1.0,
+      "n": 2508,
+      "fatia": 0.1672,
+      "taxa_observada": 0.4525518341307815,
+      "prob_media": 0.4404084802147033
+    }
+  ],
+  "importancia": {
+    "amostra": 1600,
+    "repeticoes": 3,
+    "por_modelo": {
+      "logistica": [
+        {
+          "bloco": "regua",
+          "nome": "Régua interna de atrasos",
+          "queda_auc": 0.01756,
+          "fatia": 0.3203
+        },
+        {
+          "bloco": "cartao",
+          "nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.01018,
+          "fatia": 0.1856
+        },
+        {
+          "bloco": "bureau",
+          "nome": "Mercado externo e bureau",
+          "queda_auc": 0.00749,
+          "fatia": 0.1366
+        },
+        {
+          "bloco": "endividamento",
+          "nome": "Endividamento e empréstimos",
+          "queda_auc": 0.00692,
+          "fatia": 0.1262
+        },
+        {
+          "bloco": "fluxo",
+          "nome": "Fluxo de caixa e liquidez",
+          "queda_auc": 0.00468,
+          "fatia": 0.0854
+        },
+        {
+          "bloco": "cheque",
+          "nome": "Conta corrente e cheque especial",
+          "queda_auc": 0.00445,
+          "fatia": 0.0812
+        },
+        {
+          "bloco": "cadastral",
+          "nome": "Cadastral e sociodemográfico",
+          "queda_auc": 0.00355,
+          "fatia": 0.0647
+        }
+      ],
+      "floresta": [
+        {
+          "bloco": "endividamento",
+          "nome": "Endividamento e empréstimos",
+          "queda_auc": 0.01776,
+          "fatia": 0.3542
+        },
+        {
+          "bloco": "cheque",
+          "nome": "Conta corrente e cheque especial",
+          "queda_auc": 0.01499,
+          "fatia": 0.2989
+        },
+        {
+          "bloco": "regua",
+          "nome": "Régua interna de atrasos",
+          "queda_auc": 0.00928,
+          "fatia": 0.1851
+        },
+        {
+          "bloco": "bureau",
+          "nome": "Mercado externo e bureau",
+          "queda_auc": 0.00468,
+          "fatia": 0.0933
+        },
+        {
+          "bloco": "fluxo",
+          "nome": "Fluxo de caixa e liquidez",
+          "queda_auc": 0.00195,
+          "fatia": 0.039
+        },
+        {
+          "bloco": "cartao",
+          "nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00111,
+          "fatia": 0.0222
+        },
+        {
+          "bloco": "cadastral",
+          "nome": "Cadastral e sociodemográfico",
+          "queda_auc": 0.00037,
+          "fatia": 0.0075
+        }
+      ],
+      "boosting": [
+        {
+          "bloco": "endividamento",
+          "nome": "Endividamento e empréstimos",
+          "queda_auc": 0.02278,
+          "fatia": 0.3188
+        },
+        {
+          "bloco": "regua",
+          "nome": "Régua interna de atrasos",
+          "queda_auc": 0.01565,
+          "fatia": 0.219
+        },
+        {
+          "bloco": "cheque",
+          "nome": "Conta corrente e cheque especial",
+          "queda_auc": 0.00798,
+          "fatia": 0.1116
+        },
+        {
+          "bloco": "fluxo",
+          "nome": "Fluxo de caixa e liquidez",
+          "queda_auc": 0.00738,
+          "fatia": 0.1034
+        },
+        {
+          "bloco": "bureau",
+          "nome": "Mercado externo e bureau",
+          "queda_auc": 0.00673,
+          "fatia": 0.0942
+        },
+        {
+          "bloco": "cartao",
+          "nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.00659,
+          "fatia": 0.0922
+        },
+        {
+          "bloco": "cadastral",
+          "nome": "Cadastral e sociodemográfico",
+          "queda_auc": 0.00434,
+          "fatia": 0.0607
+        }
+      ],
+      "mlp": [
+        {
+          "bloco": "regua",
+          "nome": "Régua interna de atrasos",
+          "queda_auc": 0.02018,
+          "fatia": 0.2917
+        },
+        {
+          "bloco": "cheque",
+          "nome": "Conta corrente e cheque especial",
+          "queda_auc": 0.01174,
+          "fatia": 0.1696
+        },
+        {
+          "bloco": "cartao",
+          "nome": "Cartão de crédito e consumo",
+          "queda_auc": 0.01132,
+          "fatia": 0.1636
+        },
+        {
+          "bloco": "bureau",
+          "nome": "Mercado externo e bureau",
+          "queda_auc": 0.00859,
+          "fatia": 0.1241
+        },
+        {
+          "bloco": "endividamento",
+          "nome": "Endividamento e empréstimos",
+          "queda_auc": 0.00813,
+          "fatia": 0.1175
+        },
+        {
+          "bloco": "cadastral",
+          "nome": "Cadastral e sociodemográfico",
+          "queda_auc": 0.00546,
+          "fatia": 0.0789
+        },
+        {
+          "bloco": "fluxo",
+          "nome": "Fluxo de caixa e liquidez",
+          "queda_auc": 0.00377,
+          "fatia": 0.0545
+        }
+      ]
+    },
+    "plantado": [
+      {
+        "bloco": "regua",
+        "nome": "Régua interna de atrasos",
+        "peso_absoluto": 1.6,
+        "fatia": 0.2005
+      },
+      {
+        "bloco": "bureau",
+        "nome": "Mercado externo e bureau",
+        "peso_absoluto": 1.57,
+        "fatia": 0.1967
+      },
+      {
+        "bloco": "cartao",
+        "nome": "Cartão de crédito e consumo",
+        "peso_absoluto": 1.32,
+        "fatia": 0.1654
+      },
+      {
+        "bloco": "endividamento",
+        "nome": "Endividamento e empréstimos",
+        "peso_absoluto": 1.27,
+        "fatia": 0.1591
+      },
+      {
+        "bloco": "cheque",
+        "nome": "Conta corrente e cheque especial",
+        "peso_absoluto": 1.08,
+        "fatia": 0.1353
+      },
+      {
+        "bloco": "cadastral",
+        "nome": "Cadastral e sociodemográfico",
+        "peso_absoluto": 0.66,
+        "fatia": 0.0827
+      },
+      {
+        "bloco": "fluxo",
+        "nome": "Fluxo de caixa e liquidez",
+        "peso_absoluto": 0.48,
+        "fatia": 0.0602
+      }
+    ],
+    "spearman_referencia": 0.8571428571428571
+  },
+  "explicacao": [
+    {
+      "variavel": "score_bureau_atual",
+      "rotulo": "Score de bureau",
+      "detalhe": "efeito de +1 desvio-padrão",
+      "efeito": -0.249,
+      "bloco": "bureau"
+    },
+    {
+      "variavel": "comprometimento_renda_efetivo",
+      "rotulo": "Comprometimento da renda efetiva",
+      "detalhe": "efeito de +1 desvio-padrão",
+      "efeito": 0.2316,
+      "bloco": "endividamento"
+    },
+    {
+      "variavel": "qtd_ocorrencias_atraso_30_60d_12m",
+      "rotulo": "Ocorrências de 30 a 60 dias, 12 meses",
+      "detalhe": "efeito de +1 desvio-padrão",
+      "efeito": 0.2069,
+      "bloco": "regua"
+    },
+    {
+      "variavel": "flag_historico_fpd",
+      "rotulo": "Histórico de primeiro atraso",
+      "detalhe": "efeito de +1 desvio-padrão",
+      "efeito": 0.1988,
+      "bloco": "regua"
+    },
+    {
+      "variavel": "fatura_media_12m",
+      "rotulo": "Fatura média, 12 meses",
+      "detalhe": "efeito de +1 desvio-padrão",
+      "efeito": -0.1847,
+      "bloco": "cartao"
+    },
+    {
+      "variavel": "fluxo_medio_entradas_3m",
+      "rotulo": "Fluxo médio de entradas, 3 meses",
+      "detalhe": "efeito de +1 desvio-padrão",
+      "efeito": -0.1835,
+      "bloco": "fluxo"
+    },
+    {
+      "variavel": "fatura_media_3m",
+      "rotulo": "Fatura média, 3 meses",
+      "detalhe": "efeito de +1 desvio-padrão",
+      "efeito": 0.1671,
+      "bloco": "cartao"
+    },
+    {
+      "variavel": "qtd_vezes_atraso_cartao_30d_12m",
+      "rotulo": "Atrasos de 30 dias no cartão, 12 meses",
+      "detalhe": "efeito de +1 desvio-padrão",
+      "efeito": 0.1584,
+      "bloco": "cartao"
+    },
+    {
+      "variavel": "qtd_cheques_devolvidos_12m",
+      "rotulo": "Cheques devolvidos, 12 meses",
+      "detalhe": "efeito de +1 desvio-padrão",
+      "efeito": 0.1472,
+      "bloco": "cheque"
+    },
+    {
+      "variavel": "max_atraso_emprestimos_historico",
+      "rotulo": "Maior atraso em empréstimos (dias)",
+      "detalhe": "efeito de +1 desvio-padrão",
+      "efeito": 0.1457,
+      "bloco": "endividamento"
+    },
+    {
+      "variavel": "possui_renegociacao_ativa",
+      "rotulo": "Renegociação ativa",
+      "detalhe": "efeito de +1 desvio-padrão",
+      "efeito": 0.1326,
+      "bloco": "regua"
+    },
+    {
+      "variavel": "qtd_vezes_pagamento_minimo_12m",
+      "rotulo": "Vezes no pagamento mínimo, 12 meses",
+      "detalhe": "efeito de +1 desvio-padrão",
+      "efeito": 0.13,
+      "bloco": "cartao"
+    }
+  ],
+  "textos": {
+    "auc": "Regressão logística teve o maior ROC AUC no teste: 0,863.",
+    "corte": "No corte 0,50, Rede neural MLP captura 31,3% dos inadimplentes do teste. Random Forest acerta 68,7% dos alarmes que dispara.",
+    "faixas": "No teste, a inadimplência realizada sobe com a faixa da regressão logística: verde 3,1%, amarelo 14,1%, vermelho 45,3%.",
+    "blocos": "Na regressão logística, o bloco de maior peso medido foi Régua interna de atrasos (32,0% da importância positiva). No processo gerador, a maior fatia de sinal plantado está em Régua interna de atrasos (20,1%). Spearman entre as duas ordens de bloco, neste modelo: 0,86."
+  },
+  "figuras": {
+    "metricas": "metricas_modelos.png",
+    "matrizes": "matrizes_confusao.png",
+    "roc": "roc_comparativo.png",
+    "faixas": "faixas_alerta.png",
+    "blocos": "importancia_blocos.png",
+    "explicacao": "explicacao_variaveis.png",
+    "visao_logistica": "visao_logistica.png",
+    "visao_floresta": "visao_floresta.png",
+    "visao_boosting": "visao_boosting.png",
+    "visao_mlp": "visao_mlp.png"
+  },
+  "leituras": {
+    "referencia": "logistica",
+    "nome_referencia": "Regressão logística",
+    "melhor_auc": {
+      "slug": "logistica",
+      "nome": "Regressão logística",
+      "roc_auc": 0.863326391472215
+    },
+    "melhor_recall": {
+      "slug": "mlp",
+      "nome": "Rede neural MLP",
+      "recall": 0.3126050420168067
+    },
+    "melhor_precisao": {
+      "slug": "floresta",
+      "nome": "Random Forest",
+      "precisao": 0.6873977086743044
+    },
+    "faixas_sobem": true,
+    "verde_max": 0.08,
+    "amarelo_max": 0.2
+  }
+}

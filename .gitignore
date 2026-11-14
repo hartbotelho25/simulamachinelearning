@@ -9,3 +9,4 @@ __pycache__/
 .idea/
 .vscode/
 agent-tools/
+data/credito/dataset_sintetico.csv

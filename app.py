@@ -134,7 +134,7 @@ def render_home() -> None:
             [
                 "Mesa de gatilhos preventivos",
                 "Pesos em 100%, do maior para o menor",
-                "Código de cada modelo, para copiar",
+                "Código de cada modelo, para copiar e estudar",
             ],
         )
         if st.button("Entrar no estudo", type="primary", width="stretch", key="go_ml"):
@@ -148,7 +148,7 @@ def render_home() -> None:
             [
                 "Inadimplência e atraso acima de 90 dias",
                 "Quatro modelos lado a lado",
-                "Volta ao estudo quando quiser",
+                "Simule em tempo real",
             ],
         )
         if st.button("Entrar no Simulador de Inadimplência", type="primary", width="stretch", key="go_simulador"):

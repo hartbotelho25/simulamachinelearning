@@ -126,6 +126,8 @@ def test_tela_deixa_a_mesa_recolhida_e_o_simulador_aberto():
     assert "st.slider" not in texto
     assert "st.number_input" not in texto
     assert len(GATILHOS) == 23
+    assert len(FEATURES) == 23
+    assert FEATURES == [item["id"] for item in GATILHOS]
     estudo = texto.split("def render_estudo", 1)[1].split("def render_simulador", 1)[0]
     assert "_simulador(" not in estudo
     app = (RAIZ / "app.py").read_text(encoding="utf-8")

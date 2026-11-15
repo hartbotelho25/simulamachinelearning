@@ -142,9 +142,9 @@ def render_home() -> None:
     with simulador:
         _cartao(
             "sim",
-            "Ao vivo",
+            "Simule",
             "Simulador de Inadimplência",
-            "Vinte e três chaves Sim ou Não e as duas chances calibradas na mesma tela.",
+            "23 gatilhos",
             [
                 "Inadimplência e atraso acima de 90 dias",
                 "Quatro modelos lado a lado",

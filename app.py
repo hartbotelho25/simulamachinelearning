@@ -1,4 +1,4 @@
-"""Menu do simulador: Simula Brasileirão e Comitê de Crédito."""
+"""Menu do simulador: Simula Brasileirão e Simulador de Inadimplência."""
 
 from __future__ import annotations
 
@@ -76,7 +76,7 @@ def render_home() -> None:
         st.divider()
         st.markdown("**Simula Brasileirão**")
         st.caption("Série A 2003–2025, com treino ao vivo e PDF.")
-        st.markdown("**Comitê de Crédito**")
+        st.markdown("**Simulador de Inadimplência**")
         st.caption("Base sintética de 50.000 clientes, sem renda declarada. Relatório e simulador.")
 
     st.markdown('<p class="credit-top">Desenvolvido por Hart Botelho</p>', unsafe_allow_html=True)
@@ -87,7 +87,7 @@ def render_home() -> None:
             <h1>Por onde você entra?</h1>
             <p>
                 Dois caminhos, o mesmo visual. Simula Brasileirão abre a Série A.
-                Comitê de Crédito abre o relatório em base sintética de 50.000 clientes,
+                Simulador de Inadimplência abre o relatório em base sintética de 50.000 clientes,
                 sem renda declarada, e um simulador ao lado.
             </p>
         </div>
@@ -114,7 +114,7 @@ def render_home() -> None:
         _cartao(
             "credito",
             "Base sintética",
-            "Comitê de Crédito",
+            "Simulador de Inadimplência",
             "Relatório lido de cima a baixo. A base sintética tem 50.000 clientes e não usa renda declarada.",
             [
                 "Quatro modelos, entre eles uma rede neural",
@@ -122,11 +122,11 @@ def render_home() -> None:
                 "Simulador ao lado: chance e cliente novo",
             ],
         )
-        if st.button("Entrar no Comitê de Crédito", type="primary", width="stretch", key="go_credito"):
+        if st.button("Entrar no Simulador de Inadimplência", type="primary", width="stretch", key="go_credito"):
             _ir("credito")
 
     render_chips(
-        "Comitê de Crédito",
+        "Simulador de Inadimplência",
         ["Base sintética", "50.000 clientes", "Sem renda declarada", "Quatro modelos", "Simulador"],
     )
 

@@ -3,7 +3,7 @@
 Portal **Streamlit** com dois estudos, desenvolvido por **Hart Botelho**.
 
 1. **Simula Brasileirão** — Série A 2003–2025, 45 clubes. Treino ao vivo e PDF.
-2. **Comitê de Crédito** — base sintética de 50.000 clientes, sem renda declarada, quatro modelos gravados e simulador na página. Não é carteira de banco.
+2. **Simulador de Inadimplência** — base sintética de 50.000 clientes, sem renda declarada, quatro modelos gravados e simulador na página. Não é carteira de banco.
 
 ## O que o Simula Brasileirão faz
 
@@ -13,7 +13,7 @@ Portal **Streamlit** com dois estudos, desenvolvido por **Hart Botelho**.
 4. Compara ROC AUC, F1, acurácia, precisão, recall, FP e FN. Em cada método, vê a matriz e o impacto das variáveis.
 5. Baixa o relatório do experimento em PDF.
 
-## O que o Comitê de Crédito faz
+## O que o Simulador de Inadimplência faz
 
 O menu abre o relato estático (grupos, acurácia, itens de cada modelo e combinações críticas) e, na mesma página, o simulador com a chance ao vivo. A página não oferece download da base.
 
@@ -58,5 +58,5 @@ data/brasileirao.csv
 data/credito/               # relatório, figuras, amostra e modelos
 fonts/                      # DejaVu para o PDF na nuvem
 src/br_app.py               # Simula Brasileirão
-src/credito/                # pipeline modular do Comitê de Crédito
+src/credito/                # pipeline modular do Simulador de Inadimplência
 ```

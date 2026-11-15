@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -42,6 +43,69 @@ def _conferir(modelos: dict) -> None:
         saida = modelo.predict_proba(frame)
         if getattr(saida, "shape", None) != (1, 2):
             raise ValueError("um modelo gravado não devolveu chance para duas classes")
+
+
+def assinatura_modelos() -> str:
+    """Chave do cache: muda quando o joblib, o CSV ou o esquema de colunas muda."""
+    partes = []
+    for arquivo in (ARTEFATOS / "modelos.joblib", CSV_CLIENTES):
+        if arquivo.exists():
+            stat = arquivo.stat()
+            partes.append(f"{arquivo.name}:{stat.st_mtime_ns}:{stat.st_size}")
+        else:
+            partes.append(f"{arquivo.name}:ausente")
+    esquema = hashlib.sha256(repr(tuple(FEATURES)).encode()).hexdigest()[:12]
+    partes.append(esquema)
+    return "|".join(partes)
+
+
+def colunas_do_modelo(modelo) -> set[str] | None:
+    prep = modelo.named_steps.get("prep") if hasattr(modelo, "named_steps") else None
+    nomes = getattr(prep, "feature_names_in_", None)
+    if nomes is None:
+        nomes = getattr(modelo, "feature_names_in_", None)
+    if nomes is None:
+        return None
+    return {str(nome) for nome in nomes}
+
+
+def compativel(modelos: dict) -> bool:
+    if not isinstance(modelos, dict) or not modelos:
+        return False
+    esperadas = set(FEATURES)
+    for modelo in modelos.values():
+        vistas = colunas_do_modelo(modelo)
+        if vistas is None or vistas != esperadas:
+            return False
+    return True
+
+
+def teste_compativel(df: pd.DataFrame) -> bool:
+    colunas = set(df.columns)
+    return set(FEATURES) <= colunas and {"id_cliente", "inadimplente_90d"} <= colunas
+
+
+def resolver_modelos(obter, limpar, recarregar) -> dict:
+    """Se o objeto cacheado divergir de FEATURES, joga fora e lê o joblib de novo."""
+    try:
+        modelos = obter()
+        if not compativel(modelos):
+            raise ValueError("columns are missing")
+        return modelos
+    except Exception:
+        limpar()
+        return recarregar()
+
+
+def resolver_teste(obter, limpar, recarregar) -> pd.DataFrame:
+    try:
+        df = obter()
+        if not teste_compativel(df):
+            raise ValueError("columns are missing")
+        return df
+    except Exception:
+        limpar()
+        return recarregar()
 
 
 def carregar_modelos() -> dict:

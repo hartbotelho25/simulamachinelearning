@@ -1,4 +1,4 @@
-"""Comitê de Crédito: relato estático e simulador na mesma página.
+"""Simulador de Inadimplência: relato estático e simulador na mesma página.
 
 O placar muda com os controles. Não há gaveta, aba nem formulário congelado.
 """
@@ -13,11 +13,14 @@ from src.credito.chaves import PERGUNTAS, aplicar, respostas_da_linha, respostas
 from src.credito.politica import CORTE_MATRIZ, nome_faixa
 from src.credito.simulador import (
     amostra_teste,
+    assinatura_modelos,
     carregar_modelos,
     chance,
     figura,
     ler_relatorio,
     pronto,
+    resolver_modelos,
+    resolver_teste,
 )
 
 MESA = [
@@ -130,13 +133,36 @@ def _mil(valor: float) -> str:
 
 
 @st.cache_resource(show_spinner=False)
-def _modelos_gravados():
+def _modelos_gravados(assinatura: str):
+    # `assinatura` entra na chave. Sem argumento o processo entrega o joblib antigo.
+    if not assinatura:
+        raise RuntimeError("assinatura vazia")
     return carregar_modelos()
 
 
 @st.cache_data(show_spinner=False)
-def _teste() -> pd.DataFrame:
+def _teste(assinatura: str) -> pd.DataFrame:
+    if not assinatura:
+        raise RuntimeError("assinatura vazia")
     return amostra_teste()
+
+
+def _modelos_atuais() -> dict:
+    assinatura = assinatura_modelos()
+    return resolver_modelos(
+        lambda: _modelos_gravados(assinatura),
+        _modelos_gravados.clear,
+        carregar_modelos,
+    )
+
+
+def _amostra_atual() -> pd.DataFrame:
+    assinatura = assinatura_modelos()
+    return resolver_teste(
+        lambda: _teste(assinatura),
+        _teste.clear,
+        amostra_teste,
+    )
 
 
 
@@ -183,7 +209,7 @@ def _sins_que_puxam(relatorio: dict, slug: str, respostas: dict[str, bool]) -> l
 def _cabecalho(relatorio: dict, ir) -> None:
     if st.button("← Voltar ao menu inicial", key="credito_voltar"):
         ir("home")
-    st.title("Comitê de Crédito")
+    st.title("Simulador de Inadimplência")
     st.markdown(
         '<div class="sintetico"><strong>Base sintética.</strong> '
         "Não é carteira de banco. O modelo não usa renda declarada: o banco quase nunca "
@@ -205,7 +231,7 @@ def _cabecalho(relatorio: dict, ir) -> None:
 
 def _grupos(relatorio: dict) -> None:
     st.subheader("O que a mesa avalia")
-    st.write("O comitê olha o comportamento na conta. Cada cartão diz, numa linha, o que acende alerta.")
+    st.write("A mesa olha o comportamento na conta. Cada cartão diz, numa linha, o que acende alerta.")
     fatia = {
         item["bloco"]: item["fatia"]
         for item in relatorio["importancia"]["por_modelo"][relatorio["referencia"]]
@@ -343,7 +369,7 @@ def _placar(relatorio: dict, linha: dict, respostas: dict[str, bool], modelos: d
 
 @st.fragment
 def _simulador(relatorio: dict) -> None:
-    st.subheader("Simulador do comitê")
+    st.subheader("Simulador")
     st.write("Cada chave é Sim ou Não. A chance muda na hora, sem abrir gaveta.")
     chaves = relatorio["chaves"]
     if "sim_geracao" not in st.session_state:
@@ -355,7 +381,7 @@ def _simulador(relatorio: dict) -> None:
         if chave not in st.session_state:
             st.session_state[chave] = bool(guardadas[pergunta["id"]])
 
-    modelos = _modelos_gravados()
+    modelos = _modelos_atuais()
     respostas = _respostas(geracao)
     linha = aplicar(chaves["em_dia"], chaves["sim"], respostas)
     _placar(relatorio, linha, respostas, modelos, st.session_state.get("sim_caso"))
@@ -371,7 +397,7 @@ def _simulador(relatorio: dict) -> None:
         _nova_geracao(respostas_em_dia(), None)
         st.rerun(scope="fragment")
     if sortear:
-        teste = _teste()
+        teste = _amostra_atual()
         row = teste.iloc[int(np.random.default_rng().integers(0, len(teste)))]
         _nova_geracao(
             respostas_da_linha(row),

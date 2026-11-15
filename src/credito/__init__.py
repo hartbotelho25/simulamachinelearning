@@ -1,1 +1,1 @@
-"""Comitê de Crédito: base sintética, quatro modelos e simulador."""
+"""Simulador de Inadimplência: base sintética, quatro modelos e simulador."""

@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+from sklearn.utils.class_weight import compute_sample_weight
 from xgboost import XGBClassifier
 
 from .dataset import FEATURES
@@ -50,7 +51,9 @@ CATALOGO = [
         "papel": "Interações entre os blocos, em camadas densas.",
         "tecnica": (
             "Perceptron de duas camadas ocultas, 64 e 32 neurônios, ativação ReLU. "
-            "Os números entram padronizados. Dez por cento do treino servem só para parar cedo. "
+            "Os números entram padronizados. A classe rara pesa mais no treino, "
+            "na proporção inversa da frequência. Dez por cento do treino servem só para parar cedo, "
+            "e a rede volta aos coeficientes da melhor validação. "
             "A rede entra pela curva, pela matriz e pela importância aprendida em cada gatilho."
         ),
     },
@@ -121,6 +124,11 @@ def treinar_todos(X_treino: pd.DataFrame, y_treino: np.ndarray) -> dict:
     modelos = {}
     for item in CATALOGO:
         modelo = construir(item["slug"])
-        modelo.fit(matriz, y_treino)
+        if item["slug"] == "mlp":
+            # MLPClassifier não tem class_weight. O peso por linha é o equivalente.
+            pesos = compute_sample_weight(class_weight="balanced", y=y_treino)
+            modelo.fit(matriz, y_treino, clf__sample_weight=pesos)
+        else:
+            modelo.fit(matriz, y_treino)
         modelos[item["slug"]] = modelo
     return modelos

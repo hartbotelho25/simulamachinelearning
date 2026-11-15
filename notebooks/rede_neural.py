@@ -1,8 +1,10 @@
 """Rede neural para inadimplência.
 
 Script completo: abre no VS Code ou, como notebook, no Google Colab.
-Duas camadas ReLU e uma saída sigmoide. O laço de épocas imprime a perda
-e a acurácia a cada passo. A base vem do GitHub. Não grava modelo no disco.
+Duas camadas ReLU e uma saída sigmoide. A classe rara pesa mais no treino.
+A parada antecipada devolve os coeficientes da melhor validação.
+O laço de épocas imprime a perda e a acurácia a cada passo.
+A base vem do GitHub. Não grava modelo no disco.
 
 No Colab o TensorFlow já vem instalado. No VS Code: pip install tensorflow
 """
@@ -22,6 +24,8 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from sklearn.utils.class_weight import compute_class_weight
+from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.layers import Dense, Input
 from tensorflow.keras.models import Sequential
 
@@ -59,14 +63,24 @@ modelo = Sequential(
 modelo.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
 modelo.summary()
 
+classes = np.array([0, 1])
+bruto = compute_class_weight(class_weight="balanced", classes=classes, y=y_train)
+peso_classe = {int(classe): float(valor) for classe, valor in zip(classes, bruto)}
+print("Peso de cada classe:", peso_classe)
+
+parada = EarlyStopping(monitor="val_loss", patience=5, restore_best_weights=True)
 historico = modelo.fit(
     X_train_scaled,
     y_train,
     validation_split=0.2,
-    epochs=15,
+    epochs=40,
     batch_size=256,
+    class_weight=peso_classe,
+    callbacks=[parada],
     verbose=1,
 )
+melhor = int(np.argmin(historico.history["val_loss"])) + 1
+print(f"Épocas rodadas: {len(historico.history['loss'])}. Melhor validação: época {melhor}.")
 
 print("Perda e acurácia a cada época:")
 perda = historico.history["loss"]

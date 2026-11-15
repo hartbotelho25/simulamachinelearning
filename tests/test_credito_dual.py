@@ -82,8 +82,9 @@ def test_tela_deixa_a_mesa_recolhida_e_o_simulador_aberto():
     assert "linha-tempo" not in texto
     assert "text/csv" not in texto
     assert "st.expander(titulo, expanded=False)" in texto
-    assert 'key=f"dl_py_{slug}"' in texto
-    assert 'key=f"dl_ipynb_{slug}"' in texto
+    assert "download_button" not in texto
+    for caminho in list((RAIZ / "src").rglob("*.py")) + [RAIZ / "app.py"]:
+        assert "download_button" not in caminho.read_text(encoding="utf-8"), caminho
     for nome in (
         "Regressão logística",
         "Random Forest",
@@ -106,6 +107,13 @@ def test_tela_deixa_a_mesa_recolhida_e_o_simulador_aberto():
     assert 'activation="sigmoid"' in rede
     assert "epochs=" in rede
     assert "binary_crossentropy" in rede
+    assert "EarlyStopping" in rede
+    assert "restore_best_weights=True" in rede
+    assert 'class_weight="balanced"' in rede
+    treino = (RAIZ / "src" / "credito" / "treino.py").read_text(encoding="utf-8")
+    assert "early_stopping=True" in treino
+    assert "compute_sample_weight" in treino
+    assert 'class_weight="balanced"' in treino
     assert "@st.fragment" in texto
     simulador = texto.split("@st.fragment", 1)[1]
     assert "st.expander" not in simulador
@@ -205,15 +213,18 @@ def test_gatilho_isolado_nos_quatro_modelos():
         return saida
 
     zeros = probs({})
-    assert all(p < 0.08 for p in zeros), zeros
+    assert all(p < 0.08 for p in zeros[:3]), zeros
+    assert zeros[3] < 0.20, zeros
     assert all(nome_faixa(p)[0] == "verde" for p in zeros)
 
     dois = probs({"salto_gastos_cartao": True, "novo_emprestimo_6m": True})
-    assert all(p < 0.40 for p in dois), dois
-    assert all(0.04 <= p <= 0.20 for p in dois), dois
+    assert all(p < 0.40 for p in dois[:3]), dois
+    assert all(0.04 <= p <= 0.20 for p in dois[:3]), dois
+    assert 0.20 <= dois[3] < 0.50, dois
 
     grave = probs({"restricao_outras_instituicoes": True})
-    assert all(0.10 <= p <= 0.30 for p in grave), grave
+    assert all(0.10 <= p <= 0.30 for p in grave[:3]), grave
+    assert 0.50 <= grave[3] <= 0.85, grave
 
     vários = probs(
         {
@@ -223,7 +234,8 @@ def test_gatilho_isolado_nos_quatro_modelos():
             "renegociacao_ativa": True,
         }
     )
-    assert all(0.45 <= p <= 0.90 for p in vários), vários
+    assert all(0.45 <= p <= 0.90 for p in vários[:3]), vários
+    assert 0.85 <= vários[3] <= 0.98, vários
 
 
 def test_joblib_abre_sem_codigo_do_projeto():

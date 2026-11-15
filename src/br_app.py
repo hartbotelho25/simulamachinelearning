@@ -1,11 +1,9 @@
 """Simula Brasileirão, aberto a partir do menu.
 
-O visual, o treino e o PDF desta página seguem o estudo já publicado.
+O visual e o treino desta página seguem o estudo já publicado.
 """
 
 from __future__ import annotations
-
-from datetime import datetime
 
 import streamlit as st
 
@@ -29,7 +27,6 @@ from src.br_modeling import (
     MODEL_CATALOG,
     run_experiment,
 )
-from src.br_report import build_pdf_report
 from src.br_ui import (
     inject_css,
     render_chips,
@@ -190,28 +187,4 @@ def main():
             st.markdown("**Impacto das variáveis**")
             render_impact(r)
             st.markdown(f'<div class="diag">{_md(method_narrative(r, real, tgt))}</div>', unsafe_allow_html=True)
-
-    st.markdown("#### Relatório em PDF")
-    try:
-        pdf_bytes = build_pdf_report(
-            meta=meta,
-            target_key=tgt,
-            train_pct=train_pct,
-            threshold=threshold,
-            features=features,
-            preset_label=PRESET_LABELS[st.session_state.br_preset],
-            n_test=n_test,
-            real=real,
-            results=results,
-        )
-        st.download_button(
-            "Baixar relatório completo em PDF",
-            data=pdf_bytes,
-            file_name=f"relatorio_brasileirao_{datetime.now():%Y%m%d_%H%M}.pdf",
-            mime="application/pdf",
-            type="primary",
-            width="stretch",
-        )
-    except Exception as exc:
-        st.error(f"Não foi possível montar o PDF: {exc}")
 

@@ -69,13 +69,6 @@ CSS = """
     .rank-nome { color: #F4F1E8; font-size: 0.84rem; }
     .rank-barra { height: 6px; border-radius: 99px; background: #0f1f18; margin: 0.12rem 0 0.45rem; }
     .rank-barra span { display: block; height: 100%; border-radius: 99px; background: #E8B923; }
-    .combo {
-        background: #163024; border-radius: 14px; padding: 0.8rem 0.9rem; margin-bottom: 0.65rem;
-        border-left: 4px solid #ff8a65;
-    }
-    .combo h3 { margin: 0 0 0.35rem; color: #F4F1E8; font-size: 1rem; }
-    .combo p { margin: 0.15rem 0; color: #c9c3b4; font-size: 0.88rem; }
-    .combo strong { color: #F4F1E8; }
     .dupla { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin-bottom: 0.6rem; }
     .veredito {
         background: #163024; border-radius: 16px; padding: 0.85rem 1rem 0.75rem;
@@ -85,13 +78,6 @@ CSS = """
     .veredito .grande { font-size: 2.4rem; font-weight: 700; line-height: 1.05; margin: 0.2rem 0 0; }
     .veredito .chamada { font-size: 1.2rem; font-weight: 700; margin: 0.15rem 0 0; }
     .sim-grupo { color: #E8B923; font-weight: 700; font-size: 0.92rem; margin: 0.35rem 0 0.15rem; }
-    .faixas-comite { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.65rem; margin: 0.15rem 0 0.85rem; }
-    .faixas-comite article { border-radius: 12px; padding: 0.7rem 0.8rem; }
-    .faixas-comite strong { display: block; color: #F4F1E8; font-size: 0.95rem; }
-    .faixas-comite p { margin: 0.28rem 0 0; color: #F4F1E8; font-size: 0.86rem; line-height: 1.35; }
-    .faixas-comite .verde { background: #146c43; }
-    .faixas-comite .amarelo { background: #8a6a12; }
-    .faixas-comite .vermelho { background: #8c3b2c; }
     [data-testid="stExpander"] {
         border: 1px solid #E8B923 !important;
         border-left: 6px solid #E8B923 !important;
@@ -422,30 +408,14 @@ def _codigo() -> None:
     st.subheader("O código")
     st.caption(
         "Cada modelo é um script completo, recolhido. "
-        "Baixe o .py para o VS Code ou o .ipynb para o Google Colab. "
-        "Os dois leem a base direto do GitHub, separam treino e teste, treinam "
-        "e imprimem AUC, acurácia e a matriz de confusão. Não gravam por cima do modelo do site."
+        "O ícone no canto do código copia o script. "
+        "Ele lê a base direto do GitHub, separa treino e teste, treina "
+        "e imprime AUC, acurácia e a matriz de confusão. Não grava por cima do modelo do site."
     )
     for slug, titulo in _MODELOS_CODIGO:
         with st.expander(titulo, expanded=False):
             py = _RAIZ / "notebooks" / f"{slug}.py"
-            ipynb = _RAIZ / "notebooks" / f"{slug}.ipynb"
             st.code(py.read_text(encoding="utf-8"), language="python")
-            coluna_py, coluna_nb = st.columns(2)
-            coluna_py.download_button(
-                "Baixar .py",
-                data=py.read_bytes(),
-                file_name=py.name,
-                mime="text/x-python",
-                key=f"dl_py_{slug}",
-            )
-            coluna_nb.download_button(
-                "Baixar .ipynb",
-                data=ipynb.read_bytes(),
-                file_name=ipynb.name,
-                mime="application/x-ipynb+json",
-                key=f"dl_ipynb_{slug}",
-            )
     st.markdown(f"[Repositório]({_REPO})")
 
 

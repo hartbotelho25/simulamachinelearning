@@ -189,6 +189,59 @@ def test_gatilho_isolado_nos_quatro_modelos():
     assert all(p > 0.65 for p in trava), trava
 
 
+def test_joblib_abre_sem_codigo_do_projeto():
+    import subprocess
+    import sys
+
+    arquivo = RAIZ / "data" / "credito" / "modelos.joblib"
+    if not arquivo.exists():
+        return
+    comando = (
+        "import joblib\n"
+        "from joblib import numpy_pickle as npickle\n"
+        "original = npickle.NumpyUnpickler.find_class\n"
+        "def find_class(self, module, name):\n"
+        "    if module == '__main__' or module.startswith('src.'):\n"
+        "        raise SystemExit(f'referencia proibida: {module}.{name}')\n"
+        "    return original(self, module, name)\n"
+        "npickle.NumpyUnpickler.find_class = find_class\n"
+        "modelos = joblib.load('data/credito/modelos.joblib')\n"
+        "for bloco in modelos.values():\n"
+        "    for pipe in bloco.values():\n"
+        "        nomes = [type(passo).__name__ for passo in pipe.named_steps.values()]\n"
+        "        if 'FunctionTransformer' in nomes:\n"
+        "            raise SystemExit('FunctionTransformer ainda esta no joblib')\n"
+        "print('ok')\n"
+    )
+    resultado = subprocess.run(
+        [sys.executable, "-c", comando],
+        cwd=RAIZ,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert resultado.returncode == 0, resultado.stderr or resultado.stdout
+    assert "ok" in resultado.stdout
+
+
+def test_joblib_quebrado_treina_a_partir_do_csv(monkeypatch):
+    def estoura(*_args, **_kwargs):
+        raise AttributeError("find_class")
+
+    monkeypatch.setattr("src.credito.simulador.joblib.load", estoura)
+    from src.credito.simulador import carregar_modelos, chances, resolver_modelos
+
+    modelos = resolver_modelos(carregar_modelos, lambda: None, carregar_modelos)
+    slugs = ("logistica", "floresta", "boosting", "mlp")
+    zeros = {coluna: 0 for coluna in FEATURES}
+    for slug in slugs:
+        p_inad, p_90 = chances(modelos, slug, zeros)
+        assert 0.0 <= p_90 <= p_inad <= 1.0
+    restricao = vetor({"restricao_outras_instituicoes": True})
+    alta = [chances(modelos, slug, restricao)[0] for slug in slugs]
+    assert all(p > 0.65 for p in alta), alta
+
+
 def test_escada_sobe_quando_os_gatilhos_se_acumulam():
     sinais = np.array([0, 0, 2, 4, 6, 8, 11, 12])
     inad = np.array([0, 0, 0, 0, 1, 1, 1, 1])

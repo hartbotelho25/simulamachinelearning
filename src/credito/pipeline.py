@@ -21,7 +21,7 @@ from .graficos import combinacoes_barras, matrizes
 from .importancia import pacote_importancia, ranking_blocos, ranking_itens
 from .metricas import avaliar, modelo_referencia
 from .politica import AMARELO_MAX, CORTE_MATRIZ, N_CLIENTES, SEMENTE, VERDE_MAX
-from .treino import CATALOGO, fatiar, treinar_todos
+from .treino import CATALOGO, fatiar, matriz_exclusiva, treinar_todos
 
 ALVOS = (
     ("inadimplente", "Inadimplência geral", "Vai ficar inadimplente?"),
@@ -97,9 +97,14 @@ def main() -> None:
         y_te = teste[slug_alvo].to_numpy(dtype=int)
         modelos = treinar_todos(X_tr, y_tr)
         gravados[slug_alvo] = modelos
-        probas[slug_alvo] = {slug: pipe.predict_proba(X_te)[:, 1] for slug, pipe in modelos.items()}
+        X_te_modelo = matriz_exclusiva(X_te)
+        probas[slug_alvo] = {
+            slug: pipe.predict_proba(X_te_modelo)[:, 1] for slug, pipe in modelos.items()
+        }
         print("  importância", nome, flush=True)
-        pacotes[slug_alvo] = _pacote_alvo(slug_alvo, nome, pergunta, y_te, probas[slug_alvo], modelos, X_te)
+        pacotes[slug_alvo] = _pacote_alvo(
+            slug_alvo, nome, pergunta, y_te, probas[slug_alvo], modelos, X_te_modelo
+        )
 
     referencia = pacotes["inadimplente"]["referencia"]
     nome_ref = next(item["nome"] for item in CATALOGO if item["slug"] == referencia)

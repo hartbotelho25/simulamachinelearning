@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import FunctionTransformer, StandardScaler
+from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
 
 from .dataset import FEATURES, aplicar_exclusivo
@@ -60,16 +59,10 @@ CATALOGO = [
 ]
 
 
-def _exclusivo(amostra):
-    frame = amostra if isinstance(amostra, pd.DataFrame) else pd.DataFrame(amostra, columns=list(FEATURES))
-    return aplicar_exclusivo(frame)[list(FEATURES)].to_numpy(dtype=float)
-
-
-def _preparo() -> ColumnTransformer:
-    exclusivo = FunctionTransformer(_exclusivo, validate=False)
-    return ColumnTransformer(
-        [("num", Pipeline([("exclusivo", exclusivo), ("escala", StandardScaler())]), list(FEATURES))]
-    )
+def matriz_exclusiva(amostra: pd.DataFrame) -> pd.DataFrame:
+    """Zera a ocorrência única quando a reincidência está ligada. Fica fora do estimador."""
+    colunas = list(FEATURES)
+    return aplicar_exclusivo(amostra[colunas])[colunas]
 
 
 def construir(slug: str) -> Pipeline:
@@ -114,7 +107,7 @@ def construir(slug: str) -> Pipeline:
         )
     else:
         raise KeyError(slug)
-    return Pipeline([("prep", _preparo()), ("clf", clf)])
+    return Pipeline([("prep", StandardScaler()), ("clf", clf)])
 
 
 def fatiar(df: pd.DataFrame):
@@ -131,9 +124,10 @@ def fatiar(df: pd.DataFrame):
 
 
 def treinar_todos(X_treino: pd.DataFrame, y_treino: np.ndarray) -> dict[str, Pipeline]:
+    matriz = matriz_exclusiva(X_treino)
     modelos = {}
     for item in CATALOGO:
         pipe = construir(item["slug"])
-        pipe.fit(X_treino, y_treino)
+        pipe.fit(matriz, y_treino)
         modelos[item["slug"]] = pipe
     return modelos

@@ -12,7 +12,7 @@ import pandas as pd
 from .caminhos import ARTEFATOS, CSV_CLIENTES
 from .chaves import codificar
 from .dataset import ALVOS, FEATURES, ler_parametros
-from .treino import fatiar
+from .treino import fatiar, treinar_todos
 
 
 class ModelosIncompativeis(RuntimeError):
@@ -95,8 +95,23 @@ def teste_compativel(df: pd.DataFrame) -> bool:
     return set(FEATURES) <= colunas and {"id_cliente", *ALVOS} <= colunas
 
 
+def treinar_em_memoria() -> dict:
+    """Treina os quatro modelos nos dois alvos a partir do CSV, sem abrir o joblib."""
+    df = pd.read_csv(CSV_CLIENTES)
+    if not teste_compativel(df):
+        raise ModelosIncompativeis("A base gravada não tem as colunas do simulador.")
+    X_tr, _X_te, i_tr, _i_te = fatiar(df)
+    treino = df.iloc[i_tr]
+    modelos = {
+        alvo: treinar_todos(X_tr, treino[alvo].to_numpy(dtype=int))
+        for alvo in ALVOS
+    }
+    _conferir(modelos)
+    return modelos
+
+
 def resolver_modelos(obter, limpar, recarregar) -> dict:
-    """Se o objeto cacheado divergir de FEATURES, joga fora e lê o joblib de novo."""
+    """Se o cache ou o joblib falhar, treina de novo a partir do CSV."""
     try:
         modelos = obter()
         if not compativel(modelos):
@@ -104,7 +119,13 @@ def resolver_modelos(obter, limpar, recarregar) -> dict:
         return modelos
     except Exception:
         limpar()
-        return recarregar()
+        try:
+            modelos = recarregar()
+            if not compativel(modelos):
+                raise ValueError("columns are missing")
+            return modelos
+        except Exception:
+            return treinar_em_memoria()
 
 
 def resolver_teste(obter, limpar, recarregar) -> pd.DataFrame:
@@ -118,10 +139,11 @@ def resolver_teste(obter, limpar, recarregar) -> pd.DataFrame:
         return recarregar()
 
 
-def carregar_modelos() -> dict:
+def _ler_joblib() -> dict:
     try:
         modelos = joblib.load(ARTEFATOS / "modelos.joblib")
         _conferir(modelos)
+        return modelos
     except Exception as exc:
         versoes = {}
         caminho = ARTEFATOS / "versoes.json"
@@ -133,7 +155,14 @@ def carregar_modelos() -> dict:
             + (f" ({esperado})" if esperado else "")
             + f": {exc}"
         ) from exc
-    return modelos
+
+
+def carregar_modelos() -> dict:
+    """Abre o joblib. Se a versão do Python ou do sklearn não bater, treina do CSV."""
+    try:
+        return _ler_joblib()
+    except ModelosIncompativeis:
+        return treinar_em_memoria()
 
 
 def parametros_gerador() -> dict:

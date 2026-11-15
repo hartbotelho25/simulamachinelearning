@@ -22,6 +22,7 @@ from src.credito.chaves import (
 )
 from src.credito.politica import CORTE_MATRIZ, semaforo
 from src.credito.simulador import (
+    ModelosIncompativeis,
     amostra_teste,
     assinatura_modelos,
     carregar_modelos,
@@ -30,6 +31,7 @@ from src.credito.simulador import (
     pronto,
     resolver_modelos,
     resolver_teste,
+    treinar_em_memoria,
 )
 
 COR_FAIXA = {"verde": "#3dd68c", "amarelo": "#E8B923", "vermelho": "#ff8a65"}
@@ -170,7 +172,10 @@ def _pp(valor: float) -> str:
 def _modelos_gravados(assinatura: str):
     if not assinatura:
         raise RuntimeError("assinatura vazia")
-    return carregar_modelos()
+    try:
+        return carregar_modelos()
+    except (ModelosIncompativeis, AttributeError):
+        return treinar_em_memoria()
 
 
 @st.cache_data(show_spinner=False)

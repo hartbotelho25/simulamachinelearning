@@ -59,13 +59,14 @@ CSS = """
     .sintetico strong { color: #E8B923; }
     .acc {
         background: #163024; border-radius: 14px; padding: 0.75rem 0.8rem 0.65rem;
-        border-top: 3px solid #2a4a38; min-height: 168px;
+        border-top: 3px solid #2a4a38; min-height: 188px;
+        display: flex; flex-direction: column; box-sizing: border-box;
     }
     .acc.melhor { border-top-color: #E8B923; }
     .acc .nome { color: #c9c3b4; font-size: 0.82rem; }
     .acc .grande { color: #F4F1E8; font-size: 2rem; font-weight: 700; line-height: 1.1; margin: 0.2rem 0; }
     .acc .miudo { color: #c9c3b4; font-size: 0.78rem; line-height: 1.45; }
-    .selo { color: #E8B923; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+    .selo { color: #E8B923; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; min-height: 1.05em; }
     .rank-nome { color: #F4F1E8; font-size: 0.84rem; }
     .rank-barra { height: 6px; border-radius: 99px; background: #0f1f18; margin: 0.12rem 0 0.45rem; }
     .rank-barra span { display: block; height: 100%; border-radius: 99px; background: #E8B923; }
@@ -283,24 +284,34 @@ def _mesa() -> None:
         st.markdown("\n".join(linhas))
 
 
+def _auc_milessimos(modelo: dict) -> float:
+    return round(float(modelo["roc_auc"]), 3)
+
+
+def _slugs_com_maior_auc(pacote: dict) -> set[str]:
+    topo = max(_auc_milessimos(modelo) for modelo in pacote["modelos"])
+    return {modelo["slug"] for modelo in pacote["modelos"] if _auc_milessimos(modelo) == topo}
+
+
 def _acuracia(pacote: dict) -> None:
-    st.write(
-        f"No teste, o acerto usa corte de {_pct(CORTE_MATRIZ)}. "
-        "A classe em dia é a maioria, então a acurácia sozinha não conta a história."
+    st.markdown(
+        "No estudo, optamos por destacar o **AUC-ROC**, pois ele mede a real capacidade "
+        "do modelo de ordenar quem tem maior risco de calote. Como a classe em dia é a "
+        "grande maioria, a acurácia (calculada no corte padrão de 50,0%) fica "
+        "artificialmente alta e sozinha não conta a história."
     )
-    melhor = max(pacote["modelos"], key=lambda modelo: modelo["matriz"]["acuracia"])["slug"]
+    melhores = _slugs_com_maior_auc(pacote)
     cols = st.columns(4)
     for col, modelo in zip(cols, pacote["modelos"]):
         corte = modelo["matriz"]
-        classe = "acc melhor" if modelo["slug"] == melhor else "acc"
-        selo = '<div class="selo">Maior acurácia</div>' if modelo["slug"] == melhor else ""
+        classe = "acc melhor" if modelo["slug"] in melhores else "acc"
+        selo = "Maior AUC" if modelo["slug"] in melhores else ""
         col.markdown(
-            f'<div class="{classe}">{selo}'
+            f'<div class="{classe}"><div class="selo">{selo}</div>'
             f'<div class="nome">{modelo["nome"]}</div>'
-            f'<div class="grande">{_pct(corte["acuracia"])}</div>'
-            f'<div class="miudo">AUC {_num(modelo["roc_auc"])}<br>'
-            f'Precisão {_pct(corte["precisao"])} · Recall {_pct(corte["recall"])}<br>'
-            f'F1 {_pct(corte["f1"])}</div></div>',
+            f'<div class="grande">AUC {_num(modelo["roc_auc"])}</div>'
+            f'<div class="miudo">Acurácia {_pct(corte["acuracia"])} • F1 {_pct(corte["f1"])}<br>'
+            f'Precisão {_pct(corte["precisao"])} • Recall {_pct(corte["recall"])}</div></div>',
             unsafe_allow_html=True,
         )
     st.markdown(_matriz_html(pacote), unsafe_allow_html=True)

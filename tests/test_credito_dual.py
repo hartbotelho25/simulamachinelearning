@@ -76,6 +76,9 @@ def test_tela_deixa_a_mesa_recolhida_e_o_simulador_aberto():
         "Ficou inadimplente, mas passou sem alerta do modelo.",
     ):
         assert frase in texto
+    assert "optamos por destacar o **AUC-ROC**" in texto
+    assert "Maior acurácia" not in texto
+    assert "Maior AUC" in texto
     assert texto.count('st.subheader("O código")') == 1
     assert "Os códigos utilizados estão disponíveis abaixo." in texto
     assert "Cada modelo é um script completo" not in texto
@@ -349,6 +352,16 @@ def test_joblib_calibrado_abre_pesos_e_o_simulador():
     assert titulos.count("O código") == 1
     legendas = [getattr(bloco, "value", "") for bloco in estudo.caption]
     assert legendas.count("Os códigos utilizados estão disponíveis abaixo.") == 1
+
+
+def test_o_selo_marca_quem_empata_no_auc_em_tres_casas():
+    import json
+
+    from src.credito.relato import _slugs_com_maior_auc
+
+    relatorio = json.loads(RELATORIO.read_text(encoding="utf-8"))
+    assert _slugs_com_maior_auc(relatorio["alvos"]["inadimplente"]) == {"logistica", "boosting"}
+    assert _slugs_com_maior_auc(relatorio["alvos"]["inadimplente_90d"]) == {"logistica", "boosting"}
 
 
 def test_escada_sobe_quando_os_gatilhos_se_acumulam():

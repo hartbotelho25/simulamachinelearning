@@ -202,6 +202,34 @@ for _item in GATILHOS:
 
 PARES = [(item["id"], item["pai"]) for item in GATILHOS if item["pai"]]
 
+# Pontuação interna do comitê. A tela não mostra esses números.
+# No par, a reincidência substitui a ocorrência única.
+PONTOS = {
+    "restricao_outras_instituicoes": 35,
+    "protesto_3_ou_mais": 30,
+    "protesto_cartorio": 18,
+    "mais_de_um_cheque_sem_fundo_12m": 25,
+    "cheque_sem_fundo_12m": 15,
+    "uso_cheque_especial_mais_3m_em_6m": 12,
+    "usou_cheque_especial_6m": 5,
+    "saque_cartao_credito": 20,
+    "rotativo_mais_2x_6m": 18,
+    "pagou_fatura_com_cheque_especial": 18,
+    "parcelamento_fatura_6m": 15,
+    "cartao_acima_90_mais_3x_6m": 12,
+    "salto_gastos_cartao": 10,
+    "pagamento_minimo_rotativo": 8,
+    "cartao_acima_90_ou_compra_negada": 8,
+    "renegociacao_ativa": 22,
+    "resgate_total_reserva": 18,
+    "adiantamento_emergencial": 12,
+    "acumulo_emprestimos": 10,
+    "novo_emprestimo_6m": 5,
+    "queda_vinculo_principal": 15,
+    "relacionamento_recente": 4,
+    "sem_imovel_proprio": 2,
+}
+
 PRESETS = [
     {"id": "limpar", "texto": "Limpar tudo (tudo Não)", "ligar": []},
     {
@@ -245,6 +273,27 @@ def coerente(respostas: dict[str, bool]) -> dict[str, bool]:
 def vetor(respostas: dict[str, bool]) -> dict[str, int]:
     limpo = coerente(respostas)
     return {item["id"]: int(limpo[item["id"]]) for item in GATILHOS}
+
+
+def codificar(linha: dict) -> dict[str, int]:
+    """Entrada do modelo: se a reincidência está ligada, a ocorrência única entra como zero."""
+    saida = {item["id"]: int(linha.get(item["id"], 0)) for item in GATILHOS}
+    for filho, pai in PARES:
+        if saida[filho]:
+            saida[pai] = 0
+    return saida
+
+
+def pontuar(linha: dict) -> int:
+    exclusivo = codificar(linha)
+    return int(sum(PONTOS[chave] * exclusivo[chave] for chave in exclusivo))
+
+
+def principais(linha: dict, limite: int = 3) -> list[str]:
+    exclusivo = codificar(linha)
+    ativos = [item for item in GATILHOS if exclusivo[item["id"]]]
+    ativos.sort(key=lambda item: PONTOS[item["id"]], reverse=True)
+    return [item["rotulo"] for item in ativos[:limite]]
 
 
 def grupos() -> list[tuple[str, list[dict]]]:

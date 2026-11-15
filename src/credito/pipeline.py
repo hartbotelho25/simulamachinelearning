@@ -18,7 +18,7 @@ from .chaves import montar_chaves
 from .combinacoes import medir_combinacoes
 from .dataset import COLUNAS, conferir_esquema, gerar_base, salvar_parametros
 from .graficos import combinacoes_barras, matrizes
-from .importancia import pacote_importancia, ranking_itens
+from .importancia import pacote_importancia, ranking_blocos, ranking_itens
 from .metricas import avaliar, modelo_referencia
 from .politica import AMARELO_MAX, CORTE_MATRIZ, N_CLIENTES, SEMENTE, VERDE_MAX
 from .treino import CATALOGO, fatiar, treinar_todos
@@ -64,6 +64,10 @@ def _pacote_alvo(slug_alvo: str, nome: str, pergunta: str, y_te, probas, modelos
             "repeticoes": importancia["repeticoes"],
             "itens": {
                 slug: ranking_itens(pacote["colunas"])
+                for slug, pacote in importancia["medido"].items()
+            },
+            "blocos": {
+                slug: ranking_blocos(pacote["colunas"])
                 for slug, pacote in importancia["medido"].items()
             },
         },

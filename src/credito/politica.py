@@ -31,3 +31,14 @@ def nome_faixa(probabilidade: float) -> tuple[str, str]:
         if ini <= probabilidade < fim:
             return faixa, acao
     return "vermelho", "Recusar"
+
+
+def semaforo(marcador: int, restricao: bool = False) -> tuple[str, str, bool]:
+    """Verde até 10, amarelo até 25, vermelho acima. A restrição externa é Hard Stop."""
+    if marcador <= 10:
+        faixa, postura = "verde", "Baixo risco"
+    elif marcador <= 25:
+        faixa, postura = "amarelo", "Risco moderado"
+    else:
+        faixa, postura = "vermelho", "Alto risco"
+    return faixa, postura, bool(restricao)

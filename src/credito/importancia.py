@@ -90,6 +90,19 @@ def por_bloco(importancias: dict[str, float]) -> list[dict]:
     ]
 
 
+def ranking_blocos(importancias: dict[str, float]) -> list[dict]:
+    bruto = por_bloco(importancias)
+    itens = [
+        {"bloco": item["bloco"], "nome": item["nome"], "pct": round(100.0 * item["fatia"], 1)}
+        for item in bruto
+    ]
+    itens.sort(key=lambda item: item["pct"], reverse=True)
+    if itens:
+        folga = round(100.0 - sum(item["pct"] for item in itens), 1)
+        itens[0]["pct"] = round(itens[0]["pct"] + folga, 1)
+    return itens
+
+
 def explicar_logistica(pipe) -> list[dict]:
     prep = pipe.named_steps["prep"]
     clf = pipe.named_steps["clf"]

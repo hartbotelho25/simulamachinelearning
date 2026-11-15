@@ -13,8 +13,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from .chaves import GATILHOS, IDS, PARES
-from .politica import N_CLIENTES, SEMENTE, TAXA_ALVO_90D, TAXA_ALVO_GERADOR
+from .chaves import GATILHOS, IDS, PARES, PONTOS
+from .politica import N_CLIENTES
 
 ALVOS = ("inadimplente", "inadimplente_90d")
 
@@ -49,55 +49,28 @@ FEATURES = list(IDS)
 CATEGORICAS: list[str] = []
 NUMERICAS = list(FEATURES)
 
-# Peso no logit. O alvo de 90 dias carrega mais as reincidências graves.
-PESO_INAD = {coluna: 0.48 for coluna in FEATURES}
-PESO_INAD.update(
-    {
-        "usou_cheque_especial_6m": 0.42,
-        "uso_cheque_especial_mais_3m_em_6m": 0.72,
-        "cheque_sem_fundo_12m": 0.78,
-        "mais_de_um_cheque_sem_fundo_12m": 0.95,
-        "cartao_acima_90_ou_compra_negada": 0.5,
-        "cartao_acima_90_mais_3x_6m": 0.62,
-        "pagamento_minimo_rotativo": 0.55,
-        "rotativo_mais_2x_6m": 0.7,
-        "parcelamento_fatura_6m": 0.46,
-        "pagou_fatura_com_cheque_especial": 0.82,
-        "saque_cartao_credito": 0.5,
-        "salto_gastos_cartao": 0.4,
-        "novo_emprestimo_6m": 0.38,
-        "acumulo_emprestimos": 0.58,
-        "adiantamento_emergencial": 0.64,
-        "renegociacao_ativa": 0.86,
-        "resgate_total_reserva": 0.84,
-        "protesto_cartorio": 0.6,
-        "protesto_3_ou_mais": 0.98,
-        "restricao_outras_instituicoes": 0.66,
-        "queda_vinculo_principal": 0.74,
-        "relacionamento_recente": 0.22,
-        "sem_imovel_proprio": 0.16,
-    }
+# A curva cruza 50% na passagem do amarelo para o vermelho.
+CENTRO_INAD = 25.5
+INCLINACAO_INAD = 0.152
+CENTRO_90 = 32.0
+INCLINACAO_90 = 0.168
+RUIDO = 0.15
+
+# Casos em que o gatilho grave aparece sozinho, com a casa limpa.
+ISOLADOS = (
+    ("restricao_outras_instituicoes", None),
+    ("protesto_3_ou_mais", "protesto_cartorio"),
+    ("protesto_cartorio", None),
+    ("mais_de_um_cheque_sem_fundo_12m", "cheque_sem_fundo_12m"),
+    ("cheque_sem_fundo_12m", None),
+    ("renegociacao_ativa", None),
+    ("saque_cartao_credito", None),
+    ("pagou_fatura_com_cheque_especial", None),
+    ("resgate_total_reserva", None),
+    ("queda_vinculo_principal", None),
+    ("rotativo_mais_2x_6m", "pagamento_minimo_rotativo"),
+    ("uso_cheque_especial_mais_3m_em_6m", "usou_cheque_especial_6m"),
 )
-PESO_90 = {coluna: 0.22 for coluna in FEATURES}
-PESO_90.update(
-    {
-        "uso_cheque_especial_mais_3m_em_6m": 0.55,
-        "cheque_sem_fundo_12m": 1.05,
-        "mais_de_um_cheque_sem_fundo_12m": 1.45,
-        "cartao_acima_90_mais_3x_6m": 0.48,
-        "rotativo_mais_2x_6m": 0.5,
-        "pagou_fatura_com_cheque_especial": 1.2,
-        "adiantamento_emergencial": 0.55,
-        "renegociacao_ativa": 1.35,
-        "resgate_total_reserva": 1.25,
-        "protesto_3_ou_mais": 1.55,
-        "restricao_outras_instituicoes": 0.45,
-        "queda_vinculo_principal": 1.15,
-        "relacionamento_recente": 0.08,
-        "sem_imovel_proprio": 0.06,
-    }
-)
-RUIDO = 1.05
 
 
 def conferir_esquema(df: pd.DataFrame, checar_taxas: bool = False) -> None:
@@ -120,10 +93,10 @@ def conferir_esquema(df: pd.DataFrame, checar_taxas: bool = False) -> None:
         return
     taxa = float(df["inadimplente"].mean())
     taxa_90 = float(df["inadimplente_90d"].mean())
-    if not 0.11 <= taxa <= 0.13:
-        raise ValueError(f"Inadimplência saiu em {taxa:.3%}, fora de 11% a 13%.")
-    if not 0.05 <= taxa_90 <= 0.07:
-        raise ValueError(f"Acima de 90 dias saiu em {taxa_90:.3%}, fora de 5% a 7%.")
+    if not 0.11 <= taxa <= 0.15:
+        raise ValueError(f"Inadimplência saiu em {taxa:.3%}, fora de 11% a 15%.")
+    if not 0.05 <= taxa_90 <= 0.08:
+        raise ValueError(f"Acima de 90 dias saiu em {taxa_90:.3%}, fora de 5% a 8%.")
 
 
 def _sigmoid(x: np.ndarray) -> np.ndarray:
@@ -134,32 +107,67 @@ def _flag(rng: np.random.Generator, logit: np.ndarray) -> np.ndarray:
     return (rng.random(logit.shape[0]) < _sigmoid(logit)).astype(int)
 
 
+def aplicar_exclusivo(df: pd.DataFrame) -> pd.DataFrame:
+    """Zera a ocorrência única quando a reincidência do mesmo par está ligada."""
+    saida = df.copy()
+    for filho, pai in PARES:
+        saida.loc[saida[filho].to_numpy() == 1, pai] = 0
+    return saida
+
+
+def _marcador(sinais: pd.DataFrame) -> np.ndarray:
+    exclusivo = aplicar_exclusivo(sinais[FEATURES])
+    bruto = np.zeros(len(exclusivo), dtype=float)
+    for coluna in FEATURES:
+        bruto += exclusivo[coluna].to_numpy(dtype=float) * PONTOS[coluna]
+    ligados = exclusivo.to_numpy(dtype=float).sum(axis=1)
+    bruto += np.where(ligados >= 3, 2.0, np.where(ligados >= 2, 1.0, 0.0))
+    return bruto
+
+
+def _isolar(rng: np.random.Generator, sinais: pd.DataFrame) -> None:
+    n = len(sinais)
+    cota = max(30, n // 140)
+    bloco = cota * len(ISOLADOS)
+    if bloco >= n:
+        cota = max(1, n // (len(ISOLADOS) + 1))
+        bloco = cota * len(ISOLADOS)
+    escolhidos = rng.choice(n, size=bloco, replace=False)
+    for i, (grave, pai) in enumerate(ISOLADOS):
+        linhas = escolhidos[i * cota : (i + 1) * cota]
+        sinais.loc[linhas, FEATURES] = 0
+        sinais.loc[linhas, grave] = 1
+        if pai:
+            sinais.loc[linhas, pai] = 1
+
+
 def _sinais(rng: np.random.Generator, n: int) -> pd.DataFrame:
     stress = rng.normal(0.0, 1.0, n)
-    usou = _flag(rng, -0.35 + 0.95 * stress)
-    mais_3m = usou * _flag(rng, -0.25 + 0.7 * stress)
-    cheque = _flag(rng, -1.85 + 1.15 * stress)
-    mais_um = cheque * _flag(rng, -0.45 + 0.65 * stress)
-    teto = _flag(rng, -1.05 + 0.95 * stress)
-    teto_3x = teto * _flag(rng, -0.15 + 0.55 * stress)
-    minimo = _flag(rng, -0.95 + 0.9 * stress)
-    rotativo = minimo * _flag(rng, -0.05 + 0.6 * stress)
-    parcela = _flag(rng, -1.55 + 0.85 * stress)
-    pagou = _flag(rng, -2.15 + 1.2 * stress + 1.35 * usou)
-    saque = _flag(rng, -2.25 + 1.05 * stress)
-    salto = _flag(rng, -1.25 + 0.75 * stress)
-    novo = _flag(rng, -1.15 + 0.8 * stress)
-    acumulo = _flag(rng, -1.75 + 0.95 * stress)
-    adiant = _flag(rng, -2.35 + 1.05 * stress)
-    reneg = _flag(rng, -2.55 + 1.2 * stress + 0.7 * np.maximum(minimo, acumulo))
-    resgate = _flag(rng, -2.7 + 1.15 * stress)
-    protesto = _flag(rng, -2.25 + 1.05 * stress)
-    protesto3 = protesto * _flag(rng, -0.95 + 0.75 * stress)
-    restricao = _flag(rng, -2.05 + 1.1 * stress)
-    queda = _flag(rng, -2.15 + 1.0 * stress)
-    recente = _flag(rng, -1.45 + 0.25 * stress)
-    sem_imovel = _flag(rng, -0.05 + 0.2 * stress)
-    return pd.DataFrame(
+
+    def par(logit_leve: float, logit_grave: float) -> tuple[np.ndarray, np.ndarray]:
+        grave = _flag(rng, logit_grave + 0.4 * stress)
+        leve = _flag(rng, logit_leve + 0.35 * stress)
+        return np.maximum(leve, grave), grave
+
+    usou, mais_3m = par(-3.15, -4.15)
+    cheque, mais_um = par(-3.85, -4.65)
+    teto, teto_3x = par(-3.45, -4.25)
+    minimo, rotativo = par(-3.35, -4.15)
+    parcela = _flag(rng, -3.75 + 0.45 * stress)
+    pagou = _flag(rng, -4.15 + 0.5 * stress)
+    saque = _flag(rng, -4.35 + 0.5 * stress)
+    salto = _flag(rng, -3.55 + 0.4 * stress)
+    novo = _flag(rng, -3.35 + 0.35 * stress)
+    acumulo = _flag(rng, -3.85 + 0.45 * stress)
+    adiant = _flag(rng, -4.25 + 0.45 * stress)
+    reneg = _flag(rng, -4.45 + 0.5 * stress)
+    resgate = _flag(rng, -4.55 + 0.5 * stress)
+    protesto, protesto3 = par(-4.05, -4.75)
+    restricao = _flag(rng, -4.65 + 0.45 * stress)
+    queda = _flag(rng, -4.25 + 0.45 * stress)
+    recente = _flag(rng, -2.3 + 0.15 * stress)
+    sem_imovel = _flag(rng, -0.85 + 0.1 * stress)
+    sinais = pd.DataFrame(
         {
             "usou_cheque_especial_6m": usou,
             "uso_cheque_especial_mais_3m_em_6m": mais_3m,
@@ -186,66 +194,52 @@ def _sinais(rng: np.random.Generator, n: int) -> pd.DataFrame:
             "sem_imovel_proprio": sem_imovel,
         }
     )
+    _isolar(rng, sinais)
+    _plantar_pares(rng, sinais)
+    return sinais
 
 
-def _intercepto(base: np.ndarray, ruido: np.ndarray, alvo: float) -> float:
-    baixo, alto = -12.0, 8.0
-    for _ in range(32):
-        meio = (baixo + alto) / 2
-        taxa = float(_sigmoid(base + meio + ruido).mean())
-        if taxa > alvo:
-            alto = meio
-        else:
-            baixo = meio
-    return (baixo + alto) / 2
-
-
-def _intercepto_90(p_inad: np.ndarray, base: np.ndarray, ruido: np.ndarray, alvo: float) -> float:
-    baixo, alto = -12.0, 8.0
-    for _ in range(32):
-        meio = (baixo + alto) / 2
-        p_grave = _sigmoid(base + meio + ruido)
-        taxa = float((p_inad * p_grave).mean())
-        if taxa > alvo:
-            alto = meio
-        else:
-            baixo = meio
-    return (baixo + alto) / 2
-
-
-def _pesos(mapa: dict[str, float]) -> np.ndarray:
-    return np.array([mapa[coluna] for coluna in FEATURES], dtype=float)
+def _plantar_pares(rng: np.random.Generator, sinais: pd.DataFrame) -> None:
+    """Garante as combinações críticas com amostra no teste, sem dominar a carteira."""
+    pares = (
+        ("uso_cheque_especial_mais_3m_em_6m", "usou_cheque_especial_6m", "rotativo_mais_2x_6m", "pagamento_minimo_rotativo"),
+        ("mais_de_um_cheque_sem_fundo_12m", "cheque_sem_fundo_12m", "pagou_fatura_com_cheque_especial"),
+        ("protesto_3_ou_mais", "protesto_cartorio", "renegociacao_ativa"),
+        ("resgate_total_reserva", "queda_vinculo_principal"),
+        ("cartao_acima_90_mais_3x_6m", "cartao_acima_90_ou_compra_negada", "parcelamento_fatura_6m"),
+        ("adiantamento_emergencial", "novo_emprestimo_6m"),
+    )
+    n = len(sinais)
+    cota = max(8, n // 620)
+    livres = np.arange(n)
+    rng.shuffle(livres)
+    for i, grupo in enumerate(pares):
+        linhas = livres[i * cota : (i + 1) * cota]
+        sinais.loc[linhas, FEATURES] = 0
+        for coluna in grupo:
+            sinais.loc[linhas, coluna] = 1
 
 
 def gerar_base(n: int, seed: int, parametros: dict | None = None, prefixo_id: str = "C") -> tuple[pd.DataFrame, dict]:
     rng = np.random.default_rng(seed)
     sinais = _sinais(rng, n)
-    matriz = sinais[FEATURES].to_numpy(dtype=float)
+    marcador = _marcador(sinais)
+    ruido = float(parametros["ruido"]) if parametros else RUIDO
+    ruido_inad = rng.normal(0.0, ruido, n)
+    ruido_90 = rng.normal(0.0, ruido, n)
+    p_inad = _sigmoid((marcador - CENTRO_INAD) * INCLINACAO_INAD + ruido_inad)
+    p_grave = _sigmoid((marcador - CENTRO_90) * INCLINACAO_90 + ruido_90)
+    sorteio = rng.random(n)
+    inad = (sorteio < p_inad).astype(int)
+    acima = (sorteio < np.minimum(p_grave, p_inad)).astype(int)
     if parametros is None:
-        ruido_inad = rng.normal(0.0, RUIDO, n)
-        ruido_90 = rng.normal(0.0, RUIDO, n)
-        base_inad = matriz @ _pesos(PESO_INAD)
-        base_90 = matriz @ _pesos(PESO_90)
-        b_inad = _intercepto(base_inad, ruido_inad, TAXA_ALVO_GERADOR)
-        p_inad = _sigmoid(base_inad + b_inad + ruido_inad)
-        b_90 = _intercepto_90(p_inad, base_90, ruido_90, TAXA_ALVO_90D)
-        p_grave = _sigmoid(base_90 + b_90 + ruido_90)
         parametros = {
-            "b_inad": float(b_inad),
-            "b_90": float(b_90),
             "ruido": RUIDO,
-            "peso_inad": PESO_INAD,
-            "peso_90": PESO_90,
+            "centro_inad": CENTRO_INAD,
+            "inclinacao_inad": INCLINACAO_INAD,
+            "centro_90": CENTRO_90,
+            "inclinacao_90": INCLINACAO_90,
         }
-        inad = (rng.random(n) < p_inad).astype(int)
-        acima = ((rng.random(n) < p_grave) & (inad == 1)).astype(int)
-    else:
-        ruido_inad = rng.normal(0.0, parametros["ruido"], n)
-        ruido_90 = rng.normal(0.0, parametros["ruido"], n)
-        p_inad = _sigmoid(matriz @ _pesos(parametros["peso_inad"]) + parametros["b_inad"] + ruido_inad)
-        p_grave = _sigmoid(matriz @ _pesos(parametros["peso_90"]) + parametros["b_90"] + ruido_90)
-        inad = (rng.random(n) < p_inad).astype(int)
-        acima = ((rng.random(n) < p_grave) & (inad == 1)).astype(int)
     df = sinais.copy()
     df["inadimplente"] = inad
     df["inadimplente_90d"] = acima

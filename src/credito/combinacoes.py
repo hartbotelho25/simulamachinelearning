@@ -82,7 +82,7 @@ def medir_combinacoes(
     for regra in _regras():
         mascara = np.asarray(regra["mascara"](X), dtype=bool)
         n = int(mascara.sum())
-        if n < 40:
+        if n < 20:
             continue
         taxa_inad = float(inad[mascara].mean())
         taxa_90 = float(grave[mascara].mean())

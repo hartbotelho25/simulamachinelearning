@@ -10,12 +10,12 @@
     "n": 50000,
     "n_colunas": 26,
     "n_gatilhos": 23,
-    "taxa_inadimplente": 0.11974,
-    "taxa_90d": 0.06048,
+    "taxa_inadimplente": 0.1367,
+    "taxa_90d": 0.07424,
     "n_treino": 35000,
     "n_teste": 15000,
-    "taxa_teste_inad": 0.11973333333333333,
-    "taxa_teste_90": 0.06046666666666667
+    "taxa_teste_inad": 0.13673333333333335,
+    "taxa_teste_90": 0.07426666666666666
   },
   "alvos": {
     "inadimplente": {
@@ -29,18 +29,18 @@
           "nome": "Regressão logística",
           "papel": "Baseline e scorecard. O peso de cada variável fica visível.",
           "tecnica": "Modelo linear. Os números entram padronizados e as categorias abrem em colunas. Cada peso se lê com sinal: empurra para o calote ou afasta dele. É a peça que o comitê consegue auditar variável a variável.",
-          "roc_auc": 0.9184051966097875,
-          "brier": 0.05857183257677669,
+          "roc_auc": 0.8794996829439907,
+          "brier": 0.07377284513310248,
           "matriz": {
             "corte": 0.5,
-            "tn": 12892,
-            "fp": 312,
-            "fn": 861,
-            "tp": 935,
-            "precisao": 0.7497995188452286,
-            "recall": 0.5206013363028953,
-            "f1": 0.6145251396648045,
-            "acuracia": 0.9218
+            "tn": 12670,
+            "fp": 279,
+            "fn": 1186,
+            "tp": 865,
+            "precisao": 0.7561188811188811,
+            "recall": 0.42174549000487566,
+            "f1": 0.5414710485133021,
+            "acuracia": 0.9023333333333333
           }
         },
         {
@@ -48,18 +48,18 @@
           "nome": "Random Forest",
           "papel": "Ensemble de árvores, estável diante de relação não linear.",
           "tecnica": "Duzentas árvores. Cada uma vê uma amostra e um subconjunto de colunas. A chance é a média dos votos. A floresta não entrega um peso único por variável; a leitura dela, aqui, é a curva, a matriz e a importância por permutação.",
-          "roc_auc": 0.9159908813149016,
-          "brier": 0.06178032844264647,
+          "roc_auc": 0.869068707793719,
+          "brier": 0.08235473111745092,
           "matriz": {
             "corte": 0.5,
-            "tn": 13030,
-            "fp": 174,
-            "fn": 1037,
-            "tp": 759,
-            "precisao": 0.8135048231511254,
-            "recall": 0.4226057906458797,
-            "f1": 0.5562477097838036,
-            "acuracia": 0.9192666666666667
+            "tn": 12752,
+            "fp": 197,
+            "fn": 1525,
+            "tp": 526,
+            "precisao": 0.7275242047026279,
+            "recall": 0.25646026328620186,
+            "f1": 0.37923576063446285,
+            "acuracia": 0.8852
           }
         },
         {
@@ -67,18 +67,18 @@
           "nome": "Gradient Boosting (XGBoost)",
           "papel": "Árvores em sequência, o padrão forte em tabela de crédito.",
           "tecnica": "XGBoost com árvores rasas. A árvore seguinte corrige o erro da anterior. Captura não linearidade sem virar uma rede. Os ganhos internos não substituem a explicação do scorecard; a comparação com a logística mostra o que a não linearidade acrescenta.",
-          "roc_auc": 0.9172841892076977,
-          "brier": 0.05950908362865448,
+          "roc_auc": 0.8780881897286053,
+          "brier": 0.07472960650920868,
           "matriz": {
             "corte": 0.5,
-            "tn": 12863,
-            "fp": 341,
-            "fn": 851,
-            "tp": 945,
-            "precisao": 0.7348367029548989,
-            "recall": 0.5261692650334076,
-            "f1": 0.6132381570408826,
-            "acuracia": 0.9205333333333333
+            "tn": 12693,
+            "fp": 256,
+            "fn": 1216,
+            "tp": 835,
+            "precisao": 0.7653528872593951,
+            "recall": 0.40711847879083374,
+            "f1": 0.5315085932527053,
+            "acuracia": 0.9018666666666667
           }
         },
         {
@@ -86,18 +86,18 @@
           "nome": "Rede neural MLP",
           "papel": "Interações entre os blocos, em camadas densas.",
           "tecnica": "Perceptron de duas camadas ocultas, 64 e 32 neurônios, ativação ReLU. Os números entram padronizados. Dez por cento do treino servem só para parar cedo. Os pesos internos não se apresentam ao comitê; a rede entra pela curva, pela matriz e pela permutação.",
-          "roc_auc": 0.9174591463138997,
-          "brier": 0.05929314594257165,
+          "roc_auc": 0.8771446464073381,
+          "brier": 0.0747239151916106,
           "matriz": {
             "corte": 0.5,
-            "tn": 12881,
-            "fp": 323,
-            "fn": 878,
-            "tp": 918,
-            "precisao": 0.7397260273972602,
-            "recall": 0.5111358574610245,
-            "f1": 0.6045439578531445,
-            "acuracia": 0.9199333333333334
+            "tn": 12643,
+            "fp": 306,
+            "fn": 1168,
+            "tp": 883,
+            "precisao": 0.7426408746846089,
+            "recall": 0.4305216967333008,
+            "f1": 0.5450617283950617,
+            "acuracia": 0.9017333333333334
           }
         }
       ],
@@ -107,391 +107,155 @@
         "itens": {
           "logistica": [
             {
-              "variavel": "pagou_fatura_com_cheque_especial",
-              "rotulo": "Pagou a fatura com o especial",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00759,
-              "pct": 16.2
+              "variavel": "renegociacao_ativa",
+              "rotulo": "Renegociação ativa",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.04955,
+              "pct": 14.5
             },
             {
-              "variavel": "cheque_sem_fundo_12m",
-              "rotulo": "Cheque sem fundo, 12 meses",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.0061,
+              "variavel": "restricao_outras_instituicoes",
+              "rotulo": "Restrição em outra instituição",
+              "bloco": "mercado",
+              "bloco_nome": "Cartório e mercado",
+              "queda_auc": 0.04435,
               "pct": 13.2
             },
             {
-              "variavel": "uso_cheque_especial_mais_3m_em_6m",
-              "rotulo": "Especial por mais de 3 meses",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00545,
-              "pct": 11.8
-            },
-            {
               "variavel": "protesto_cartorio",
               "rotulo": "Protesto em cartório",
               "bloco": "mercado",
               "bloco_nome": "Cartório e mercado",
-              "queda_auc": 0.00398,
-              "pct": 8.6
+              "queda_auc": 0.03125,
+              "pct": 9.3
             },
             {
-              "variavel": "salto_gastos_cartao",
-              "rotulo": "Salto de gastos no cartão",
+              "variavel": "saque_cartao_credito",
+              "rotulo": "Saque no cartão de crédito",
               "bloco": "cartao",
               "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00378,
-              "pct": 8.2
-            },
-            {
-              "variavel": "acumulo_emprestimos",
-              "rotulo": "Acúmulo de empréstimos",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00333,
-              "pct": 7.2
-            },
-            {
-              "variavel": "pagamento_minimo_rotativo",
-              "rotulo": "Pagamento mínimo ou rotativo",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00281,
-              "pct": 6.1
-            },
-            {
-              "variavel": "novo_emprestimo_6m",
-              "rotulo": "Novo empréstimo, 6 meses",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00268,
-              "pct": 5.8
-            },
-            {
-              "variavel": "usou_cheque_especial_6m",
-              "rotulo": "Usou cheque especial, 6 meses",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00185,
-              "pct": 4.0
-            },
-            {
-              "variavel": "rotativo_mais_2x_6m",
-              "rotulo": "Rotativo mais de 2 vezes",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00183,
-              "pct": 4.0
-            },
-            {
-              "variavel": "adiantamento_emergencial",
-              "rotulo": "Adiantamento emergencial",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00164,
-              "pct": 3.5
-            },
-            {
-              "variavel": "mais_de_um_cheque_sem_fundo_12m",
-              "rotulo": "Mais de 1 cheque sem fundo",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00139,
-              "pct": 3.0
-            },
-            {
-              "variavel": "protesto_3_ou_mais",
-              "rotulo": "3 ou mais protestos",
-              "bloco": "mercado",
-              "bloco_nome": "Cartório e mercado",
-              "queda_auc": 0.00134,
-              "pct": 2.9
+              "queda_auc": 0.03015,
+              "pct": 8.9
             },
             {
               "variavel": "resgate_total_reserva",
               "rotulo": "Resgate total da reserva",
               "bloco": "emprestimo",
               "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00122,
-              "pct": 2.6
+              "queda_auc": 0.02688,
+              "pct": 8.0
             },
-            {
-              "variavel": "cartao_acima_90_ou_compra_negada",
-              "rotulo": "Cartão acima de 90% ou compra negada",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00072,
-              "pct": 1.6
-            },
-            {
-              "variavel": "restricao_outras_instituicoes",
-              "rotulo": "Restrição em outra instituição",
-              "bloco": "mercado",
-              "bloco_nome": "Cartório e mercado",
-              "queda_auc": 0.00059,
-              "pct": 1.3
-            },
-            {
-              "variavel": "sem_imovel_proprio",
-              "rotulo": "Sem imóvel próprio",
-              "bloco": "vinculo",
-              "bloco_nome": "Vínculo e perfil",
-              "queda_auc": 2e-05,
-              "pct": 0.0
-            }
-          ],
-          "floresta": [
             {
               "variavel": "pagou_fatura_com_cheque_especial",
               "rotulo": "Pagou a fatura com o especial",
               "bloco": "cartao",
               "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.01255,
-              "pct": 24.9
+              "queda_auc": 0.02547,
+              "pct": 7.6
             },
             {
               "variavel": "cheque_sem_fundo_12m",
               "rotulo": "Cheque sem fundo, 12 meses",
               "bloco": "cheque",
               "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00965,
-              "pct": 19.0
-            },
-            {
-              "variavel": "acumulo_emprestimos",
-              "rotulo": "Acúmulo de empréstimos",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00578,
-              "pct": 11.4
-            },
-            {
-              "variavel": "uso_cheque_especial_mais_3m_em_6m",
-              "rotulo": "Especial por mais de 3 meses",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00464,
-              "pct": 9.1
-            },
-            {
-              "variavel": "protesto_3_ou_mais",
-              "rotulo": "3 ou mais protestos",
-              "bloco": "mercado",
-              "bloco_nome": "Cartório e mercado",
-              "queda_auc": 0.00326,
-              "pct": 6.4
-            },
-            {
-              "variavel": "protesto_cartorio",
-              "rotulo": "Protesto em cartório",
-              "bloco": "mercado",
-              "bloco_nome": "Cartório e mercado",
-              "queda_auc": 0.0029,
-              "pct": 5.7
-            },
-            {
-              "variavel": "rotativo_mais_2x_6m",
-              "rotulo": "Rotativo mais de 2 vezes",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00256,
-              "pct": 5.0
-            },
-            {
-              "variavel": "salto_gastos_cartao",
-              "rotulo": "Salto de gastos no cartão",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00183,
-              "pct": 3.6
-            },
-            {
-              "variavel": "restricao_outras_instituicoes",
-              "rotulo": "Restrição em outra instituição",
-              "bloco": "mercado",
-              "bloco_nome": "Cartório e mercado",
-              "queda_auc": 0.00175,
-              "pct": 3.4
-            },
-            {
-              "variavel": "novo_emprestimo_6m",
-              "rotulo": "Novo empréstimo, 6 meses",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00162,
-              "pct": 3.2
-            },
-            {
-              "variavel": "resgate_total_reserva",
-              "rotulo": "Resgate total da reserva",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00152,
-              "pct": 3.0
-            },
-            {
-              "variavel": "adiantamento_emergencial",
-              "rotulo": "Adiantamento emergencial",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00117,
-              "pct": 2.3
-            },
-            {
-              "variavel": "mais_de_um_cheque_sem_fundo_12m",
-              "rotulo": "Mais de 1 cheque sem fundo",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00096,
-              "pct": 1.9
-            },
-            {
-              "variavel": "usou_cheque_especial_6m",
-              "rotulo": "Usou cheque especial, 6 meses",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00031,
-              "pct": 0.6
-            },
-            {
-              "variavel": "cartao_acima_90_ou_compra_negada",
-              "rotulo": "Cartão acima de 90% ou compra negada",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00027,
-              "pct": 0.5
-            }
-          ],
-          "boosting": [
-            {
-              "variavel": "pagou_fatura_com_cheque_especial",
-              "rotulo": "Pagou a fatura com o especial",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00982,
-              "pct": 16.9
-            },
-            {
-              "variavel": "uso_cheque_especial_mais_3m_em_6m",
-              "rotulo": "Especial por mais de 3 meses",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00859,
-              "pct": 14.7
-            },
-            {
-              "variavel": "cheque_sem_fundo_12m",
-              "rotulo": "Cheque sem fundo, 12 meses",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00735,
-              "pct": 12.6
-            },
-            {
-              "variavel": "acumulo_emprestimos",
-              "rotulo": "Acúmulo de empréstimos",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00462,
-              "pct": 7.9
-            },
-            {
-              "variavel": "salto_gastos_cartao",
-              "rotulo": "Salto de gastos no cartão",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00354,
-              "pct": 6.1
-            },
-            {
-              "variavel": "pagamento_minimo_rotativo",
-              "rotulo": "Pagamento mínimo ou rotativo",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00342,
-              "pct": 5.8
-            },
-            {
-              "variavel": "protesto_cartorio",
-              "rotulo": "Protesto em cartório",
-              "bloco": "mercado",
-              "bloco_nome": "Cartório e mercado",
-              "queda_auc": 0.00298,
-              "pct": 5.1
-            },
-            {
-              "variavel": "novo_emprestimo_6m",
-              "rotulo": "Novo empréstimo, 6 meses",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00269,
+              "queda_auc": 0.01539,
               "pct": 4.6
             },
             {
-              "variavel": "restricao_outras_instituicoes",
-              "rotulo": "Restrição em outra instituição",
-              "bloco": "mercado",
-              "bloco_nome": "Cartório e mercado",
-              "queda_auc": 0.00242,
-              "pct": 4.1
-            },
-            {
-              "variavel": "resgate_total_reserva",
-              "rotulo": "Resgate total da reserva",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00213,
-              "pct": 3.6
-            },
-            {
-              "variavel": "mais_de_um_cheque_sem_fundo_12m",
-              "rotulo": "Mais de 1 cheque sem fundo",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00211,
-              "pct": 3.6
-            },
-            {
-              "variavel": "rotativo_mais_2x_6m",
-              "rotulo": "Rotativo mais de 2 vezes",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00204,
-              "pct": 3.5
-            },
-            {
-              "variavel": "cartao_acima_90_ou_compra_negada",
-              "rotulo": "Cartão acima de 90% ou compra negada",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00199,
-              "pct": 3.4
-            },
-            {
-              "variavel": "adiantamento_emergencial",
-              "rotulo": "Adiantamento emergencial",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00183,
-              "pct": 3.1
-            },
-            {
-              "variavel": "protesto_3_ou_mais",
-              "rotulo": "3 ou mais protestos",
-              "bloco": "mercado",
-              "bloco_nome": "Cartório e mercado",
-              "queda_auc": 0.00131,
-              "pct": 2.2
+              "variavel": "queda_vinculo_principal",
+              "rotulo": "Queda do vínculo principal",
+              "bloco": "vinculo",
+              "bloco_nome": "Vínculo e perfil",
+              "queda_auc": 0.01476,
+              "pct": 4.4
             },
             {
               "variavel": "parcelamento_fatura_6m",
               "rotulo": "Parcelou a fatura do cartão",
               "bloco": "cartao",
               "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00077,
+              "queda_auc": 0.01345,
+              "pct": 4.0
+            },
+            {
+              "variavel": "pagamento_minimo_rotativo",
+              "rotulo": "Pagamento mínimo ou rotativo",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.01177,
+              "pct": 3.5
+            },
+            {
+              "variavel": "protesto_3_ou_mais",
+              "rotulo": "3 ou mais protestos",
+              "bloco": "mercado",
+              "bloco_nome": "Cartório e mercado",
+              "queda_auc": 0.01135,
+              "pct": 3.4
+            },
+            {
+              "variavel": "adiantamento_emergencial",
+              "rotulo": "Adiantamento emergencial",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.00843,
+              "pct": 2.5
+            },
+            {
+              "variavel": "relacionamento_recente",
+              "rotulo": "Relacionamento recente",
+              "bloco": "vinculo",
+              "bloco_nome": "Vínculo e perfil",
+              "queda_auc": 0.00763,
+              "pct": 2.3
+            },
+            {
+              "variavel": "cartao_acima_90_ou_compra_negada",
+              "rotulo": "Cartão acima de 90% ou compra negada",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00754,
+              "pct": 2.2
+            },
+            {
+              "variavel": "sem_imovel_proprio",
+              "rotulo": "Sem imóvel próprio",
+              "bloco": "vinculo",
+              "bloco_nome": "Vínculo e perfil",
+              "queda_auc": 0.00731,
+              "pct": 2.2
+            },
+            {
+              "variavel": "mais_de_um_cheque_sem_fundo_12m",
+              "rotulo": "Mais de 1 cheque sem fundo",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.00667,
+              "pct": 2.0
+            },
+            {
+              "variavel": "salto_gastos_cartao",
+              "rotulo": "Salto de gastos no cartão",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00601,
+              "pct": 1.8
+            },
+            {
+              "variavel": "rotativo_mais_2x_6m",
+              "rotulo": "Rotativo mais de 2 vezes",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00562,
+              "pct": 1.7
+            },
+            {
+              "variavel": "uso_cheque_especial_mais_3m_em_6m",
+              "rotulo": "Especial por mais de 3 meses",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.00448,
               "pct": 1.3
             },
             {
@@ -499,145 +263,355 @@
               "rotulo": "Usou cheque especial, 6 meses",
               "bloco": "cheque",
               "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00064,
+              "queda_auc": 0.00385,
               "pct": 1.1
-            },
-            {
-              "variavel": "sem_imovel_proprio",
-              "rotulo": "Sem imóvel próprio",
-              "bloco": "vinculo",
-              "bloco_nome": "Vínculo e perfil",
-              "queda_auc": 0.00023,
-              "pct": 0.4
-            }
-          ],
-          "mlp": [
-            {
-              "variavel": "cheque_sem_fundo_12m",
-              "rotulo": "Cheque sem fundo, 12 meses",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.01352,
-              "pct": 20.7
-            },
-            {
-              "variavel": "pagou_fatura_com_cheque_especial",
-              "rotulo": "Pagou a fatura com o especial",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.01162,
-              "pct": 18.0
-            },
-            {
-              "variavel": "uso_cheque_especial_mais_3m_em_6m",
-              "rotulo": "Especial por mais de 3 meses",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00733,
-              "pct": 11.3
-            },
-            {
-              "variavel": "protesto_cartorio",
-              "rotulo": "Protesto em cartório",
-              "bloco": "mercado",
-              "bloco_nome": "Cartório e mercado",
-              "queda_auc": 0.00406,
-              "pct": 6.3
-            },
-            {
-              "variavel": "salto_gastos_cartao",
-              "rotulo": "Salto de gastos no cartão",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00397,
-              "pct": 6.1
-            },
-            {
-              "variavel": "novo_emprestimo_6m",
-              "rotulo": "Novo empréstimo, 6 meses",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00342,
-              "pct": 5.3
-            },
-            {
-              "variavel": "pagamento_minimo_rotativo",
-              "rotulo": "Pagamento mínimo ou rotativo",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.0029,
-              "pct": 4.5
             },
             {
               "variavel": "acumulo_emprestimos",
               "rotulo": "Acúmulo de empréstimos",
               "bloco": "emprestimo",
               "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00276,
-              "pct": 4.3
+              "queda_auc": 0.00307,
+              "pct": 0.9
+            },
+            {
+              "variavel": "cartao_acima_90_mais_3x_6m",
+              "rotulo": "Cartão acima de 90% mais de 3 vezes",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00211,
+              "pct": 0.6
+            },
+            {
+              "variavel": "novo_emprestimo_6m",
+              "rotulo": "Novo empréstimo, 6 meses",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 4e-05,
+              "pct": 0.0
+            }
+          ],
+          "floresta": [
+            {
+              "variavel": "renegociacao_ativa",
+              "rotulo": "Renegociação ativa",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.05104,
+              "pct": 17.0
             },
             {
               "variavel": "restricao_outras_instituicoes",
               "rotulo": "Restrição em outra instituição",
               "bloco": "mercado",
               "bloco_nome": "Cartório e mercado",
-              "queda_auc": 0.0025,
-              "pct": 3.9
+              "queda_auc": 0.04435,
+              "pct": 14.8
             },
             {
-              "variavel": "protesto_3_ou_mais",
-              "rotulo": "3 ou mais protestos",
+              "variavel": "protesto_cartorio",
+              "rotulo": "Protesto em cartório",
               "bloco": "mercado",
               "bloco_nome": "Cartório e mercado",
-              "queda_auc": 0.00247,
-              "pct": 3.8
+              "queda_auc": 0.0282,
+              "pct": 9.4
+            },
+            {
+              "variavel": "saque_cartao_credito",
+              "rotulo": "Saque no cartão de crédito",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.02724,
+              "pct": 9.1
             },
             {
               "variavel": "resgate_total_reserva",
               "rotulo": "Resgate total da reserva",
               "bloco": "emprestimo",
               "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00236,
-              "pct": 3.7
+              "queda_auc": 0.02465,
+              "pct": 8.2
             },
             {
-              "variavel": "adiantamento_emergencial",
-              "rotulo": "Adiantamento emergencial",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00223,
-              "pct": 3.4
+              "variavel": "pagou_fatura_com_cheque_especial",
+              "rotulo": "Pagou a fatura com o especial",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.02313,
+              "pct": 7.7
             },
             {
-              "variavel": "relacionamento_recente",
-              "rotulo": "Relacionamento recente",
+              "variavel": "parcelamento_fatura_6m",
+              "rotulo": "Parcelou a fatura do cartão",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.01228,
+              "pct": 4.1
+            },
+            {
+              "variavel": "protesto_3_ou_mais",
+              "rotulo": "3 ou mais protestos",
+              "bloco": "mercado",
+              "bloco_nome": "Cartório e mercado",
+              "queda_auc": 0.01185,
+              "pct": 4.0
+            },
+            {
+              "variavel": "queda_vinculo_principal",
+              "rotulo": "Queda do vínculo principal",
               "bloco": "vinculo",
               "bloco_nome": "Vínculo e perfil",
-              "queda_auc": 0.00154,
-              "pct": 2.4
+              "queda_auc": 0.01138,
+              "pct": 3.8
             },
             {
-              "variavel": "rotativo_mais_2x_6m",
-              "rotulo": "Rotativo mais de 2 vezes",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00133,
-              "pct": 2.1
-            },
-            {
-              "variavel": "cartao_acima_90_ou_compra_negada",
-              "rotulo": "Cartão acima de 90% ou compra negada",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00114,
-              "pct": 1.8
+              "variavel": "cheque_sem_fundo_12m",
+              "rotulo": "Cheque sem fundo, 12 meses",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.01091,
+              "pct": 3.6
             },
             {
               "variavel": "mais_de_um_cheque_sem_fundo_12m",
               "rotulo": "Mais de 1 cheque sem fundo",
               "bloco": "cheque",
               "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00101,
+              "queda_auc": 0.00951,
+              "pct": 3.2
+            },
+            {
+              "variavel": "pagamento_minimo_rotativo",
+              "rotulo": "Pagamento mínimo ou rotativo",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00929,
+              "pct": 3.1
+            },
+            {
+              "variavel": "adiantamento_emergencial",
+              "rotulo": "Adiantamento emergencial",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.00604,
+              "pct": 2.0
+            },
+            {
+              "variavel": "rotativo_mais_2x_6m",
+              "rotulo": "Rotativo mais de 2 vezes",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00598,
+              "pct": 2.0
+            },
+            {
+              "variavel": "cartao_acima_90_ou_compra_negada",
+              "rotulo": "Cartão acima de 90% ou compra negada",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00546,
+              "pct": 1.8
+            },
+            {
+              "variavel": "sem_imovel_proprio",
+              "rotulo": "Sem imóvel próprio",
+              "bloco": "vinculo",
+              "bloco_nome": "Vínculo e perfil",
+              "queda_auc": 0.00542,
+              "pct": 1.8
+            },
+            {
+              "variavel": "relacionamento_recente",
+              "rotulo": "Relacionamento recente",
+              "bloco": "vinculo",
+              "bloco_nome": "Vínculo e perfil",
+              "queda_auc": 0.00531,
+              "pct": 1.8
+            },
+            {
+              "variavel": "usou_cheque_especial_6m",
+              "rotulo": "Usou cheque especial, 6 meses",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.00238,
+              "pct": 0.8
+            },
+            {
+              "variavel": "salto_gastos_cartao",
+              "rotulo": "Salto de gastos no cartão",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00208,
+              "pct": 0.7
+            },
+            {
+              "variavel": "uso_cheque_especial_mais_3m_em_6m",
+              "rotulo": "Especial por mais de 3 meses",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.00191,
+              "pct": 0.6
+            },
+            {
+              "variavel": "cartao_acima_90_mais_3x_6m",
+              "rotulo": "Cartão acima de 90% mais de 3 vezes",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00123,
+              "pct": 0.4
+            },
+            {
+              "variavel": "acumulo_emprestimos",
+              "rotulo": "Acúmulo de empréstimos",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.0002,
+              "pct": 0.1
+            }
+          ],
+          "boosting": [
+            {
+              "variavel": "renegociacao_ativa",
+              "rotulo": "Renegociação ativa",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.04926,
+              "pct": 15.1
+            },
+            {
+              "variavel": "restricao_outras_instituicoes",
+              "rotulo": "Restrição em outra instituição",
+              "bloco": "mercado",
+              "bloco_nome": "Cartório e mercado",
+              "queda_auc": 0.04462,
+              "pct": 13.7
+            },
+            {
+              "variavel": "protesto_cartorio",
+              "rotulo": "Protesto em cartório",
+              "bloco": "mercado",
+              "bloco_nome": "Cartório e mercado",
+              "queda_auc": 0.03029,
+              "pct": 9.3
+            },
+            {
+              "variavel": "saque_cartao_credito",
+              "rotulo": "Saque no cartão de crédito",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.02983,
+              "pct": 9.1
+            },
+            {
+              "variavel": "resgate_total_reserva",
+              "rotulo": "Resgate total da reserva",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.02669,
+              "pct": 8.2
+            },
+            {
+              "variavel": "pagou_fatura_com_cheque_especial",
+              "rotulo": "Pagou a fatura com o especial",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.02483,
+              "pct": 7.6
+            },
+            {
+              "variavel": "cheque_sem_fundo_12m",
+              "rotulo": "Cheque sem fundo, 12 meses",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.01582,
+              "pct": 4.9
+            },
+            {
+              "variavel": "queda_vinculo_principal",
+              "rotulo": "Queda do vínculo principal",
+              "bloco": "vinculo",
+              "bloco_nome": "Vínculo e perfil",
+              "queda_auc": 0.01398,
+              "pct": 4.3
+            },
+            {
+              "variavel": "parcelamento_fatura_6m",
+              "rotulo": "Parcelou a fatura do cartão",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.01308,
+              "pct": 4.0
+            },
+            {
+              "variavel": "pagamento_minimo_rotativo",
+              "rotulo": "Pagamento mínimo ou rotativo",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.01163,
+              "pct": 3.6
+            },
+            {
+              "variavel": "protesto_3_ou_mais",
+              "rotulo": "3 ou mais protestos",
+              "bloco": "mercado",
+              "bloco_nome": "Cartório e mercado",
+              "queda_auc": 0.01143,
+              "pct": 3.5
+            },
+            {
+              "variavel": "adiantamento_emergencial",
+              "rotulo": "Adiantamento emergencial",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.00796,
+              "pct": 2.4
+            },
+            {
+              "variavel": "cartao_acima_90_ou_compra_negada",
+              "rotulo": "Cartão acima de 90% ou compra negada",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00724,
+              "pct": 2.2
+            },
+            {
+              "variavel": "sem_imovel_proprio",
+              "rotulo": "Sem imóvel próprio",
+              "bloco": "vinculo",
+              "bloco_nome": "Vínculo e perfil",
+              "queda_auc": 0.00695,
+              "pct": 2.1
+            },
+            {
+              "variavel": "mais_de_um_cheque_sem_fundo_12m",
+              "rotulo": "Mais de 1 cheque sem fundo",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.0067,
+              "pct": 2.1
+            },
+            {
+              "variavel": "relacionamento_recente",
+              "rotulo": "Relacionamento recente",
+              "bloco": "vinculo",
+              "bloco_nome": "Vínculo e perfil",
+              "queda_auc": 0.00653,
+              "pct": 2.0
+            },
+            {
+              "variavel": "rotativo_mais_2x_6m",
+              "rotulo": "Rotativo mais de 2 vezes",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00575,
+              "pct": 1.8
+            },
+            {
+              "variavel": "salto_gastos_cartao",
+              "rotulo": "Salto de gastos no cartão",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00514,
               "pct": 1.6
             },
             {
@@ -645,16 +619,336 @@
               "rotulo": "Usou cheque especial, 6 meses",
               "bloco": "cheque",
               "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00044,
-              "pct": 0.7
+              "queda_auc": 0.00301,
+              "pct": 0.9
+            },
+            {
+              "variavel": "uso_cheque_especial_mais_3m_em_6m",
+              "rotulo": "Especial por mais de 3 meses",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.00292,
+              "pct": 0.9
+            },
+            {
+              "variavel": "acumulo_emprestimos",
+              "rotulo": "Acúmulo de empréstimos",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.00205,
+              "pct": 0.6
+            },
+            {
+              "variavel": "cartao_acima_90_mais_3x_6m",
+              "rotulo": "Cartão acima de 90% mais de 3 vezes",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00034,
+              "pct": 0.1
+            },
+            {
+              "variavel": "novo_emprestimo_6m",
+              "rotulo": "Novo empréstimo, 6 meses",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 1e-05,
+              "pct": 0.0
+            }
+          ],
+          "mlp": [
+            {
+              "variavel": "renegociacao_ativa",
+              "rotulo": "Renegociação ativa",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.04912,
+              "pct": 14.4
+            },
+            {
+              "variavel": "restricao_outras_instituicoes",
+              "rotulo": "Restrição em outra instituição",
+              "bloco": "mercado",
+              "bloco_nome": "Cartório e mercado",
+              "queda_auc": 0.04462,
+              "pct": 13.1
+            },
+            {
+              "variavel": "protesto_cartorio",
+              "rotulo": "Protesto em cartório",
+              "bloco": "mercado",
+              "bloco_nome": "Cartório e mercado",
+              "queda_auc": 0.02989,
+              "pct": 8.8
+            },
+            {
+              "variavel": "saque_cartao_credito",
+              "rotulo": "Saque no cartão de crédito",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.02972,
+              "pct": 8.8
+            },
+            {
+              "variavel": "resgate_total_reserva",
+              "rotulo": "Resgate total da reserva",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.02941,
+              "pct": 8.7
+            },
+            {
+              "variavel": "pagou_fatura_com_cheque_especial",
+              "rotulo": "Pagou a fatura com o especial",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.02321,
+              "pct": 6.8
+            },
+            {
+              "variavel": "parcelamento_fatura_6m",
+              "rotulo": "Parcelou a fatura do cartão",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.01563,
+              "pct": 4.6
+            },
+            {
+              "variavel": "cheque_sem_fundo_12m",
+              "rotulo": "Cheque sem fundo, 12 meses",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.01507,
+              "pct": 4.4
+            },
+            {
+              "variavel": "queda_vinculo_principal",
+              "rotulo": "Queda do vínculo principal",
+              "bloco": "vinculo",
+              "bloco_nome": "Vínculo e perfil",
+              "queda_auc": 0.01427,
+              "pct": 4.2
+            },
+            {
+              "variavel": "pagamento_minimo_rotativo",
+              "rotulo": "Pagamento mínimo ou rotativo",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.01239,
+              "pct": 3.7
+            },
+            {
+              "variavel": "protesto_3_ou_mais",
+              "rotulo": "3 ou mais protestos",
+              "bloco": "mercado",
+              "bloco_nome": "Cartório e mercado",
+              "queda_auc": 0.01187,
+              "pct": 3.5
+            },
+            {
+              "variavel": "cartao_acima_90_ou_compra_negada",
+              "rotulo": "Cartão acima de 90% ou compra negada",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00925,
+              "pct": 2.7
+            },
+            {
+              "variavel": "adiantamento_emergencial",
+              "rotulo": "Adiantamento emergencial",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.00831,
+              "pct": 2.4
             },
             {
               "variavel": "sem_imovel_proprio",
               "rotulo": "Sem imóvel próprio",
               "bloco": "vinculo",
               "bloco_nome": "Vínculo e perfil",
-              "queda_auc": 5e-05,
-              "pct": 0.1
+              "queda_auc": 0.00723,
+              "pct": 2.1
+            },
+            {
+              "variavel": "mais_de_um_cheque_sem_fundo_12m",
+              "rotulo": "Mais de 1 cheque sem fundo",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.00703,
+              "pct": 2.1
+            },
+            {
+              "variavel": "salto_gastos_cartao",
+              "rotulo": "Salto de gastos no cartão",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.0063,
+              "pct": 1.9
+            },
+            {
+              "variavel": "rotativo_mais_2x_6m",
+              "rotulo": "Rotativo mais de 2 vezes",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00617,
+              "pct": 1.8
+            },
+            {
+              "variavel": "relacionamento_recente",
+              "rotulo": "Relacionamento recente",
+              "bloco": "vinculo",
+              "bloco_nome": "Vínculo e perfil",
+              "queda_auc": 0.00502,
+              "pct": 1.5
+            },
+            {
+              "variavel": "acumulo_emprestimos",
+              "rotulo": "Acúmulo de empréstimos",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.00496,
+              "pct": 1.5
+            },
+            {
+              "variavel": "uso_cheque_especial_mais_3m_em_6m",
+              "rotulo": "Especial por mais de 3 meses",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.00434,
+              "pct": 1.3
+            },
+            {
+              "variavel": "usou_cheque_especial_6m",
+              "rotulo": "Usou cheque especial, 6 meses",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.00327,
+              "pct": 1.0
+            },
+            {
+              "variavel": "cartao_acima_90_mais_3x_6m",
+              "rotulo": "Cartão acima de 90% mais de 3 vezes",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00131,
+              "pct": 0.4
+            },
+            {
+              "variavel": "novo_emprestimo_6m",
+              "rotulo": "Novo empréstimo, 6 meses",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.00097,
+              "pct": 0.3
+            }
+          ]
+        },
+        "blocos": {
+          "logistica": [
+            {
+              "bloco": "cartao",
+              "nome": "Cartão de crédito e fatura",
+              "pct": 30.3
+            },
+            {
+              "bloco": "emprestimo",
+              "nome": "Empréstimos, emergência e reserva",
+              "pct": 26.1
+            },
+            {
+              "bloco": "mercado",
+              "nome": "Cartório e mercado",
+              "pct": 25.8
+            },
+            {
+              "bloco": "cheque",
+              "nome": "Cheque especial e cheques",
+              "pct": 9.0
+            },
+            {
+              "bloco": "vinculo",
+              "nome": "Vínculo e perfil",
+              "pct": 8.8
+            }
+          ],
+          "floresta": [
+            {
+              "bloco": "cartao",
+              "nome": "Cartão de crédito e fatura",
+              "pct": 29.0
+            },
+            {
+              "bloco": "mercado",
+              "nome": "Cartório e mercado",
+              "pct": 28.3
+            },
+            {
+              "bloco": "emprestimo",
+              "nome": "Empréstimos, emergência e reserva",
+              "pct": 27.0
+            },
+            {
+              "bloco": "cheque",
+              "nome": "Cheque especial e cheques",
+              "pct": 8.3
+            },
+            {
+              "bloco": "vinculo",
+              "nome": "Vínculo e perfil",
+              "pct": 7.4
+            }
+          ],
+          "boosting": [
+            {
+              "bloco": "cartao",
+              "nome": "Cartão de crédito e fatura",
+              "pct": 30.0
+            },
+            {
+              "bloco": "mercado",
+              "nome": "Cartório e mercado",
+              "pct": 26.5
+            },
+            {
+              "bloco": "emprestimo",
+              "nome": "Empréstimos, emergência e reserva",
+              "pct": 26.4
+            },
+            {
+              "bloco": "cheque",
+              "nome": "Cheque especial e cheques",
+              "pct": 8.7
+            },
+            {
+              "bloco": "vinculo",
+              "nome": "Vínculo e perfil",
+              "pct": 8.4
+            }
+          ],
+          "mlp": [
+            {
+              "bloco": "cartao",
+              "nome": "Cartão de crédito e fatura",
+              "pct": 30.7
+            },
+            {
+              "bloco": "emprestimo",
+              "nome": "Empréstimos, emergência e reserva",
+              "pct": 27.3
+            },
+            {
+              "bloco": "mercado",
+              "nome": "Cartório e mercado",
+              "pct": 25.4
+            },
+            {
+              "bloco": "cheque",
+              "nome": "Cheque especial e cheques",
+              "pct": 8.8
+            },
+            {
+              "bloco": "vinculo",
+              "nome": "Vínculo e perfil",
+              "pct": 7.8
             }
           ]
         }
@@ -671,18 +965,18 @@
           "nome": "Regressão logística",
           "papel": "Baseline e scorecard. O peso de cada variável fica visível.",
           "tecnica": "Modelo linear. Os números entram padronizados e as categorias abrem em colunas. Cada peso se lê com sinal: empurra para o calote ou afasta dele. É a peça que o comitê consegue auditar variável a variável.",
-          "roc_auc": 0.9766502656670905,
-          "brier": 0.025745343118549143,
+          "roc_auc": 0.9240683175206368,
+          "brier": 0.04055568541195679,
           "matriz": {
             "corte": 0.5,
-            "tn": 13923,
-            "fp": 170,
-            "fn": 362,
-            "tp": 545,
-            "precisao": 0.7622377622377622,
-            "recall": 0.6008820286659317,
-            "f1": 0.6720098643649816,
-            "acuracia": 0.9645333333333334
+            "tn": 13721,
+            "fp": 165,
+            "fn": 625,
+            "tp": 489,
+            "precisao": 0.7477064220183486,
+            "recall": 0.43895870736086173,
+            "f1": 0.5531674208144797,
+            "acuracia": 0.9473333333333334
           }
         },
         {
@@ -690,18 +984,18 @@
           "nome": "Random Forest",
           "papel": "Ensemble de árvores, estável diante de relação não linear.",
           "tecnica": "Duzentas árvores. Cada uma vê uma amostra e um subconjunto de colunas. A chance é a média dos votos. A floresta não entrega um peso único por variável; a leitura dela, aqui, é a curva, a matriz e a importância por permutação.",
-          "roc_auc": 0.9740885303493856,
-          "brier": 0.02873244236286258,
+          "roc_auc": 0.9042025265492207,
+          "brier": 0.049925191152850844,
           "matriz": {
             "corte": 0.5,
-            "tn": 14014,
-            "fp": 79,
-            "fn": 519,
-            "tp": 388,
-            "precisao": 0.8308351177730193,
-            "recall": 0.42778390297684676,
-            "f1": 0.5647743813682679,
-            "acuracia": 0.9601333333333333
+            "tn": 13818,
+            "fp": 68,
+            "fn": 929,
+            "tp": 185,
+            "precisao": 0.7312252964426877,
+            "recall": 0.16606822262118492,
+            "f1": 0.27066569129480617,
+            "acuracia": 0.9335333333333333
           }
         },
         {
@@ -709,18 +1003,18 @@
           "nome": "Gradient Boosting (XGBoost)",
           "papel": "Árvores em sequência, o padrão forte em tabela de crédito.",
           "tecnica": "XGBoost com árvores rasas. A árvore seguinte corrige o erro da anterior. Captura não linearidade sem virar uma rede. Os ganhos internos não substituem a explicação do scorecard; a comparação com a logística mostra o que a não linearidade acrescenta.",
-          "roc_auc": 0.974637099231589,
-          "brier": 0.026708317920565605,
+          "roc_auc": 0.921692598954658,
+          "brier": 0.04155851900577545,
           "matriz": {
             "corte": 0.5,
-            "tn": 13897,
-            "fp": 196,
-            "fn": 369,
-            "tp": 538,
-            "precisao": 0.7329700272479565,
-            "recall": 0.5931642778390298,
-            "f1": 0.65569774527727,
-            "acuracia": 0.9623333333333334
+            "tn": 13739,
+            "fp": 147,
+            "fn": 674,
+            "tp": 440,
+            "precisao": 0.7495741056218058,
+            "recall": 0.39497307001795334,
+            "f1": 0.5173427395649618,
+            "acuracia": 0.9452666666666667
           }
         },
         {
@@ -728,18 +1022,18 @@
           "nome": "Rede neural MLP",
           "papel": "Interações entre os blocos, em camadas densas.",
           "tecnica": "Perceptron de duas camadas ocultas, 64 e 32 neurônios, ativação ReLU. Os números entram padronizados. Dez por cento do treino servem só para parar cedo. Os pesos internos não se apresentam ao comitê; a rede entra pela curva, pela matriz e pela permutação.",
-          "roc_auc": 0.9740544208182047,
-          "brier": 0.026709221034545965,
+          "roc_auc": 0.9221766960561907,
+          "brier": 0.04136788441417022,
           "matriz": {
             "corte": 0.5,
-            "tn": 13928,
-            "fp": 165,
-            "fn": 368,
-            "tp": 539,
-            "precisao": 0.765625,
-            "recall": 0.5942668136714443,
-            "f1": 0.6691495965238982,
-            "acuracia": 0.9644666666666667
+            "tn": 13588,
+            "fp": 298,
+            "fn": 538,
+            "tp": 576,
+            "precisao": 0.6590389016018307,
+            "recall": 0.5170556552962298,
+            "f1": 0.579476861167002,
+            "acuracia": 0.9442666666666667
           }
         }
       ],
@@ -749,489 +1043,277 @@
         "itens": {
           "logistica": [
             {
-              "variavel": "pagou_fatura_com_cheque_especial",
-              "rotulo": "Pagou a fatura com o especial",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.01014,
-              "pct": 25.6
-            },
-            {
-              "variavel": "mais_de_um_cheque_sem_fundo_12m",
-              "rotulo": "Mais de 1 cheque sem fundo",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00642,
-              "pct": 16.2
-            },
-            {
-              "variavel": "uso_cheque_especial_mais_3m_em_6m",
-              "rotulo": "Especial por mais de 3 meses",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.0048,
-              "pct": 12.1
+              "variavel": "restricao_outras_instituicoes",
+              "rotulo": "Restrição em outra instituição",
+              "bloco": "mercado",
+              "bloco_nome": "Cartório e mercado",
+              "queda_auc": 0.09573,
+              "pct": 29.7
             },
             {
               "variavel": "renegociacao_ativa",
               "rotulo": "Renegociação ativa",
               "bloco": "emprestimo",
               "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00359,
-              "pct": 9.0
-            },
-            {
-              "variavel": "resgate_total_reserva",
-              "rotulo": "Resgate total da reserva",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00339,
-              "pct": 8.5
-            },
-            {
-              "variavel": "cheque_sem_fundo_12m",
-              "rotulo": "Cheque sem fundo, 12 meses",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00275,
-              "pct": 6.9
-            },
-            {
-              "variavel": "adiantamento_emergencial",
-              "rotulo": "Adiantamento emergencial",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00189,
-              "pct": 4.8
-            },
-            {
-              "variavel": "restricao_outras_instituicoes",
-              "rotulo": "Restrição em outra instituição",
-              "bloco": "mercado",
-              "bloco_nome": "Cartório e mercado",
-              "queda_auc": 0.00182,
-              "pct": 4.6
-            },
-            {
-              "variavel": "cartao_acima_90_ou_compra_negada",
-              "rotulo": "Cartão acima de 90% ou compra negada",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00152,
-              "pct": 3.8
-            },
-            {
-              "variavel": "cartao_acima_90_mais_3x_6m",
-              "rotulo": "Cartão acima de 90% mais de 3 vezes",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00121,
-              "pct": 3.0
-            },
-            {
-              "variavel": "queda_vinculo_principal",
-              "rotulo": "Queda do vínculo principal",
-              "bloco": "vinculo",
-              "bloco_nome": "Vínculo e perfil",
-              "queda_auc": 0.00102,
-              "pct": 2.6
-            },
-            {
-              "variavel": "salto_gastos_cartao",
-              "rotulo": "Salto de gastos no cartão",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00048,
-              "pct": 1.2
-            },
-            {
-              "variavel": "pagamento_minimo_rotativo",
-              "rotulo": "Pagamento mínimo ou rotativo",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.0003,
-              "pct": 0.8
-            },
-            {
-              "variavel": "usou_cheque_especial_6m",
-              "rotulo": "Usou cheque especial, 6 meses",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00023,
-              "pct": 0.6
+              "queda_auc": 0.03109,
+              "pct": 9.6
             },
             {
               "variavel": "saque_cartao_credito",
               "rotulo": "Saque no cartão de crédito",
               "bloco": "cartao",
               "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00012,
-              "pct": 0.3
-            }
-          ],
-          "floresta": [
+              "queda_auc": 0.02016,
+              "pct": 6.3
+            },
             {
               "variavel": "pagou_fatura_com_cheque_especial",
               "rotulo": "Pagou a fatura com o especial",
               "bloco": "cartao",
               "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.01,
-              "pct": 24.1
+              "queda_auc": 0.01954,
+              "pct": 6.1
             },
             {
-              "variavel": "uso_cheque_especial_mais_3m_em_6m",
-              "rotulo": "Especial por mais de 3 meses",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00648,
-              "pct": 15.7
-            },
-            {
-              "variavel": "mais_de_um_cheque_sem_fundo_12m",
-              "rotulo": "Mais de 1 cheque sem fundo",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00612,
-              "pct": 14.8
-            },
-            {
-              "variavel": "renegociacao_ativa",
-              "rotulo": "Renegociação ativa",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00412,
-              "pct": 10.0
-            },
-            {
-              "variavel": "resgate_total_reserva",
-              "rotulo": "Resgate total da reserva",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00345,
-              "pct": 8.3
+              "variavel": "protesto_3_ou_mais",
+              "rotulo": "3 ou mais protestos",
+              "bloco": "mercado",
+              "bloco_nome": "Cartório e mercado",
+              "queda_auc": 0.01883,
+              "pct": 5.8
             },
             {
               "variavel": "cheque_sem_fundo_12m",
               "rotulo": "Cheque sem fundo, 12 meses",
               "bloco": "cheque",
               "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00276,
-              "pct": 6.7
+              "queda_auc": 0.01882,
+              "pct": 5.8
             },
             {
-              "variavel": "cartao_acima_90_mais_3x_6m",
-              "rotulo": "Cartão acima de 90% mais de 3 vezes",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00246,
-              "pct": 5.9
+              "variavel": "resgate_total_reserva",
+              "rotulo": "Resgate total da reserva",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.01797,
+              "pct": 5.6
             },
             {
               "variavel": "queda_vinculo_principal",
               "rotulo": "Queda do vínculo principal",
               "bloco": "vinculo",
               "bloco_nome": "Vínculo e perfil",
-              "queda_auc": 0.0012,
-              "pct": 2.9
+              "queda_auc": 0.0178,
+              "pct": 5.5
             },
             {
-              "variavel": "pagamento_minimo_rotativo",
-              "rotulo": "Pagamento mínimo ou rotativo",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00119,
-              "pct": 2.9
-            },
-            {
-              "variavel": "adiantamento_emergencial",
-              "rotulo": "Adiantamento emergencial",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00114,
-              "pct": 2.8
-            },
-            {
-              "variavel": "restricao_outras_instituicoes",
-              "rotulo": "Restrição em outra instituição",
+              "variavel": "protesto_cartorio",
+              "rotulo": "Protesto em cartório",
               "bloco": "mercado",
               "bloco_nome": "Cartório e mercado",
-              "queda_auc": 0.00109,
-              "pct": 2.6
-            },
-            {
-              "variavel": "cartao_acima_90_ou_compra_negada",
-              "rotulo": "Cartão acima de 90% ou compra negada",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00076,
-              "pct": 1.8
+              "queda_auc": 0.01597,
+              "pct": 5.0
             },
             {
               "variavel": "parcelamento_fatura_6m",
               "rotulo": "Parcelou a fatura do cartão",
               "bloco": "cartao",
               "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00042,
-              "pct": 1.0
+              "queda_auc": 0.01176,
+              "pct": 3.6
+            },
+            {
+              "variavel": "mais_de_um_cheque_sem_fundo_12m",
+              "rotulo": "Mais de 1 cheque sem fundo",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.0099,
+              "pct": 3.1
+            },
+            {
+              "variavel": "cartao_acima_90_ou_compra_negada",
+              "rotulo": "Cartão acima de 90% ou compra negada",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.0068,
+              "pct": 2.1
+            },
+            {
+              "variavel": "adiantamento_emergencial",
+              "rotulo": "Adiantamento emergencial",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.00641,
+              "pct": 2.0
             },
             {
               "variavel": "rotativo_mais_2x_6m",
               "rotulo": "Rotativo mais de 2 vezes",
               "bloco": "cartao",
               "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00017,
-              "pct": 0.4
+              "queda_auc": 0.00512,
+              "pct": 1.6
+            },
+            {
+              "variavel": "uso_cheque_especial_mais_3m_em_6m",
+              "rotulo": "Especial por mais de 3 meses",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.00509,
+              "pct": 1.6
+            },
+            {
+              "variavel": "sem_imovel_proprio",
+              "rotulo": "Sem imóvel próprio",
+              "bloco": "vinculo",
+              "bloco_nome": "Vínculo e perfil",
+              "queda_auc": 0.00502,
+              "pct": 1.6
+            },
+            {
+              "variavel": "usou_cheque_especial_6m",
+              "rotulo": "Usou cheque especial, 6 meses",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.00427,
+              "pct": 1.3
             },
             {
               "variavel": "acumulo_emprestimos",
               "rotulo": "Acúmulo de empréstimos",
               "bloco": "emprestimo",
               "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 3e-05,
-              "pct": 0.1
-            }
-          ],
-          "boosting": [
-            {
-              "variavel": "pagou_fatura_com_cheque_especial",
-              "rotulo": "Pagou a fatura com o especial",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.01055,
-              "pct": 21.9
-            },
-            {
-              "variavel": "uso_cheque_especial_mais_3m_em_6m",
-              "rotulo": "Especial por mais de 3 meses",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00665,
-              "pct": 13.8
-            },
-            {
-              "variavel": "mais_de_um_cheque_sem_fundo_12m",
-              "rotulo": "Mais de 1 cheque sem fundo",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00532,
-              "pct": 11.1
-            },
-            {
-              "variavel": "renegociacao_ativa",
-              "rotulo": "Renegociação ativa",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.0048,
-              "pct": 10.0
-            },
-            {
-              "variavel": "cheque_sem_fundo_12m",
-              "rotulo": "Cheque sem fundo, 12 meses",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00373,
-              "pct": 7.8
-            },
-            {
-              "variavel": "resgate_total_reserva",
-              "rotulo": "Resgate total da reserva",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00303,
-              "pct": 6.3
-            },
-            {
-              "variavel": "cartao_acima_90_mais_3x_6m",
-              "rotulo": "Cartão acima de 90% mais de 3 vezes",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00271,
-              "pct": 5.6
-            },
-            {
-              "variavel": "restricao_outras_instituicoes",
-              "rotulo": "Restrição em outra instituição",
-              "bloco": "mercado",
-              "bloco_nome": "Cartório e mercado",
-              "queda_auc": 0.00246,
-              "pct": 5.1
-            },
-            {
-              "variavel": "adiantamento_emergencial",
-              "rotulo": "Adiantamento emergencial",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00166,
-              "pct": 3.5
-            },
-            {
-              "variavel": "cartao_acima_90_ou_compra_negada",
-              "rotulo": "Cartão acima de 90% ou compra negada",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00145,
-              "pct": 3.0
-            },
-            {
-              "variavel": "queda_vinculo_principal",
-              "rotulo": "Queda do vínculo principal",
-              "bloco": "vinculo",
-              "bloco_nome": "Vínculo e perfil",
-              "queda_auc": 0.00143,
-              "pct": 3.0
-            },
-            {
-              "variavel": "pagamento_minimo_rotativo",
-              "rotulo": "Pagamento mínimo ou rotativo",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00138,
-              "pct": 2.9
-            },
-            {
-              "variavel": "usou_cheque_especial_6m",
-              "rotulo": "Usou cheque especial, 6 meses",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.001,
-              "pct": 2.1
+              "queda_auc": 0.004,
+              "pct": 1.2
             },
             {
               "variavel": "novo_emprestimo_6m",
               "rotulo": "Novo empréstimo, 6 meses",
               "bloco": "emprestimo",
               "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00077,
-              "pct": 1.6
-            },
-            {
-              "variavel": "parcelamento_fatura_6m",
-              "rotulo": "Parcelou a fatura do cartão",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00054,
-              "pct": 1.1
+              "queda_auc": 0.00304,
+              "pct": 0.9
             },
             {
               "variavel": "salto_gastos_cartao",
               "rotulo": "Salto de gastos no cartão",
               "bloco": "cartao",
               "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00052,
-              "pct": 1.1
+              "queda_auc": 0.00247,
+              "pct": 0.8
             },
             {
-              "variavel": "saque_cartao_credito",
-              "rotulo": "Saque no cartão de crédito",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 5e-05,
-              "pct": 0.1
-            }
-          ],
-          "mlp": [
-            {
-              "variavel": "pagou_fatura_com_cheque_especial",
-              "rotulo": "Pagou a fatura com o especial",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.01328,
-              "pct": 20.7
-            },
-            {
-              "variavel": "uso_cheque_especial_mais_3m_em_6m",
-              "rotulo": "Especial por mais de 3 meses",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00738,
-              "pct": 11.5
-            },
-            {
-              "variavel": "mais_de_um_cheque_sem_fundo_12m",
-              "rotulo": "Mais de 1 cheque sem fundo",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00688,
-              "pct": 10.7
-            },
-            {
-              "variavel": "cheque_sem_fundo_12m",
-              "rotulo": "Cheque sem fundo, 12 meses",
-              "bloco": "cheque",
-              "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.00623,
-              "pct": 9.7
-            },
-            {
-              "variavel": "renegociacao_ativa",
-              "rotulo": "Renegociação ativa",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00449,
-              "pct": 7.0
-            },
-            {
-              "variavel": "resgate_total_reserva",
-              "rotulo": "Resgate total da reserva",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00388,
-              "pct": 6.0
-            },
-            {
-              "variavel": "restricao_outras_instituicoes",
-              "rotulo": "Restrição em outra instituição",
-              "bloco": "mercado",
-              "bloco_nome": "Cartório e mercado",
-              "queda_auc": 0.00313,
-              "pct": 4.9
-            },
-            {
-              "variavel": "queda_vinculo_principal",
-              "rotulo": "Queda do vínculo principal",
+              "variavel": "relacionamento_recente",
+              "rotulo": "Relacionamento recente",
               "bloco": "vinculo",
               "bloco_nome": "Vínculo e perfil",
-              "queda_auc": 0.00286,
-              "pct": 4.5
-            },
-            {
-              "variavel": "adiantamento_emergencial",
-              "rotulo": "Adiantamento emergencial",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00248,
-              "pct": 3.9
+              "queda_auc": 0.00139,
+              "pct": 0.4
             },
             {
               "variavel": "cartao_acima_90_mais_3x_6m",
               "rotulo": "Cartão acima de 90% mais de 3 vezes",
               "bloco": "cartao",
               "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00214,
-              "pct": 3.3
+              "queda_auc": 0.00117,
+              "pct": 0.4
+            }
+          ],
+          "floresta": [
+            {
+              "variavel": "restricao_outras_instituicoes",
+              "rotulo": "Restrição em outra instituição",
+              "bloco": "mercado",
+              "bloco_nome": "Cartório e mercado",
+              "queda_auc": 0.09727,
+              "pct": 33.8
             },
             {
-              "variavel": "salto_gastos_cartao",
-              "rotulo": "Salto de gastos no cartão",
+              "variavel": "renegociacao_ativa",
+              "rotulo": "Renegociação ativa",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.02929,
+              "pct": 10.1
+            },
+            {
+              "variavel": "protesto_3_ou_mais",
+              "rotulo": "3 ou mais protestos",
+              "bloco": "mercado",
+              "bloco_nome": "Cartório e mercado",
+              "queda_auc": 0.02381,
+              "pct": 8.2
+            },
+            {
+              "variavel": "pagou_fatura_com_cheque_especial",
+              "rotulo": "Pagou a fatura com o especial",
               "bloco": "cartao",
               "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00178,
-              "pct": 2.8
+              "queda_auc": 0.02033,
+              "pct": 7.0
             },
             {
               "variavel": "saque_cartao_credito",
               "rotulo": "Saque no cartão de crédito",
               "bloco": "cartao",
               "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00177,
-              "pct": 2.8
+              "queda_auc": 0.01613,
+              "pct": 5.6
             },
             {
-              "variavel": "usou_cheque_especial_6m",
-              "rotulo": "Usou cheque especial, 6 meses",
+              "variavel": "queda_vinculo_principal",
+              "rotulo": "Queda do vínculo principal",
+              "bloco": "vinculo",
+              "bloco_nome": "Vínculo e perfil",
+              "queda_auc": 0.01533,
+              "pct": 5.3
+            },
+            {
+              "variavel": "mais_de_um_cheque_sem_fundo_12m",
+              "rotulo": "Mais de 1 cheque sem fundo",
               "bloco": "cheque",
               "bloco_nome": "Cheque especial e cheques",
-              "queda_auc": 0.0016,
+              "queda_auc": 0.01412,
+              "pct": 4.9
+            },
+            {
+              "variavel": "resgate_total_reserva",
+              "rotulo": "Resgate total da reserva",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.01396,
+              "pct": 4.8
+            },
+            {
+              "variavel": "protesto_cartorio",
+              "rotulo": "Protesto em cartório",
+              "bloco": "mercado",
+              "bloco_nome": "Cartório e mercado",
+              "queda_auc": 0.01334,
+              "pct": 4.6
+            },
+            {
+              "variavel": "cheque_sem_fundo_12m",
+              "rotulo": "Cheque sem fundo, 12 meses",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.01125,
+              "pct": 3.9
+            },
+            {
+              "variavel": "parcelamento_fatura_6m",
+              "rotulo": "Parcelou a fatura do cartão",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.0098,
+              "pct": 3.4
+            },
+            {
+              "variavel": "rotativo_mais_2x_6m",
+              "rotulo": "Rotativo mais de 2 vezes",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.0071,
               "pct": 2.5
             },
             {
@@ -1239,72 +1321,554 @@
               "rotulo": "Sem imóvel próprio",
               "bloco": "vinculo",
               "bloco_nome": "Vínculo e perfil",
-              "queda_auc": 0.00125,
-              "pct": 1.9
+              "queda_auc": 0.00504,
+              "pct": 1.7
             },
             {
-              "variavel": "pagamento_minimo_rotativo",
-              "rotulo": "Pagamento mínimo ou rotativo",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00116,
-              "pct": 1.8
+              "variavel": "usou_cheque_especial_6m",
+              "rotulo": "Usou cheque especial, 6 meses",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.00482,
+              "pct": 1.7
             },
             {
-              "variavel": "parcelamento_fatura_6m",
-              "rotulo": "Parcelou a fatura do cartão",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00101,
-              "pct": 1.6
-            },
-            {
-              "variavel": "novo_emprestimo_6m",
-              "rotulo": "Novo empréstimo, 6 meses",
+              "variavel": "adiantamento_emergencial",
+              "rotulo": "Adiantamento emergencial",
               "bloco": "emprestimo",
               "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00066,
-              "pct": 1.0
-            },
-            {
-              "variavel": "acumulo_emprestimos",
-              "rotulo": "Acúmulo de empréstimos",
-              "bloco": "emprestimo",
-              "bloco_nome": "Empréstimos, emergência e reserva",
-              "queda_auc": 0.00058,
-              "pct": 0.9
-            },
-            {
-              "variavel": "rotativo_mais_2x_6m",
-              "rotulo": "Rotativo mais de 2 vezes",
-              "bloco": "cartao",
-              "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00058,
-              "pct": 0.9
-            },
-            {
-              "variavel": "relacionamento_recente",
-              "rotulo": "Relacionamento recente",
-              "bloco": "vinculo",
-              "bloco_nome": "Vínculo e perfil",
-              "queda_auc": 0.00051,
+              "queda_auc": 0.00238,
               "pct": 0.8
+            },
+            {
+              "variavel": "uso_cheque_especial_mais_3m_em_6m",
+              "rotulo": "Especial por mais de 3 meses",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.00215,
+              "pct": 0.7
             },
             {
               "variavel": "cartao_acima_90_ou_compra_negada",
               "rotulo": "Cartão acima de 90% ou compra negada",
               "bloco": "cartao",
               "bloco_nome": "Cartão de crédito e fatura",
-              "queda_auc": 0.00025,
+              "queda_auc": 0.0013,
               "pct": 0.4
+            },
+            {
+              "variavel": "acumulo_emprestimos",
+              "rotulo": "Acúmulo de empréstimos",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.00079,
+              "pct": 0.3
+            },
+            {
+              "variavel": "salto_gastos_cartao",
+              "rotulo": "Salto de gastos no cartão",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00047,
+              "pct": 0.2
+            },
+            {
+              "variavel": "relacionamento_recente",
+              "rotulo": "Relacionamento recente",
+              "bloco": "vinculo",
+              "bloco_nome": "Vínculo e perfil",
+              "queda_auc": 0.00021,
+              "pct": 0.1
+            },
+            {
+              "variavel": "cartao_acima_90_mais_3x_6m",
+              "rotulo": "Cartão acima de 90% mais de 3 vezes",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 7e-05,
+              "pct": 0.0
+            }
+          ],
+          "boosting": [
+            {
+              "variavel": "restricao_outras_instituicoes",
+              "rotulo": "Restrição em outra instituição",
+              "bloco": "mercado",
+              "bloco_nome": "Cartório e mercado",
+              "queda_auc": 0.0962,
+              "pct": 30.4
+            },
+            {
+              "variavel": "renegociacao_ativa",
+              "rotulo": "Renegociação ativa",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.03098,
+              "pct": 9.8
+            },
+            {
+              "variavel": "protesto_3_ou_mais",
+              "rotulo": "3 ou mais protestos",
+              "bloco": "mercado",
+              "bloco_nome": "Cartório e mercado",
+              "queda_auc": 0.02044,
+              "pct": 6.4
+            },
+            {
+              "variavel": "pagou_fatura_com_cheque_especial",
+              "rotulo": "Pagou a fatura com o especial",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.0199,
+              "pct": 6.3
+            },
+            {
+              "variavel": "saque_cartao_credito",
+              "rotulo": "Saque no cartão de crédito",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.01878,
+              "pct": 5.9
+            },
+            {
+              "variavel": "resgate_total_reserva",
+              "rotulo": "Resgate total da reserva",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.01746,
+              "pct": 5.5
+            },
+            {
+              "variavel": "cheque_sem_fundo_12m",
+              "rotulo": "Cheque sem fundo, 12 meses",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.01745,
+              "pct": 5.5
+            },
+            {
+              "variavel": "queda_vinculo_principal",
+              "rotulo": "Queda do vínculo principal",
+              "bloco": "vinculo",
+              "bloco_nome": "Vínculo e perfil",
+              "queda_auc": 0.01694,
+              "pct": 5.3
             },
             {
               "variavel": "protesto_cartorio",
               "rotulo": "Protesto em cartório",
               "bloco": "mercado",
               "bloco_nome": "Cartório e mercado",
-              "queda_auc": 0.00024,
+              "queda_auc": 0.01573,
+              "pct": 5.0
+            },
+            {
+              "variavel": "parcelamento_fatura_6m",
+              "rotulo": "Parcelou a fatura do cartão",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.01191,
+              "pct": 3.8
+            },
+            {
+              "variavel": "mais_de_um_cheque_sem_fundo_12m",
+              "rotulo": "Mais de 1 cheque sem fundo",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.01084,
+              "pct": 3.4
+            },
+            {
+              "variavel": "sem_imovel_proprio",
+              "rotulo": "Sem imóvel próprio",
+              "bloco": "vinculo",
+              "bloco_nome": "Vínculo e perfil",
+              "queda_auc": 0.00578,
+              "pct": 1.8
+            },
+            {
+              "variavel": "cartao_acima_90_ou_compra_negada",
+              "rotulo": "Cartão acima de 90% ou compra negada",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00546,
+              "pct": 1.7
+            },
+            {
+              "variavel": "rotativo_mais_2x_6m",
+              "rotulo": "Rotativo mais de 2 vezes",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00529,
+              "pct": 1.7
+            },
+            {
+              "variavel": "adiantamento_emergencial",
+              "rotulo": "Adiantamento emergencial",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.00489,
+              "pct": 1.5
+            },
+            {
+              "variavel": "acumulo_emprestimos",
+              "rotulo": "Acúmulo de empréstimos",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.00434,
+              "pct": 1.4
+            },
+            {
+              "variavel": "uso_cheque_especial_mais_3m_em_6m",
+              "rotulo": "Especial por mais de 3 meses",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.00418,
+              "pct": 1.3
+            },
+            {
+              "variavel": "usou_cheque_especial_6m",
+              "rotulo": "Usou cheque especial, 6 meses",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.00397,
+              "pct": 1.3
+            },
+            {
+              "variavel": "relacionamento_recente",
+              "rotulo": "Relacionamento recente",
+              "bloco": "vinculo",
+              "bloco_nome": "Vínculo e perfil",
+              "queda_auc": 0.00224,
+              "pct": 0.7
+            },
+            {
+              "variavel": "salto_gastos_cartao",
+              "rotulo": "Salto de gastos no cartão",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00167,
+              "pct": 0.5
+            },
+            {
+              "variavel": "novo_emprestimo_6m",
+              "rotulo": "Novo empréstimo, 6 meses",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.00164,
+              "pct": 0.5
+            },
+            {
+              "variavel": "cartao_acima_90_mais_3x_6m",
+              "rotulo": "Cartão acima de 90% mais de 3 vezes",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00068,
+              "pct": 0.2
+            },
+            {
+              "variavel": "pagamento_minimo_rotativo",
+              "rotulo": "Pagamento mínimo ou rotativo",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00017,
+              "pct": 0.1
+            }
+          ],
+          "mlp": [
+            {
+              "variavel": "restricao_outras_instituicoes",
+              "rotulo": "Restrição em outra instituição",
+              "bloco": "mercado",
+              "bloco_nome": "Cartório e mercado",
+              "queda_auc": 0.09582,
+              "pct": 29.6
+            },
+            {
+              "variavel": "renegociacao_ativa",
+              "rotulo": "Renegociação ativa",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.03082,
+              "pct": 9.5
+            },
+            {
+              "variavel": "protesto_3_ou_mais",
+              "rotulo": "3 ou mais protestos",
+              "bloco": "mercado",
+              "bloco_nome": "Cartório e mercado",
+              "queda_auc": 0.02082,
+              "pct": 6.4
+            },
+            {
+              "variavel": "pagou_fatura_com_cheque_especial",
+              "rotulo": "Pagou a fatura com o especial",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.02008,
+              "pct": 6.2
+            },
+            {
+              "variavel": "saque_cartao_credito",
+              "rotulo": "Saque no cartão de crédito",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.01973,
+              "pct": 6.1
+            },
+            {
+              "variavel": "cheque_sem_fundo_12m",
+              "rotulo": "Cheque sem fundo, 12 meses",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.01752,
+              "pct": 5.4
+            },
+            {
+              "variavel": "resgate_total_reserva",
+              "rotulo": "Resgate total da reserva",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.01706,
+              "pct": 5.3
+            },
+            {
+              "variavel": "queda_vinculo_principal",
+              "rotulo": "Queda do vínculo principal",
+              "bloco": "vinculo",
+              "bloco_nome": "Vínculo e perfil",
+              "queda_auc": 0.01652,
+              "pct": 5.1
+            },
+            {
+              "variavel": "protesto_cartorio",
+              "rotulo": "Protesto em cartório",
+              "bloco": "mercado",
+              "bloco_nome": "Cartório e mercado",
+              "queda_auc": 0.01599,
+              "pct": 5.0
+            },
+            {
+              "variavel": "mais_de_um_cheque_sem_fundo_12m",
+              "rotulo": "Mais de 1 cheque sem fundo",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.01187,
+              "pct": 3.7
+            },
+            {
+              "variavel": "parcelamento_fatura_6m",
+              "rotulo": "Parcelou a fatura do cartão",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.01107,
+              "pct": 3.4
+            },
+            {
+              "variavel": "usou_cheque_especial_6m",
+              "rotulo": "Usou cheque especial, 6 meses",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.00683,
+              "pct": 2.1
+            },
+            {
+              "variavel": "cartao_acima_90_ou_compra_negada",
+              "rotulo": "Cartão acima de 90% ou compra negada",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00668,
+              "pct": 2.1
+            },
+            {
+              "variavel": "sem_imovel_proprio",
+              "rotulo": "Sem imóvel próprio",
+              "bloco": "vinculo",
+              "bloco_nome": "Vínculo e perfil",
+              "queda_auc": 0.00668,
+              "pct": 2.1
+            },
+            {
+              "variavel": "rotativo_mais_2x_6m",
+              "rotulo": "Rotativo mais de 2 vezes",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00638,
+              "pct": 2.0
+            },
+            {
+              "variavel": "adiantamento_emergencial",
+              "rotulo": "Adiantamento emergencial",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.00447,
+              "pct": 1.4
+            },
+            {
+              "variavel": "uso_cheque_especial_mais_3m_em_6m",
+              "rotulo": "Especial por mais de 3 meses",
+              "bloco": "cheque",
+              "bloco_nome": "Cheque especial e cheques",
+              "queda_auc": 0.00413,
+              "pct": 1.3
+            },
+            {
+              "variavel": "acumulo_emprestimos",
+              "rotulo": "Acúmulo de empréstimos",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.00343,
+              "pct": 1.1
+            },
+            {
+              "variavel": "novo_emprestimo_6m",
+              "rotulo": "Novo empréstimo, 6 meses",
+              "bloco": "emprestimo",
+              "bloco_nome": "Empréstimos, emergência e reserva",
+              "queda_auc": 0.00258,
+              "pct": 0.8
+            },
+            {
+              "variavel": "salto_gastos_cartao",
+              "rotulo": "Salto de gastos no cartão",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00167,
+              "pct": 0.5
+            },
+            {
+              "variavel": "relacionamento_recente",
+              "rotulo": "Relacionamento recente",
+              "bloco": "vinculo",
+              "bloco_nome": "Vínculo e perfil",
+              "queda_auc": 0.0013,
               "pct": 0.4
+            },
+            {
+              "variavel": "pagamento_minimo_rotativo",
+              "rotulo": "Pagamento mínimo ou rotativo",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00086,
+              "pct": 0.3
+            },
+            {
+              "variavel": "cartao_acima_90_mais_3x_6m",
+              "rotulo": "Cartão acima de 90% mais de 3 vezes",
+              "bloco": "cartao",
+              "bloco_nome": "Cartão de crédito e fatura",
+              "queda_auc": 0.00062,
+              "pct": 0.2
+            }
+          ]
+        },
+        "blocos": {
+          "logistica": [
+            {
+              "bloco": "mercado",
+              "nome": "Cartório e mercado",
+              "pct": 40.6
+            },
+            {
+              "bloco": "cartao",
+              "nome": "Cartão de crédito e fatura",
+              "pct": 20.7
+            },
+            {
+              "bloco": "emprestimo",
+              "nome": "Empréstimos, emergência e reserva",
+              "pct": 19.4
+            },
+            {
+              "bloco": "cheque",
+              "nome": "Cheque especial e cheques",
+              "pct": 11.8
+            },
+            {
+              "bloco": "vinculo",
+              "nome": "Vínculo e perfil",
+              "pct": 7.5
+            }
+          ],
+          "floresta": [
+            {
+              "bloco": "mercado",
+              "nome": "Cartório e mercado",
+              "pct": 46.6
+            },
+            {
+              "bloco": "cartao",
+              "nome": "Cartão de crédito e fatura",
+              "pct": 19.0
+            },
+            {
+              "bloco": "emprestimo",
+              "nome": "Empréstimos, emergência e reserva",
+              "pct": 16.1
+            },
+            {
+              "bloco": "cheque",
+              "nome": "Cheque especial e cheques",
+              "pct": 11.2
+            },
+            {
+              "bloco": "vinculo",
+              "nome": "Vínculo e perfil",
+              "pct": 7.1
+            }
+          ],
+          "boosting": [
+            {
+              "bloco": "mercado",
+              "nome": "Cartório e mercado",
+              "pct": 41.7
+            },
+            {
+              "bloco": "cartao",
+              "nome": "Cartão de crédito e fatura",
+              "pct": 20.2
+            },
+            {
+              "bloco": "emprestimo",
+              "nome": "Empréstimos, emergência e reserva",
+              "pct": 18.7
+            },
+            {
+              "bloco": "cheque",
+              "nome": "Cheque especial e cheques",
+              "pct": 11.5
+            },
+            {
+              "bloco": "vinculo",
+              "nome": "Vínculo e perfil",
+              "pct": 7.9
+            }
+          ],
+          "mlp": [
+            {
+              "bloco": "mercado",
+              "nome": "Cartório e mercado",
+              "pct": 41.0
+            },
+            {
+              "bloco": "cartao",
+              "nome": "Cartão de crédito e fatura",
+              "pct": 20.8
+            },
+            {
+              "bloco": "emprestimo",
+              "nome": "Empréstimos, emergência e reserva",
+              "pct": 18.1
+            },
+            {
+              "bloco": "cheque",
+              "nome": "Cheque especial e cheques",
+              "pct": 12.5
+            },
+            {
+              "bloco": "vinculo",
+              "nome": "Vínculo e perfil",
+              "pct": 7.6
             }
           ]
         }
@@ -1319,13 +1883,13 @@
         "3 ou mais protestos",
         "Renegociação ativa"
       ],
-      "n": 326,
-      "base_inad": 0.1197,
-      "base_90": 0.0605,
-      "taxa_inad": 0.6902,
-      "taxa_90": 0.5798,
-      "prev_inad": 0.71,
-      "prev_90": 0.6194,
+      "n": 27,
+      "base_inad": 0.1367,
+      "base_90": 0.0743,
+      "taxa_inad": 1.0,
+      "taxa_90": 1.0,
+      "prev_inad": 0.985,
+      "prev_90": 0.9706,
       "critica": true
     },
     {
@@ -1335,13 +1899,13 @@
         "Mais de 1 cheque sem fundo",
         "Pagou a fatura com o cheque especial"
       ],
-      "n": 696,
-      "base_inad": 0.1197,
-      "base_90": 0.0605,
-      "taxa_inad": 0.6509,
-      "taxa_90": 0.5388,
-      "prev_inad": 0.6494,
-      "prev_90": 0.5405,
+      "n": 27,
+      "base_inad": 0.1367,
+      "base_90": 0.0743,
+      "taxa_inad": 0.963,
+      "taxa_90": 0.8889,
+      "prev_inad": 0.9449,
+      "prev_90": 0.8894,
       "critica": true
     },
     {
@@ -1351,13 +1915,13 @@
         "Zerou a reserva no banco",
         "Queda do vínculo principal"
       ],
-      "n": 374,
-      "base_inad": 0.1197,
-      "base_90": 0.0605,
-      "taxa_inad": 0.5802,
-      "taxa_90": 0.4947,
-      "prev_inad": 0.6046,
-      "prev_90": 0.4911,
+      "n": 21,
+      "base_inad": 0.1367,
+      "base_90": 0.0743,
+      "taxa_inad": 0.9048,
+      "taxa_90": 0.619,
+      "prev_inad": 0.7952,
+      "prev_90": 0.6293,
       "critica": true
     },
     {
@@ -1367,13 +1931,13 @@
         "Cheque especial por mais de 3 meses",
         "Rotativo mais de 2 vezes"
       ],
-      "n": 923,
-      "base_inad": 0.1197,
-      "base_90": 0.0605,
-      "taxa_inad": 0.5482,
-      "taxa_90": 0.3824,
-      "prev_inad": 0.5369,
-      "prev_90": 0.3593,
+      "n": 31,
+      "base_inad": 0.1367,
+      "base_90": 0.0743,
+      "taxa_inad": 0.7742,
+      "taxa_90": 0.6452,
+      "prev_inad": 0.7065,
+      "prev_90": 0.4136,
       "critica": true
     },
     {
@@ -1383,13 +1947,13 @@
         "Cartão acima de 90% mais de 3 vezes",
         "Parcelou a fatura"
       ],
-      "n": 731,
-      "base_inad": 0.1197,
-      "base_90": 0.0605,
-      "taxa_inad": 0.4706,
-      "taxa_90": 0.2982,
-      "prev_inad": 0.4609,
-      "prev_90": 0.3002,
+      "n": 29,
+      "base_inad": 0.1367,
+      "base_90": 0.0743,
+      "taxa_inad": 0.6897,
+      "taxa_90": 0.4483,
+      "prev_inad": 0.6005,
+      "prev_90": 0.3325,
       "critica": true
     },
     {
@@ -1399,13 +1963,13 @@
         "Adiantamento emergencial",
         "Novo empréstimo em 6 meses"
       ],
-      "n": 724,
-      "base_inad": 0.1197,
-      "base_90": 0.0605,
-      "taxa_inad": 0.4392,
-      "taxa_90": 0.3094,
-      "prev_inad": 0.4483,
-      "prev_90": 0.3036,
+      "n": 36,
+      "base_inad": 0.1367,
+      "base_90": 0.0743,
+      "taxa_inad": 0.4722,
+      "taxa_90": 0.3889,
+      "prev_inad": 0.3912,
+      "prev_90": 0.2432,
       "critica": true
     }
   ],

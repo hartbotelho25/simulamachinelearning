@@ -10,10 +10,10 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import FunctionTransformer, StandardScaler
 from xgboost import XGBClassifier
 
-from .dataset import FEATURES
+from .dataset import FEATURES, aplicar_exclusivo
 from .politica import FRACAO_TESTE, SEMENTE
 
 CATALOGO = [
@@ -60,13 +60,21 @@ CATALOGO = [
 ]
 
 
+def _exclusivo(amostra):
+    frame = amostra if isinstance(amostra, pd.DataFrame) else pd.DataFrame(amostra, columns=list(FEATURES))
+    return aplicar_exclusivo(frame)[list(FEATURES)].to_numpy(dtype=float)
+
+
 def _preparo() -> ColumnTransformer:
-    return ColumnTransformer([("num", StandardScaler(), list(FEATURES))])
+    exclusivo = FunctionTransformer(_exclusivo, validate=False)
+    return ColumnTransformer(
+        [("num", Pipeline([("exclusivo", exclusivo), ("escala", StandardScaler())]), list(FEATURES))]
+    )
 
 
 def construir(slug: str) -> Pipeline:
     if slug == "logistica":
-        clf = LogisticRegression(max_iter=800, solver="lbfgs")
+        clf = LogisticRegression(max_iter=800, solver="lbfgs", C=20.0)
     elif slug == "floresta":
         clf = RandomForestClassifier(
             n_estimators=200,

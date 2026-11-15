@@ -9,8 +9,18 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-from src.credito.chaves import FILHOS, GATILHOS, PARES, PRESETS, coerente, grupos, respostas_vazias, vetor
-from src.credito.politica import CORTE_MATRIZ, nome_faixa
+from src.credito.chaves import (
+    FILHOS,
+    GATILHOS,
+    PARES,
+    PRESETS,
+    coerente,
+    grupos,
+    principais,
+    respostas_vazias,
+    vetor,
+)
+from src.credito.politica import CORTE_MATRIZ, semaforo
 from src.credito.simulador import (
     amostra_teste,
     assinatura_modelos,
@@ -71,6 +81,13 @@ CSS = """
     .veredito .grande { font-size: 2.4rem; font-weight: 700; line-height: 1.05; margin: 0.2rem 0 0; }
     .veredito .chamada { font-size: 1.2rem; font-weight: 700; margin: 0.15rem 0 0; }
     .sim-grupo { color: #E8B923; font-weight: 700; font-size: 0.92rem; margin: 0.35rem 0 0.15rem; }
+    .faixas-comite { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.65rem; margin: 0.15rem 0 0.85rem; }
+    .faixas-comite article { border-radius: 12px; padding: 0.7rem 0.8rem; }
+    .faixas-comite strong { display: block; color: #F4F1E8; font-size: 0.95rem; }
+    .faixas-comite p { margin: 0.28rem 0 0; color: #F4F1E8; font-size: 0.86rem; line-height: 1.35; }
+    .faixas-comite .verde { background: #146c43; }
+    .faixas-comite .amarelo { background: #8a6a12; }
+    .faixas-comite .vermelho { background: #8c3b2c; }
     [data-testid="stExpander"] {
         border: 1px solid #E8B923 !important;
         border-left: 6px solid #E8B923 !important;
@@ -265,7 +282,8 @@ def _cabecalho(relatorio: dict, ir) -> None:
 def _mesa() -> None:
     with st.expander(ROTULO_MESA, expanded=False):
         st.caption(
-            "Lista dos gatilhos preventivos. Se uma reincidência fica em Sim, o gatilho base também fica."
+            "Lista dos gatilhos preventivos. Se uma reincidência fica em Sim, o gatilho base também fica. "
+            "Na leitura do modelo, a reincidência substitui a ocorrência única."
         )
         linhas = []
         for nome, itens in grupos():
@@ -299,6 +317,26 @@ def _acuracia(pacote: dict) -> None:
 
 
 def _ranking(pacote: dict) -> None:
+    blocos = (pacote.get("importancia") or {}).get("blocos") or {}
+    if blocos:
+        st.markdown("**O que cada bloco pesa, em percentual dentro de 100%**")
+        st.caption("Do maior para o menor. Os cinco blocos de cada modelo somam 100%.")
+        nomes = [modelo["slug"] for modelo in pacote["modelos"]]
+        rotulo = {modelo["slug"]: modelo["nome"] for modelo in pacote["modelos"]}
+        cols = st.columns(4)
+        for col, slug in zip(cols, nomes):
+            with col:
+                st.markdown(f"**{rotulo[slug]}**")
+                ranking = blocos.get(slug) or []
+                maior = ranking[0]["pct"] if ranking else 1
+                for item in ranking:
+                    largura = 100.0 * item["pct"] / maior if maior else 0
+                    st.markdown(
+                        f'<div class="rank-nome">{item["nome"]} '
+                        f'<strong style="color:#E8B923">{_pp(item["pct"])}</strong></div>'
+                        f'<div class="rank-barra"><span style="width:{largura:.1f}%"></span></div>',
+                        unsafe_allow_html=True,
+                    )
     st.markdown("**O que cada modelo aponta, em percentual dentro de 100%**")
     st.caption("Do maior para o menor. A lista inteira de cada modelo soma 100%.")
     nomes = [modelo["slug"] for modelo in pacote["modelos"]]
@@ -416,20 +454,24 @@ def _combinacoes(relatorio: dict) -> None:
     st.image(figura_salto(relatorio["combinacoes"]), width="stretch")
 
 
-def _veredito(pergunta: str, prob: float) -> str:
-    faixa, acao = nome_faixa(prob)
+def _veredito(pergunta: str, prob: float, faixa: str) -> str:
     chamada = "SIM" if prob >= CORTE_MATRIZ else "NÃO"
     return (
         f'<article class="veredito">'
         f'<p class="pergunta">{pergunta}</p>'
         f'<p class="grande" style="color:{COR_FAIXA[faixa]}">{_pct(prob)}</p>'
-        f'<p class="chamada" style="color:{COR_FAIXA[faixa]}">{chamada} · {NOME_FAIXA[faixa]} · {acao}</p>'
+        f'<p class="chamada" style="color:{COR_FAIXA[faixa]}">{chamada} · {NOME_FAIXA[faixa]}</p>'
         f"</article>"
     )
 
 
 def _quadro(relatorio: dict, linha: dict, modelos: dict, caso: dict | None) -> None:
+    from src.credito.chaves import pontuar
+
     slug = st.session_state.get("sim_modelo", "logistica")
+    faixa, postura, trava = semaforo(pontuar(linha), bool(linha.get("restricao_outras_instituicoes")))
+    if trava:
+        postura = "Alto risco · Hard Stop"
     p_inad, p_90 = chances(modelos, slug, linha)
     linhas = []
     for modelo in relatorio["alvos"]["inadimplente"]["modelos"]:
@@ -442,20 +484,26 @@ def _quadro(relatorio: dict, linha: dict, modelos: dict, caso: dict | None) -> N
             f"<td>{_pct(pi)} · {si}</td><td>{_pct(pg)} · {sg}</td></tr>"
         )
     ligados = sum(linha.values())
+    nomes = principais(linha)
+    puxam = ""
+    if nomes:
+        puxam = "<p class='puxam'>" + " · ".join(nomes) + "</p>"
     nota = ""
     if caso is not None:
         real_inad = "Sim" if caso["inad"] else "Não"
         real_90 = "Sim" if caso["d90"] else "Não"
         nota = f"<p class='nota'>Cliente {caso['id']}: inadimplente {real_inad}, acima de 90 dias {real_90}.</p>"
     st.markdown(
-        '<div class="painel-respostas"><div class="dupla">'
-        + _veredito("Vai ficar inadimplente?", p_inad)
-        + _veredito("Vai passar de 90 dias?", p_90)
+        f'<div class="painel-respostas"><p class="semaforo {faixa}">Semáforo do Comitê · {NOME_FAIXA[faixa]} · {postura}</p>'
+        + '<div class="dupla">'
+        + _veredito("Vai ficar inadimplente?", p_inad, faixa)
+        + _veredito("Vai passar de 90 dias?", p_90, faixa)
         + "</div>"
         + "<table class='quadro'><thead><tr><th>Modelo</th><th>Inadimplência</th><th>90 dias</th></tr></thead><tbody>"
         + "".join(linhas)
         + "</tbody></table>"
         + f"<p class='ligados'>{ligados} gatilhos em Sim</p>"
+        + puxam
         + nota
         + "</div>",
         unsafe_allow_html=True,
@@ -555,10 +603,27 @@ def _dossie() -> dict:
     return relatorio
 
 
+def _faixa_comite() -> None:
+    st.markdown(
+        """
+        <div class="faixas-comite">
+          <article class="verde"><strong>Verde — Baixo Risco</strong>
+            <p>Aprovação natural. Alçada da agência.</p></article>
+          <article class="amarelo"><strong>Amarelo — Risco Moderado</strong>
+            <p>Análise cautelosa e conferência do gerente.</p></article>
+          <article class="vermelho"><strong>Vermelho — Alto Risco / Crítico</strong>
+            <p>Alçada de comitê ou recusa, com garantia real. Restrição em outra instituição é Hard Stop.</p></article>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def render_estudo(ir) -> None:
     st.markdown(CSS, unsafe_allow_html=True)
     relatorio = _dossie()
     _cabecalho(relatorio, ir)
+    _faixa_comite()
     _mesa()
     _metricas(relatorio)
     _combinacoes(relatorio)
@@ -640,7 +705,15 @@ COCKPIT_CSS = """
     }
     .quadro th { color: #c9c3b4; font-weight: 600; }
     .quadro tr.destaque td { color: #E8B923; }
-    .ligados { color: #F4F1E8; font-size: 0.8rem; font-weight: 700; margin: 0.2rem 0 0; }
+    .semaforo {
+        margin: 0 0 0.28rem; border-radius: 8px; padding: 0.28rem 0.45rem;
+        color: #F4F1E8; font-size: 0.74rem; font-weight: 700; line-height: 1.2;
+    }
+    .semaforo.verde { background: #146c43; }
+    .semaforo.amarelo { background: #8a6a12; }
+    .semaforo.vermelho { background: #8c3b2c; }
+    .ligados { color: #F4F1E8; font-size: 0.78rem; font-weight: 700; margin: 0.15rem 0 0; }
+    .puxam { color: #c9c3b4; font-size: 0.68rem; line-height: 1.2; margin: 0.08rem 0 0; }
     .nota { color: #c9c3b4; font-size: 0.7rem; margin: 0.1rem 0 0; line-height: 1.2; }
 </style>
 """

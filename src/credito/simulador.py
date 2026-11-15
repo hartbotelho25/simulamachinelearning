@@ -10,6 +10,7 @@ import joblib
 import pandas as pd
 
 from .caminhos import ARTEFATOS, CSV_CLIENTES
+from .chaves import codificar
 from .dataset import ALVOS, FEATURES, ler_parametros
 from .treino import fatiar
 
@@ -140,7 +141,8 @@ def parametros_gerador() -> dict:
 
 
 def linha_para_frame(linha: dict) -> pd.DataFrame:
-    return pd.DataFrame([{coluna: linha[coluna] for coluna in FEATURES}])
+    exclusivo = codificar(linha)
+    return pd.DataFrame([{coluna: exclusivo[coluna] for coluna in FEATURES}])
 
 
 def chance(modelo, linha: dict) -> float:

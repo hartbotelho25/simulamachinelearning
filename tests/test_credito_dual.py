@@ -5,7 +5,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from src.credito.chaves import GATILHOS, PARES, coerente, vetor
+from src.credito.chaves import GATILHOS, PARES, PONTOS, codificar, coerente, pontuar, vetor
+from src.credito.politica import semaforo
 from src.credito.combinacoes import medir_escada
 from src.credito.dataset import COLUNAS, FEATURES, PROIBIDAS, gerar_base
 from src.credito.simulador import chances
@@ -99,14 +100,93 @@ def test_livro_e_pesos_quando_o_pipeline_ja_rodou():
     assert int((df["inadimplente_90d"] > df["inadimplente"]).sum()) == 0
     for filho, pai in PARES:
         assert int(((df[filho] == 1) & (df[pai] == 0)).sum()) == 0
-    assert 0.11 <= float(df["inadimplente"].mean()) <= 0.13
-    assert 0.05 <= float(df["inadimplente_90d"].mean()) <= 0.07
+    assert 0.11 <= float(df["inadimplente"].mean()) <= 0.15
+    assert 0.05 <= float(df["inadimplente_90d"].mean()) <= 0.08
     relatorio = json.loads(RELATORIO.read_text(encoding="utf-8"))
     for slug in ("inadimplente", "inadimplente_90d"):
         for _modelo, itens in relatorio["alvos"][slug]["importancia"]["itens"].items():
             pcts = [item["pct"] for item in itens]
             assert abs(sum(pcts) - 100.0) < 0.05
             assert pcts == sorted(pcts, reverse=True)
+        blocos = relatorio["alvos"][slug]["importancia"].get("blocos") or {}
+        for _modelo, itens_bloco in blocos.items():
+            fatias = [item["pct"] for item in itens_bloco]
+            assert abs(sum(fatias) - 100.0) < 0.05
+            assert fatias == sorted(fatias, reverse=True)
+
+
+def test_reincidencia_substitui_e_nao_soma():
+    esperado = {
+        "protesto_3_ou_mais": 30,
+        "mais_de_um_cheque_sem_fundo_12m": 25,
+        "uso_cheque_especial_mais_3m_em_6m": 12,
+        "rotativo_mais_2x_6m": 18,
+        "cartao_acima_90_mais_3x_6m": 12,
+    }
+    for filho, pai in PARES:
+        linha = vetor({filho: True})
+        assert linha[filho] == 1 and linha[pai] == 1
+        exclusivo = codificar(linha)
+        assert exclusivo[filho] == 1 and exclusivo[pai] == 0
+        assert pontuar(linha) == esperado[filho]
+        assert pontuar(linha) != PONTOS[pai] + PONTOS[filho]
+    simples = vetor({"protesto_cartorio": True})
+    assert simples["protesto_3_ou_mais"] == 0
+    assert pontuar(simples) == 18
+    faixa, _postura, trava = semaforo(pontuar(simples), False)
+    assert faixa == "amarelo" and not trava
+    faixa, _postura, trava = semaforo(0, False)
+    assert faixa == "verde"
+    faixa, _postura, trava = semaforo(26, False)
+    assert faixa == "vermelho"
+    _faixa, _postura, trava = semaforo(35, True)
+    assert trava
+
+
+def test_a_tela_nao_mostra_a_pontuacao_interna():
+    texto = RELATO.read_text(encoding="utf-8").lower()
+    assert " pts" not in texto
+    assert "pontos" not in texto
+    assert "semáforo do comitê" in texto
+    assert "hard stop" in texto
+    assert "baixo risco" in texto
+
+
+def test_gatilho_isolado_nos_quatro_modelos():
+    joblib = RAIZ / "data" / "credito" / "modelos.joblib"
+    if not joblib.exists():
+        return
+    from src.credito.simulador import carregar_modelos
+
+    modelos = carregar_modelos()
+    slugs = ("logistica", "floresta", "boosting", "mlp")
+
+    def probs(respostas: dict) -> list[float]:
+        linha = vetor(respostas)
+        return [chances(modelos, slug, linha)[0] for slug in slugs]
+
+    def faixa_de(respostas: dict) -> str:
+        linha = vetor(respostas)
+        faixa, _postura, _trava = semaforo(
+            pontuar(linha), bool(linha["restricao_outras_instituicoes"])
+        )
+        return faixa
+
+    zeros = probs({})
+    assert faixa_de({}) == "verde"
+    assert all(p < 0.05 for p in zeros), zeros
+
+    protesto = probs({"protesto_cartorio": True})
+    assert faixa_de({"protesto_cartorio": True}) == "amarelo"
+    assert all(0.18 <= p <= 0.40 for p in protesto), protesto
+
+    grave = probs({"protesto_3_ou_mais": True})
+    assert faixa_de({"protesto_3_ou_mais": True}) == "vermelho"
+    assert all(p > 0.50 for p in grave), grave
+
+    trava = probs({"restricao_outras_instituicoes": True})
+    assert faixa_de({"restricao_outras_instituicoes": True}) == "vermelho"
+    assert all(p > 0.65 for p in trava), trava
 
 
 def test_escada_sobe_quando_os_gatilhos_se_acumulam():

@@ -77,7 +77,7 @@ def render_home() -> None:
         st.markdown("**Simula Brasileirão**")
         st.caption("Série A 2003–2025, com treino ao vivo e PDF.")
         st.markdown("**Comitê de Crédito**")
-        st.caption("Base sintética corporativa: 50.000 clientes e 38 colunas. Relatório e simulador.")
+        st.caption("Base sintética de 50.000 clientes, sem renda declarada. Relatório e simulador.")
 
     st.markdown('<p class="credit-top">Desenvolvido por Hart Botelho</p>', unsafe_allow_html=True)
     st.markdown(
@@ -87,8 +87,8 @@ def render_home() -> None:
             <h1>Por onde você entra?</h1>
             <p>
                 Dois caminhos, o mesmo visual. Simula Brasileirão abre a Série A.
-                Comitê de Crédito abre o relatório em base sintética corporativa,
-                com 50.000 clientes e 38 colunas, e um simulador ao lado.
+                Comitê de Crédito abre o relatório em base sintética de 50.000 clientes,
+                sem renda declarada, e um simulador ao lado.
             </p>
         </div>
         """,
@@ -115,7 +115,7 @@ def render_home() -> None:
             "credito",
             "Base sintética",
             "Comitê de Crédito",
-            "Relatório lido de cima a baixo. A base sintética corporativa tem 50.000 clientes, 38 colunas e alvo de 90 dias.",
+            "Relatório lido de cima a baixo. A base sintética tem 50.000 clientes e não usa renda declarada.",
             [
                 "Quatro modelos, entre eles uma rede neural",
                 "Matriz, ROC, blocos e faixas de alerta",
@@ -127,7 +127,7 @@ def render_home() -> None:
 
     render_chips(
         "Comitê de Crédito",
-        ["Base sintética", "50.000 clientes", "38 colunas", "Quatro modelos", "Simulador"],
+        ["Base sintética", "50.000 clientes", "Sem renda declarada", "Quatro modelos", "Simulador"],
     )
 
 

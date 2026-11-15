@@ -1,5 +1,7 @@
-"""Base sintética de crédito de varejo: 50.000 clientes e 38 colunas.
+"""Base sintética de crédito de varejo.
 
+A renda declarada não entra: o banco quase nunca a vê com precisão.
+O mercado externo fica em protesto e restrição em outras instituições.
 O alvo nasce dos campos observados, com ruído. Um fator escondido só organiza
 as correlações do livro; ele não entra na equação do alvo nem no treino.
 """
@@ -20,7 +22,6 @@ COLUNAS = [
     "tipo_ocupacao",
     "escolaridade",
     "possui_imovel_proprio",
-    "renda_declarada",
     "fluxo_medio_entradas_3m",
     "saldo_medio_conta_12m",
     "saldo_medio_conta_3m",
@@ -41,14 +42,12 @@ COLUNAS = [
     "qtd_emprestimos_ativos",
     "qtd_novos_emprestimos_ultimos_6m",
     "parcela_total_comprometida",
-    "comprometimento_renda_efetivo",
+    "comprometimento_fluxo_entradas",
     "max_atraso_emprestimos_historico",
     "taxa_juros_media_contratos_ativos",
     "qtd_ocorrencias_atraso_30_60d_12m",
     "flag_historico_fpd",
     "possui_renegociacao_ativa",
-    "score_bureau_atual",
-    "qtd_consultas_bureau_3m",
     "qtd_protestos_historico",
     "valor_total_inadimplencia_outros_mercados",
     "inadimplente_90d",
@@ -63,7 +62,6 @@ BLOCOS = {
         "possui_imovel_proprio",
     ],
     "fluxo": [
-        "renda_declarada",
         "fluxo_medio_entradas_3m",
         "saldo_medio_conta_12m",
         "saldo_medio_conta_3m",
@@ -90,7 +88,7 @@ BLOCOS = {
         "qtd_emprestimos_ativos",
         "qtd_novos_emprestimos_ultimos_6m",
         "parcela_total_comprometida",
-        "comprometimento_renda_efetivo",
+        "comprometimento_fluxo_entradas",
         "max_atraso_emprestimos_historico",
         "taxa_juros_media_contratos_ativos",
     ],
@@ -100,8 +98,6 @@ BLOCOS = {
         "possui_renegociacao_ativa",
     ],
     "bureau": [
-        "score_bureau_atual",
-        "qtd_consultas_bureau_3m",
         "qtd_protestos_historico",
         "valor_total_inadimplencia_outros_mercados",
     ],
@@ -114,7 +110,7 @@ BLOCO_NOME = {
     "cartao": "Cartão de crédito e consumo",
     "endividamento": "Endividamento e empréstimos",
     "regua": "Régua interna de atrasos",
-    "bureau": "Mercado externo e bureau",
+    "bureau": "Restrições no mercado",
 }
 
 ROTULOS = {
@@ -123,7 +119,6 @@ ROTULOS = {
     "tipo_ocupacao": "Ocupação",
     "escolaridade": "Escolaridade",
     "possui_imovel_proprio": "Imóvel próprio",
-    "renda_declarada": "Renda declarada",
     "fluxo_medio_entradas_3m": "Fluxo médio de entradas, 3 meses",
     "saldo_medio_conta_12m": "Saldo médio da conta, 12 meses",
     "saldo_medio_conta_3m": "Saldo médio da conta, 3 meses",
@@ -144,14 +139,12 @@ ROTULOS = {
     "qtd_emprestimos_ativos": "Empréstimos ativos",
     "qtd_novos_emprestimos_ultimos_6m": "Empréstimos novos, 6 meses",
     "parcela_total_comprometida": "Parcela total comprometida",
-    "comprometimento_renda_efetivo": "Comprometimento da renda efetiva",
+    "comprometimento_fluxo_entradas": "Parcelas sobre o fluxo de entradas",
     "max_atraso_emprestimos_historico": "Maior atraso em empréstimos (dias)",
     "taxa_juros_media_contratos_ativos": "Juros médio dos contratos ativos",
     "qtd_ocorrencias_atraso_30_60d_12m": "Ocorrências de 30 a 60 dias, 12 meses",
     "flag_historico_fpd": "Histórico de primeiro atraso",
     "possui_renegociacao_ativa": "Renegociação ativa",
-    "score_bureau_atual": "Score de bureau",
-    "qtd_consultas_bureau_3m": "Consultas ao bureau, 3 meses",
     "qtd_protestos_historico": "Protestos",
     "valor_total_inadimplencia_outros_mercados": "Inadimplência em outros mercados",
     "inadimplente_90d": "Inadimplente 90 dias",
@@ -159,7 +152,9 @@ ROTULOS = {
 
 OCUPACOES = ["clt", "servidor", "autonomo", "empresario", "aposentado", "informal"]
 PESO_OCUPACAO = [0.46, 0.12, 0.16, 0.08, 0.10, 0.08]
-RENDA_BASE = {
+# Porte interno para nascer fluxo, limite e parcela juntos.
+# Não é renda declarada e não entra no modelo.
+PORTE_OCUPACAO = {
     "clt": 4500.0,
     "servidor": 7200.0,
     "autonomo": 3900.0,
@@ -178,10 +173,8 @@ SINAL_GERADOR = {
     "ocorrencias_30_60": 0.70,
     "fpd": 0.55,
     "renegociacao": 0.35,
-    "bureau_pior": 0.65,
-    "inad_outros": 0.40,
-    "protestos": 0.30,
-    "consultas": 0.22,
+    "inad_outros": 0.70,
+    "protestos": 0.55,
     "comprometimento": 0.50,
     "atraso_emprestimo": 0.40,
     "novos_emprestimos": 0.22,
@@ -194,7 +187,7 @@ SINAL_GERADOR = {
     "uso_cheque": 0.38,
     "dias_cheque": 0.28,
     "cheques": 0.42,
-    "gap_fluxo": 0.30,
+    "caixa_apertado": 0.30,
     "queda_saldo": 0.18,
     "tempo_rel": -0.16,
     "imovel": -0.22,
@@ -207,10 +200,8 @@ SINAL_BLOCO = {
     "ocorrencias_30_60": "regua",
     "fpd": "regua",
     "renegociacao": "regua",
-    "bureau_pior": "bureau",
     "inad_outros": "bureau",
     "protestos": "bureau",
-    "consultas": "bureau",
     "comprometimento": "endividamento",
     "atraso_emprestimo": "endividamento",
     "novos_emprestimos": "endividamento",
@@ -223,7 +214,7 @@ SINAL_BLOCO = {
     "uso_cheque": "cheque",
     "dias_cheque": "cheque",
     "cheques": "cheque",
-    "gap_fluxo": "fluxo",
+    "caixa_apertado": "fluxo",
     "queda_saldo": "fluxo",
     "tempo_rel": "cadastral",
     "imovel": "cadastral",
@@ -249,7 +240,6 @@ LIMITES = {
     "idade": (21, 78, 1),
     "tempo_relacionamento_meses": (1, 360, 1),
     "possui_imovel_proprio": (0, 1, 1),
-    "renda_declarada": (700.0, 80000.0, 100.0),
     "fluxo_medio_entradas_3m": (200.0, 120000.0, 100.0),
     "saldo_medio_conta_12m": (-20000.0, 80000.0, 100.0),
     "saldo_medio_conta_3m": (-20000.0, 80000.0, 100.0),
@@ -269,14 +259,12 @@ LIMITES = {
     "qtd_emprestimos_ativos": (0, 8, 1),
     "qtd_novos_emprestimos_ultimos_6m": (0, 5, 1),
     "parcela_total_comprometida": (0.0, 20000.0, 50.0),
-    "comprometimento_renda_efetivo": (0.0, 1.5, 0.01),
+    "comprometimento_fluxo_entradas": (0.0, 1.5, 0.01),
     "max_atraso_emprestimos_historico": (0, 180, 1),
     "taxa_juros_media_contratos_ativos": (0.0, 12.0, 0.1),
     "qtd_ocorrencias_atraso_30_60d_12m": (0, 8, 1),
     "flag_historico_fpd": (0, 1, 1),
     "possui_renegociacao_ativa": (0, 1, 1),
-    "score_bureau_atual": (250, 950, 1),
-    "qtd_consultas_bureau_3m": (0, 15, 1),
     "qtd_protestos_historico": (0, 6, 1),
     "valor_total_inadimplencia_outros_mercados": (0.0, 50000.0, 100.0),
 }
@@ -284,14 +272,15 @@ LIMITES = {
 
 def conferir_esquema(df: pd.DataFrame) -> None:
     if list(df.columns) != COLUNAS:
-        raise ValueError("A ordem das 38 colunas não fecha com o escopo.")
-    if len(COLUNAS) != 38:
-        raise ValueError("O escopo pede 38 colunas.")
+        raise ValueError("A ordem das colunas não fecha com o esquema.")
+    proibidas = {"renda_declarada", "score_bureau_atual", "qtd_consultas_bureau_3m"}
+    if proibidas & set(COLUNAS):
+        raise ValueError("Renda declarada e score de bureau ficaram de fora de propósito.")
     vistas = [c for cols in BLOCOS.values() for c in cols]
     if sorted(vistas) != sorted(FEATURES):
         raise ValueError("Os blocos não cobrem as colunas de treino.")
-    if df.shape[1] != 38:
-        raise ValueError("A base não tem 38 colunas.")
+    if df.shape[1] != len(COLUNAS):
+        raise ValueError("A base não tem o número de colunas do esquema.")
     if df.isna().any().any():
         raise ValueError("A base sintética saiu com vazio.")
 
@@ -310,21 +299,19 @@ def _poisson_clip(rng: np.random.Generator, lam: np.ndarray, alto: int) -> np.nd
 
 
 def _drivers(df: pd.DataFrame) -> pd.DataFrame:
-    renda = df["renda_declarada"].to_numpy(dtype=float)
     fluxo = df["fluxo_medio_entradas_3m"].to_numpy(dtype=float)
     saldo12 = df["saldo_medio_conta_12m"].to_numpy(dtype=float)
     saldo3 = df["saldo_medio_conta_3m"].to_numpy(dtype=float)
-    base = np.maximum(renda, 1.0)
+    base = np.maximum(fluxo, 1.0)
+    caixa = (saldo3 < 0).astype(float) + np.clip((0.25 * fluxo - saldo3) / base, 0, 3)
     return pd.DataFrame(
         {
             "ocorrencias_30_60": df["qtd_ocorrencias_atraso_30_60d_12m"].to_numpy(dtype=float),
             "fpd": df["flag_historico_fpd"].to_numpy(dtype=float),
             "renegociacao": df["possui_renegociacao_ativa"].to_numpy(dtype=float),
-            "bureau_pior": (1000.0 - df["score_bureau_atual"].to_numpy(dtype=float)) / 100.0,
             "inad_outros": df["valor_total_inadimplencia_outros_mercados"].to_numpy(dtype=float) / base,
             "protestos": df["qtd_protestos_historico"].to_numpy(dtype=float),
-            "consultas": df["qtd_consultas_bureau_3m"].to_numpy(dtype=float),
-            "comprometimento": df["comprometimento_renda_efetivo"].to_numpy(dtype=float),
+            "comprometimento": df["comprometimento_fluxo_entradas"].to_numpy(dtype=float),
             "atraso_emprestimo": df["max_atraso_emprestimos_historico"].to_numpy(dtype=float) / 30.0,
             "novos_emprestimos": df["qtd_novos_emprestimos_ultimos_6m"].to_numpy(dtype=float),
             "juros": df["taxa_juros_media_contratos_ativos"].to_numpy(dtype=float),
@@ -336,7 +323,7 @@ def _drivers(df: pd.DataFrame) -> pd.DataFrame:
             "uso_cheque": df["utilizacao_cheque_especial_atual"].to_numpy(dtype=float),
             "dias_cheque": df["dias_utilizando_cheque_especial_12m"].to_numpy(dtype=float) / 30.0,
             "cheques": df["qtd_cheques_devolvidos_12m"].to_numpy(dtype=float),
-            "gap_fluxo": (renda - fluxo) / base,
+            "caixa_apertado": caixa,
             "queda_saldo": (saldo12 - saldo3) / base,
             "tempo_rel": df["tempo_relacionamento_meses"].to_numpy(dtype=float) / 12.0,
             "imovel": df["possui_imovel_proprio"].to_numpy(dtype=float),
@@ -424,23 +411,23 @@ def gerar_base(n: int, seed: int, parametros: dict | None = None, prefixo_id: st
     p_imovel = _sigmoid(-0.4 + 0.35 * esc_ord + 0.02 * (idade - 40) - 0.15 * stress)
     imovel = rng.binomial(1, np.clip(p_imovel, 0.05, 0.9))
 
-    renda_base = np.array([RENDA_BASE[o] for o in ocupacao])
-    renda = _clip(renda_base * rng.lognormal(0.0, 0.36, n), 700, 80000)
+    porte_base = np.array([PORTE_OCUPACAO[o] for o in ocupacao])
+    porte = _clip(porte_base * rng.lognormal(0.0, 0.36, n), 700, 80000)
     mult_fluxo = np.ones(n)
     mult_fluxo = np.where(ocupacao == "informal", 0.70, mult_fluxo)
     mult_fluxo = np.where(ocupacao == "autonomo", 0.86, mult_fluxo)
-    fluxo = _clip(renda * mult_fluxo * rng.lognormal(-0.04 - 0.08 * stress, 0.28, n), 200, 120000)
-    saldo12 = _clip(renda * rng.normal(0.85 - 0.35 * stress, 0.65, n), -20000, 80000)
-    saldo3 = _clip(0.62 * saldo12 + renda * rng.normal(-0.05 * stress, 0.28, n), -20000, 80000)
+    fluxo = _clip(porte * mult_fluxo * rng.lognormal(-0.04 - 0.08 * stress, 0.28, n), 200, 120000)
+    saldo12 = _clip(porte * rng.normal(0.85 - 0.35 * stress, 0.65, n), -20000, 80000)
+    saldo3 = _clip(0.62 * saldo12 + porte * rng.normal(-0.05 * stress, 0.28, n), -20000, 80000)
 
-    limite_cheque = _clip(renda * rng.uniform(0.05, 0.85, n) * (rng.random(n) > 0.12), 0, 40000)
+    limite_cheque = _clip(porte * rng.uniform(0.05, 0.85, n) * (rng.random(n) > 0.12), 0, 40000)
     uso = _sigmoid(-0.6 + 0.85 * stress + rng.normal(0, 0.35, n))
     uso = np.where(limite_cheque <= 0, 0.0, _clip(uso * 1.15, 0, 1.8))
     dias30 = _poisson_clip(rng, uso * 14 + np.maximum(stress, 0) * 3, 30)
     dias12 = _clip(dias30 * rng.uniform(5.5, 13.5, n) + np.maximum(stress, 0) * 18, 0, 365).astype(int)
     cheques = _poisson_clip(rng, 0.15 + uso * 1.4 + np.maximum(stress, 0) * 0.8, 12)
 
-    limite_cartao = _clip(renda * rng.uniform(0.5, 3.2, n), 0, 120000)
+    limite_cartao = _clip(porte * rng.uniform(0.5, 3.2, n), 0, 120000)
     fatura12 = _clip(limite_cartao * _clip(rng.normal(0.38 + 0.12 * stress, 0.16, n), 0.05, 0.95), 0, 80000)
     fatura3 = _clip(fatura12 * rng.lognormal(0.04 * stress, 0.18, n), 0, 80000)
     crescimento = _clip(np.where(fatura12 > 1, fatura3 / fatura12 - 1.0, 0.0), -0.8, 1.5)
@@ -450,12 +437,12 @@ def gerar_base(n: int, seed: int, parametros: dict | None = None, prefixo_id: st
     pagamento = np.where(u < p_min, "minimo", np.where(u < p_min + p_parc, "parcial", "integral"))
     qtd_min = _poisson_clip(rng, p_min * 7 + np.maximum(stress, 0), 12)
     atraso_cartao = _poisson_clip(rng, 0.2 + np.maximum(stress, 0) * 1.3 + (pagamento == "minimo") * 0.8, 12)
-    saque = _clip(renda * _clip(rng.normal(0.02 + 0.06 * np.maximum(stress, 0), 0.05, n), 0, None), 0, 30000)
+    saque = _clip(porte * _clip(rng.normal(0.02 + 0.06 * np.maximum(stress, 0), 0.05, n), 0, None), 0, 30000)
     flag_cheque = rng.binomial(1, _sigmoid(-1.6 + 1.3 * uso + 0.5 * (pagamento == "minimo")))
 
     ativos = _poisson_clip(rng, 0.55 + 0.35 * np.maximum(stress, 0), 8)
     novos = _poisson_clip(rng, 0.18 + 0.28 * np.maximum(stress, 0), 5)
-    parcela = _clip(renda * _clip(rng.normal(0.08 + 0.07 * ativos + 0.04 * stress, 0.06, n), 0, None), 0, 20000)
+    parcela = _clip(porte * _clip(rng.normal(0.08 + 0.07 * ativos + 0.04 * stress, 0.06, n), 0, None), 0, 20000)
     comprometimento = _clip(parcela / np.maximum(fluxo, 200.0), 0, 1.5)
     atraso_emp = _poisson_clip(rng, 4 + np.maximum(stress, 0) * 22, 180)
     juros = _clip(rng.normal(2.4 + 0.9 * stress + 0.15 * ativos, 0.7, n), 0.8, 12.0)
@@ -466,8 +453,6 @@ def gerar_base(n: int, seed: int, parametros: dict | None = None, prefixo_id: st
     p_reneg = _sigmoid(-2.3 + 0.8 * stress + 0.4 * (ocorrencias > 0))
     reneg = rng.binomial(1, p_reneg)
 
-    score = _clip(rng.normal(690 - 78 * stress, 55, n), 250, 950).round().astype(int)
-    consultas = _poisson_clip(rng, 0.6 + np.maximum(stress, 0) * 1.5 + novos * 0.4, 15)
     protestos = _poisson_clip(rng, 0.05 + np.maximum(stress, 0) * 0.28, 6)
     inad_outros = _clip(
         rng.lognormal(6.5 + 0.7 * stress, 0.8, n) * (rng.random(n) < _sigmoid(-1.4 + 0.9 * stress)),
@@ -482,7 +467,6 @@ def gerar_base(n: int, seed: int, parametros: dict | None = None, prefixo_id: st
             "tipo_ocupacao": ocupacao,
             "escolaridade": escolaridade,
             "possui_imovel_proprio": imovel.astype(int),
-            "renda_declarada": renda.round(2),
             "fluxo_medio_entradas_3m": fluxo.round(2),
             "saldo_medio_conta_12m": saldo12.round(2),
             "saldo_medio_conta_3m": saldo3.round(2),
@@ -503,14 +487,12 @@ def gerar_base(n: int, seed: int, parametros: dict | None = None, prefixo_id: st
             "qtd_emprestimos_ativos": ativos.astype(int),
             "qtd_novos_emprestimos_ultimos_6m": novos.astype(int),
             "parcela_total_comprometida": parcela.round(2),
-            "comprometimento_renda_efetivo": np.round(comprometimento, 4),
+            "comprometimento_fluxo_entradas": np.round(comprometimento, 4),
             "max_atraso_emprestimos_historico": atraso_emp.astype(int),
             "taxa_juros_media_contratos_ativos": np.round(juros, 2),
             "qtd_ocorrencias_atraso_30_60d_12m": ocorrencias.astype(int),
             "flag_historico_fpd": fpd.astype(int),
             "possui_renegociacao_ativa": reneg.astype(int),
-            "score_bureau_atual": score.astype(int),
-            "qtd_consultas_bureau_3m": consultas.astype(int),
             "qtd_protestos_historico": protestos.astype(int),
             "valor_total_inadimplencia_outros_mercados": inad_outros.round(2),
         }

@@ -9,46 +9,49 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-from src.credito.dataset import BLOCO_NOME, BLOCOS, CATEGORICAS, FEATURES, LIMITES, ROTULOS
+from src.credito.chaves import PERGUNTAS, aplicar, respostas_da_linha, respostas_em_dia
 from src.credito.politica import CORTE_MATRIZ, nome_faixa
 from src.credito.simulador import (
     amostra_teste,
     carregar_modelos,
     chance,
     figura,
-    ler_perfil,
     ler_relatorio,
     pronto,
 )
 
-ROTULO_CAT = {
-    "clt": "CLT",
-    "servidor": "Servidor",
-    "autonomo": "Autônomo",
-    "empresario": "Empresário",
-    "aposentado": "Aposentado",
-    "informal": "Informal",
-    "fundamental": "Fundamental",
-    "medio": "Médio",
-    "superior": "Superior",
-    "pos": "Pós-graduação",
-    "integral": "Integral",
-    "parcial": "Parcial",
-    "minimo": "Mínimo",
-}
-FLAGS = {
-    "possui_imovel_proprio",
-    "flag_pagamento_cartao_com_cheque_especial",
-    "flag_historico_fpd",
-    "possui_renegociacao_ativa",
-}
-SLIDERS = {
-    "renda_declarada",
-    "comprometimento_renda_efetivo",
-    "score_bureau_atual",
-    "utilizacao_cheque_especial_atual",
-    "dias_utilizando_cheque_especial_12m",
-}
+MESA = [
+    {
+        "titulo": "Histórico de atrasos no banco",
+        "alerta": "Acende com atraso de 30 a 60 dias, atraso na 1ª parcela ou renegociação ativa.",
+        "blocos": ["regua"],
+    },
+    {
+        "titulo": "Uso do cartão de crédito",
+        "alerta": "Acende com pagamento no mínimo, atraso, saque no crédito ou fatura paga no cheque especial.",
+        "blocos": ["cartao"],
+    },
+    {
+        "titulo": "Conta corrente e cheque especial",
+        "alerta": "Acende com cheque devolvido, uso contínuo do especial ou saldo e fluxo fracos.",
+        "blocos": ["cheque", "fluxo"],
+    },
+    {
+        "titulo": "Empréstimos e peso das parcelas",
+        "alerta": "Acende quando as parcelas comem fatia alta das entradas ou o contrato é novo ou atrasado.",
+        "blocos": ["endividamento"],
+    },
+    {
+        "titulo": "Restrições no mercado",
+        "alerta": "Acende com protesto em cartório ou inadimplência em outra instituição.",
+        "blocos": ["bureau"],
+    },
+    {
+        "titulo": "Perfil de relacionamento",
+        "alerta": "Acende em cliente recente ou sem imóvel próprio.",
+        "blocos": ["cadastral"],
+    },
+]
 COR_FAIXA = {"verde": "#3dd68c", "amarelo": "#E8B923", "vermelho": "#ff8a65"}
 NOME_FAIXA = {"verde": "Verde", "amarelo": "Amarelo", "vermelho": "Vermelho"}
 
@@ -77,7 +80,7 @@ CSS = """
     .grupo.primeiro { border-top-color: #E8B923; }
     .grupo h3 { margin: 0.15rem 0 0.4rem; color: #F4F1E8; font-size: 1.02rem; }
     .grupo ul { margin: 0; padding: 0; }
-    .grupo li { margin: 0.16rem 0; color: #F4F1E8; font-size: 0.88rem; list-style: none; }
+    .grupo .alerta { margin: 0; color: #c9c3b4; font-size: 0.9rem; line-height: 1.4; }
     .olhe { color: #E8B923; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
     .tec { color: #8d887c; font-size: 0.74rem; margin-left: 0.3rem; }
     .ponto { color: #E8B923; margin-right: 0.25rem; }
@@ -136,392 +139,260 @@ def _teste() -> pd.DataFrame:
     return amostra_teste()
 
 
-def _valor_tipico(perfil: dict, coluna: str):
-    info = perfil[coluna]
-    if info["tipo"] == "categoria":
-        return info["moda"]
-    return info["mediana"]
+
+def _reais(valor: float) -> str:
+    texto = f"{valor:,.0f}".replace(",", ".")
+    return f"R$ {texto}"
 
 
-def _widget(coluna: str, bruto, perfil: dict):
-    if coluna in CATEGORICAS:
-        opcoes = perfil[coluna]["opcoes"]
-        texto = str(bruto)
-        return texto if texto in opcoes else opcoes[0]
-    if coluna in FLAGS:
-        return bool(int(float(bruto)))
-    baixo, alto, passo = LIMITES[coluna]
-    numero = min(max(float(bruto), float(baixo)), float(alto))
-    degraus = round((numero - float(baixo)) / float(passo))
-    ajustado = min(max(float(baixo) + degraus * float(passo), float(baixo)), float(alto))
-    if isinstance(baixo, int) and isinstance(passo, int):
-        return int(round(ajustado))
-    return round(ajustado, 4)
+def _chave(geracao: int, ident: str) -> str:
+    return f"g{geracao}_{ident}"
 
 
-def _para_modelo(coluna: str, valor):
-    if coluna in FLAGS:
-        return int(bool(valor))
-    if coluna in CATEGORICAS:
-        return str(valor)
-    return valor
+def _respostas(geracao: int) -> dict[str, bool]:
+    return {pergunta["id"]: bool(st.session_state[_chave(geracao, pergunta["id"])]) for pergunta in PERGUNTAS}
 
 
-def _chave(geracao: int, coluna: str) -> str:
-    return f"g{geracao}_{coluna}"
-
-
-def _linha_atual(geracao: int) -> dict:
-    linha = {}
-    for coluna in FEATURES:
-        linha[coluna] = _para_modelo(coluna, st.session_state[_chave(geracao, coluna)])
-    return linha
-
-
-def _nova_geracao(perfil: dict, bruto: dict, caso: dict | None) -> None:
-    # Chave nova a cada perfil. O fragmento não reinscreve o valor antigo do controle.
+def _nova_geracao(respostas: dict[str, bool], caso: dict | None) -> None:
     geracao = int(st.session_state.get("sim_geracao", 0)) + 1
     st.session_state["sim_geracao"] = geracao
-    st.session_state["sim_base"] = {coluna: _widget(coluna, bruto[coluna], perfil) for coluna in FEATURES}
+    st.session_state["sim_respostas"] = respostas
     st.session_state["sim_caso"] = caso
 
 
-def _igual(atual: dict, original: dict) -> bool:
-    for coluna in FEATURES:
-        if coluna in CATEGORICAS:
-            if str(atual[coluna]) != str(original[coluna]):
-                return False
-        elif abs(float(atual[coluna]) - float(original[coluna])) > 1e-4:
-            return False
-    return True
-
-
-def _acionados(relatorio: dict, slug: str, linha: dict, perfil: dict) -> list[dict]:
-    sinais = relatorio["importancia"]["sinais"]
+def _sins_que_puxam(relatorio: dict, slug: str, respostas: dict[str, bool]) -> list[str]:
+    ranking = {item["variavel"]: item["pct"] for item in relatorio["importancia"]["itens"][slug]}
+    sims = relatorio["chaves"]["sim"]
     acesos = []
-    for item in relatorio["importancia"]["itens"][slug]:
-        coluna = item["variavel"]
-        sinal = sinais[coluna]
-        valor = linha[coluna]
-        if sinal["sentido"] == "categoria":
-            ligado = bool(sinal.get("acima_da_base")) and str(valor) == sinal["nivel"]
+    for pergunta in PERGUNTAS:
+        ident = pergunta["id"]
+        if ident == "imovel":
+            if respostas.get(ident, True):
+                continue
+            colunas = ["possui_imovel_proprio"]
+        elif not respostas.get(ident):
+            continue
         else:
-            mediana = float(perfil[coluna]["mediana"])
-            numero = float(valor)
-            if coluna in FLAGS or mediana <= 0:
-                ligado = numero >= 1 if sinal["sentido"] == "sobe" else numero < 1
-            elif sinal["sentido"] == "sobe":
-                ligado = numero >= mediana * 1.25
-            else:
-                ligado = numero <= mediana * 0.80
-        if ligado:
-            acesos.append(item)
-    return acesos[:5]
+            colunas = list(sims[ident])
+        peso = max((ranking.get(coluna, 0.0) for coluna in colunas), default=0.0)
+        acesos.append((peso, pergunta["texto"]))
+    acesos.sort(key=lambda par: par[0], reverse=True)
+    return [texto for _, texto in acesos[:6]]
 
 
 def _cabecalho(relatorio: dict, ir) -> None:
-    if st.button("← Voltar ao menu inicial", key="voltar_credito"):
+    if st.button("← Voltar ao menu inicial", key="credito_voltar"):
         ir("home")
+    st.title("Comitê de Crédito")
+    st.markdown(
+        '<div class="sintetico"><strong>Base sintética.</strong> '
+        "Não é carteira de banco. O modelo não usa renda declarada: o banco quase nunca "
+        "vê a renda verdadeira, porque o cliente pode omitir, ter outra conta ou receber fora do banco."
+        "</div>",
+        unsafe_allow_html=True,
+    )
     base = relatorio["base"]
-    acuracias = [m["matriz"]["acuracia"] for m in relatorio["modelos"]]
-    st.markdown('<p class="credit-top">Desenvolvido por Hart Botelho</p>', unsafe_allow_html=True)
-    st.markdown(
-        """
-        <div class="hero">
-            <div class="badge">Base sintética corporativa · 50.000 clientes · 38 colunas</div>
-            <h1>Comitê de Crédito</h1>
-            <p>O relato já está calculado. Embaixo, o simulador muda a chance na hora.</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        """
-        <div class="sintetico">
-            <strong>Não é carteira de banco.</strong>
-            50.000 clientes gerados, 38 colunas, processo aberto.
-            Os números são do teste desta base.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        f"""
-        <div class="kpi-grid">
-            <div class="kpi" style="--accent:#E8B923"><div class="lbl">Clientes</div>
-            <div class="val">{_mil(base['n'])}</div><div class="sub">Livro sintético</div></div>
-            <div class="kpi" style="--accent:#ff8a65"><div class="lbl">Inadimplência</div>
-            <div class="val">{_pct(base['taxa'])}</div><div class="sub">{_mil(base['positivos'])} em 90 dias</div></div>
-            <div class="kpi" style="--accent:#6ea8fe"><div class="lbl">Teste</div>
-            <div class="val">{_mil(base['n_teste'])}</div><div class="sub">{_pct(base['taxa_teste'])} inadimplentes</div></div>
-            <div class="kpi" style="--accent:#3dd68c"><div class="lbl">Maior acurácia</div>
-            <div class="val">{_pct(max(acuracias))}</div><div class="sub">Corte 0,50 no teste</div></div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    kpis = [
+        ("Clientes", _mil(base["n"])),
+        ("Inadimplência em 90 dias", _pct(base["taxa"])),
+        ("Fluxo mediano de entradas", _reais(base["fluxo_mediano"])),
+        ("Maior acurácia", _pct(max(m["matriz"]["acuracia"] for m in relatorio["modelos"]))),
+    ]
+    cols = st.columns(4)
+    for col, (nome, valor) in zip(cols, kpis):
+        col.markdown(f'<div class="kpi"><div class="label">{nome}</div><div class="value">{valor}</div></div>', unsafe_allow_html=True)
 
 
 def _grupos(relatorio: dict) -> None:
-    blocos = relatorio["importancia"]["por_modelo"][relatorio["referencia"]]
-    ordem = [item["bloco"] for item in blocos]
-    fatia = {item["bloco"]: item["fatia"] for item in blocos}
-    primeiros = set(ordem[:3])
-    topo = {item["variavel"] for item in relatorio["importancia"]["itens"][relatorio["referencia"]][:8]}
-    nomes = [BLOCO_NOME[bloco] for bloco in ordem[:3]]
-    st.markdown("### O que a mesa avalia")
-    st.markdown(
-        f"O arquivo tem 38 colunas: o identificador, **36 itens** e o alvo de 90 dias. "
-        f"Olhe primeiro **{nomes[0]}**, **{nomes[1]}** e **{nomes[2]}**."
-    )
-    cards = []
-    for bloco in ordem:
-        classe = "grupo primeiro" if bloco in primeiros else "grupo"
-        selo = '<div class="olhe">Observar primeiro</div>' if bloco in primeiros else ""
-        itens = []
-        for coluna in BLOCOS[bloco]:
-            marca = '<span class="ponto">●</span>' if coluna in topo else ""
-            itens.append(
-                f"<li>{marca}{ROTULOS[coluna]}<span class=\"tec\">{coluna}</span></li>"
-            )
-        cards.append(
-            f'<div class="{classe}">{selo}'
-            f"<h3>{BLOCO_NOME[bloco]}</h3>"
-            f'<div class="tec">{_pct(fatia[bloco])} do sinal no modelo de referência</div>'
-            f"<ul>{''.join(itens)}</ul></div>"
+    st.subheader("O que a mesa avalia")
+    st.write("O comitê olha o comportamento na conta. Cada cartão diz, numa linha, o que acende alerta.")
+    fatia = {
+        item["bloco"]: item["fatia"]
+        for item in relatorio["importancia"]["por_modelo"][relatorio["referencia"]]
+    }
+    ordem = sorted(MESA, key=lambda card: sum(fatia.get(bloco, 0) for bloco in card["blocos"]), reverse=True)
+    primeiro = sum(fatia.get(bloco, 0) for bloco in ordem[0]["blocos"])
+    partes = []
+    for card in ordem:
+        peso = sum(fatia.get(bloco, 0) for bloco in card["blocos"])
+        classe = "grupo primeiro" if peso == primeiro else "grupo"
+        selo = '<p class="olhe">Olhar primeiro</p>' if peso == primeiro else ""
+        partes.append(
+            f'<article class="{classe}">{selo}<h3>{card["titulo"]}</h3>'
+            f'<p class="alerta">{card["alerta"]}</p></article>'
         )
-    st.markdown(f'<div class="grade-grupos">{"".join(cards)}</div>', unsafe_allow_html=True)
-    st.caption("O ponto dourado marca os oito itens que mais pesaram no modelo de referência. O identificador não entra no treino.")
+    st.markdown(f'<div class="grade-grupos">{"".join(partes)}</div>', unsafe_allow_html=True)
 
 
 def _acuracia(relatorio: dict) -> None:
-    st.markdown("### Acerto dos quatro modelos")
-    chute = 1.0 - relatorio["base"]["taxa_teste"]
-    melhor = max(relatorio["modelos"], key=lambda m: m["matriz"]["acuracia"])
-    st.markdown(
-        f"Chutar sempre em dia acertaria **{_pct(chute)}** deste teste. "
-        f"A acurácia acima disso é o que o modelo acrescenta. "
-        f"O recall é a parte do calote que ele pega no corte 0,50."
+    st.subheader("Acurácia dos quatro modelos")
+    st.write(
+        f"No teste de {_mil(relatorio['base']['n_teste'])} clientes, o acerto é quem o modelo "
+        f"classifica certo com corte em {_pct(CORTE_MATRIZ)}. "
+        "Marcar todo mundo como em dia já acertaria a maioria, porque o calote é minoria."
     )
-    colunas = st.columns(4)
-    for coluna, modelo in zip(colunas, relatorio["modelos"]):
-        m = modelo["matriz"]
-        classe = "acc melhor" if modelo["slug"] == melhor["slug"] else "acc"
-        selo = '<div class="selo">Maior acerto</div>' if modelo["slug"] == melhor["slug"] else '<div class="selo">&nbsp;</div>'
-        with coluna:
-            st.markdown(
-                f"""
-                <div class="{classe}">
-                    {selo}
-                    <div class="nome">{modelo['nome']}</div>
-                    <div class="grande">{_pct(m['acuracia'])}</div>
-                    <div class="miudo">Acurácia no teste<br>
-                    ROC AUC {_num(modelo['roc_auc'])}<br>
-                    Precisão {_pct(m['precisao'])} · Recall {_pct(m['recall'])}<br>
-                    F1 {_pct(m['f1'])}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-    st.markdown("")
-    st.image(str(figura(relatorio["figuras"]["matrizes"])), width="stretch")
-    st.caption("Matriz no corte 0,50. Verde mais claro é a célula com mais clientes. Acima, quem ficou em dia ou em atraso; ao lado, o que o modelo previu.")
+    melhor = max(relatorio["modelos"], key=lambda modelo: modelo["matriz"]["acuracia"])["slug"]
+    cols = st.columns(4)
+    for col, modelo in zip(cols, relatorio["modelos"]):
+        corte = modelo["matriz"]
+        classe = "acc melhor" if modelo["slug"] == melhor else "acc"
+        selo = '<div class="selo">Maior acurácia</div>' if modelo["slug"] == melhor else ""
+        col.markdown(
+            f'<div class="{classe}">{selo}'
+            f'<div class="nome">{modelo["nome"]}</div>'
+            f'<div class="grande">{_pct(corte["acuracia"])}</div>'
+            f'<div class="miudo">AUC {_num(modelo["roc_auc"])}<br>'
+            f'Precisão {_pct(corte["precisao"])} · Recall {_pct(corte["recall"])}<br>'
+            f'F1 {_pct(corte["f1"])}</div></div>',
+            unsafe_allow_html=True,
+        )
+    st.image(str(figura("matrizes_confusao.png")), width="stretch")
 
 
 def _itens_por_modelo(relatorio: dict) -> None:
-    st.markdown("### O que cada modelo aponta para o calote")
-    st.markdown("Embaralhar o item no teste derruba a curva. A barra é essa queda, dentro de cada modelo.")
-    colunas = st.columns(4)
-    for coluna, modelo in zip(colunas, relatorio["modelos"]):
-        ranking = relatorio["importancia"]["itens"][modelo["slug"]][:8]
-        teto = ranking[0]["queda_auc"] if ranking else 1.0
-        linhas = []
-        for item in ranking:
-            largura = 8 + 92 * (item["queda_auc"] / teto if teto else 0)
-            linhas.append(
-                f'<div class="rank-nome">{item["rotulo"]}</div>'
-                f'<div class="rank-barra"><span style="width:{largura:.0f}%"></span></div>'
-            )
-        with coluna:
-            st.markdown(f"**{modelo['nome']}**")
-            st.markdown("".join(linhas), unsafe_allow_html=True)
+    st.subheader("O que cada modelo aponta para o calote")
+    st.write(
+        "Cada barra é a fatia do peso que puxa a inadimplência. "
+        "Em cada modelo as fatias de todos os fatores somam 100%, do maior para o menor."
+    )
+    nomes = [modelo["slug"] for modelo in relatorio["modelos"]]
+    rotulo = {modelo["slug"]: modelo["nome"] for modelo in relatorio["modelos"]}
+    for linha in (nomes[:2], nomes[2:]):
+        cols = st.columns(2)
+        for col, slug in zip(cols, linha):
+            with col:
+                st.markdown(f"**{rotulo[slug]}**")
+                ranking = sorted(relatorio["importancia"]["itens"][slug], key=lambda item: item["pct"], reverse=True)
+                top = ranking[:8]
+                soma = sum(item["pct"] for item in top)
+                maior = top[0]["pct"] if top else 1
+                for item in top:
+                    largura = 100.0 * item["pct"] / maior if maior else 0
+                    texto = f"{item['pct']:.1f}%".replace(".", ",")
+                    st.markdown(
+                        f'<div class="rank-nome">{item["rotulo"]} <strong style="color:#E8B923">{texto}</strong></div>'
+                        f'<div class="rank-barra"><span style="width:{largura:.1f}%"></span></div>',
+                        unsafe_allow_html=True,
+                    )
+                soma_txt = f"{soma:.1f}".replace(".", ",")
+                st.caption(
+                    f"Estes 8, do maior para o menor, somam {soma_txt}% do peso. O restante fecha os 100%."
+                )
 
 
 def _combinacoes(relatorio: dict) -> None:
-    todas = relatorio.get("combinacoes") or []
-    criticas = [item for item in todas if item.get("critica")] or todas
-    st.markdown("### Combinações que travam a aprovação")
-    if not criticas:
-        st.caption("Nenhuma combinação ficou com amostra suficiente neste teste.")
-        return
-    base = criticas[0]["taxa_base"]
-    st.markdown(
-        f"Medidas no teste, não no texto. A base deste teste é **{_pct(base)}**. "
-        "A prevista é a chance média do modelo de referência nos mesmos clientes."
+    st.subheader("Quando os sinais se juntam")
+    criticas = [item for item in relatorio["combinacoes"] if item.get("critica")]
+    base = criticas[0]["taxa_base"] if criticas else 0.0
+    st.write(
+        "Medido no teste, não no treino. A barra coral é o que aconteceu. "
+        "A dourada é o que a regressão logística previu para as mesmas pessoas."
     )
-    esquerda, direita = st.columns(2)
-    for i, item in enumerate(criticas):
-        sinais = " · ".join(item["sinais"])
-        bloco = f"""
-        <div class="combo">
-            <h3>{item['titulo']}</h3>
-            <p>{sinais}</p>
-            <p>{_mil(item['n'])} clientes no teste</p>
-            <p>Base <strong>{_pct(item['taxa_base'])}</strong>
-            · observada <strong>{_pct(item['taxa_observada'])}</strong>
-            · prevista <strong>{_pct(item['prevista_referencia'])}</strong></p>
-        </div>
-        """
-        (esquerda if i % 2 == 0 else direita).markdown(bloco, unsafe_allow_html=True)
-    if "combinacoes" in relatorio.get("figuras", {}):
-        st.image(str(figura(relatorio["figuras"]["combinacoes"])), width="stretch")
-        st.caption("Cada combinação: base do teste, taxa que aconteceu e chance média prevista.")
-
-
-def _controle(coluna: str, perfil: dict, geracao: int) -> None:
-    rotulo = ROTULOS[coluna]
-    chave = _chave(geracao, coluna)
-    if coluna in CATEGORICAS:
-        st.selectbox(
-            rotulo,
-            perfil[coluna]["opcoes"],
-            key=chave,
-            format_func=lambda valor: ROTULO_CAT.get(valor, valor),
-            help=coluna,
+    for combo in criticas:
+        st.markdown(
+            f'<div class="combo"><h3>{combo["titulo"]}</h3>'
+            f'<p>{" · ".join(combo["sinais"])}</p>'
+            f'<p><strong>{_mil(combo["n"])} clientes</strong> no teste. '
+            f'A base do teste está em {_pct(base)}. '
+            f'Neste recorte, {_pct(combo["taxa_observada"])} ficaram inadimplentes '
+            f'e o modelo apontou {_pct(combo["prevista_referencia"])}.</p></div>',
+            unsafe_allow_html=True,
         )
-        return
-    if coluna in FLAGS:
-        st.toggle(rotulo, key=chave, help=coluna)
-        return
-    baixo, alto, passo = LIMITES[coluna]
-    if coluna in SLIDERS:
-        st.slider(rotulo, baixo, alto, step=passo, key=chave, help=coluna)
-        return
-    st.number_input(rotulo, min_value=baixo, max_value=alto, step=passo, key=chave, help=coluna)
+    caminho = figura("combinacoes.png")
+    if caminho.exists():
+        st.image(str(caminho), width="stretch")
 
 
-def _placar(relatorio: dict, linha: dict, perfil: dict, modelos: dict) -> None:
-    nomes = {item["slug"]: item["nome"] for item in relatorio["modelos"]}
+def _placar(relatorio: dict, linha: dict, respostas: dict[str, bool], modelos: dict, caso: dict | None) -> None:
     slug = st.selectbox(
-        "Parecer pelo modelo",
-        list(nomes),
-        format_func=lambda s: nomes[s],
+        "Modelo do parecer",
+        [modelo["slug"] for modelo in relatorio["modelos"]],
+        format_func=lambda item: next(modelo["nome"] for modelo in relatorio["modelos"] if modelo["slug"] == item),
         key="sim_modelo",
     )
-    probs = {item: chance(modelos[item], linha) for item in nomes}
-    faixa, acao = nome_faixa(probs[slug])
-    cor = COR_FAIXA[faixa]
-    pesos = _acionados(relatorio, slug, linha, perfil)
-    if pesos:
-        lista = "".join(f"<li>{item['rotulo']}</li>" for item in pesos)
-        pesos_html = f"<p>Pesaram para o calote neste cliente:</p><ul>{lista}</ul>"
-    else:
-        pesos_html = "<p>Nenhum item está do lado do calote em relação ao perfil base.</p>"
-    caso = st.session_state.get("sim_caso")
-    nota = ""
-    if caso:
-        real = "inadimplente" if int(caso["y"]) == 1 else "em dia"
-        if _igual(linha, caso["linha"]):
-            previsto = int(probs[slug] >= CORTE_MATRIZ)
-            leitura = "acertou" if previsto == int(caso["y"]) else "errou"
-            nota = (
-                f"<p>Cliente {caso['id']} do teste. Desfecho real: <strong>{real}</strong>. "
-                f"No corte 0,50 este modelo <strong>{leitura}</strong>.</p>"
-            )
-        else:
-            nota = (
-                f"<p>Partiu do cliente {caso['id']} (desfecho real: {real}). "
-                "Os itens já foram editados. O placar é desta edição.</p>"
-            )
-    mini = []
-    for item, prob in probs.items():
-        destaque = "font-weight:700;color:#F4F1E8" if item == slug else "color:#c9c3b4"
-        mini.append(f'<div style="{destaque}">{nomes[item]}<br><span style="font-size:1.15rem">{_pct(prob)}</span></div>')
+    prob = chance(modelos[slug], linha)
+    faixa, acao = nome_faixa(prob)
+    probs = [(modelo["slug"], chance(modelos[modelo["slug"]], linha)) for modelo in relatorio["modelos"]]
     st.markdown(
-        f"""
-        <div class="placar">
-            <div class="nome" style="color:#c9c3b4;font-size:0.82rem">{nomes[slug]} · chance de inadimplência</div>
-            <div class="grande" style="color:{cor}">{_pct(probs[slug])}</div>
-            <div class="parecer" style="color:{cor}">{NOME_FAIXA[faixa]} · {acao}</div>
-            <div class="miudo" style="color:#c9c3b4;margin-top:0.45rem">Verde até 8% aprova. Amarelo até 20% exige garantia. Acima, recusa.</div>
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.4rem;margin-top:0.7rem">{''.join(mini)}</div>
-            {pesos_html}
-            {nota}
-        </div>
-        """,
+        f'<div class="placar"><div class="grande" style="color:{COR_FAIXA[faixa]}">{_pct(prob)}</div>'
+        f'<div class="parecer" style="color:{COR_FAIXA[faixa]}">{NOME_FAIXA[faixa]} · {acao}</div>'
+        f'<p style="color:#c9c3b4;margin:0.35rem 0 0">Chance de inadimplência em 90 dias, na hora.</p></div>',
         unsafe_allow_html=True,
+    )
+    cols = st.columns(4)
+    for col, (nome, valor) in zip(cols, probs):
+        nome_modelo = next(modelo["nome"] for modelo in relatorio["modelos"] if modelo["slug"] == nome)
+        col.metric(nome_modelo, _pct(valor))
+    puxam = _sins_que_puxam(relatorio, slug, respostas)
+    if puxam:
+        st.markdown("**O que mais puxou o risco, entre os Sim marcados**")
+        for texto in puxam:
+            st.markdown(f"- {texto}")
+    else:
+        st.caption("Nenhum Sim de risco marcado. O perfil está em dia.")
+    if caso is None:
+        return
+    real = "inadimplente" if caso["y"] else "em dia"
+    previsto = "inadimplente" if prob >= CORTE_MATRIZ else "em dia"
+    acertou = "acertou" if (prob >= CORTE_MATRIZ) == bool(caso["y"]) else "errou"
+    st.caption(
+        f"Cliente {caso['id']} do teste estava {real}. "
+        f"Com corte em {_pct(CORTE_MATRIZ)}, este modelo {acertou}: previu {previsto}."
     )
 
 
 @st.fragment
 def _simulador(relatorio: dict) -> None:
-    perfil = ler_perfil()
-    if "sim_base" not in st.session_state:
-        st.session_state["sim_base"] = {
-            coluna: _widget(coluna, _valor_tipico(perfil, coluna), perfil) for coluna in FEATURES
-        }
-        st.session_state["sim_geracao"] = 0
-        st.session_state["sim_caso"] = None
+    st.subheader("Simulador do comitê")
+    st.write("Cada chave é Sim ou Não. A chance muda na hora, sem abrir gaveta.")
+    chaves = relatorio["chaves"]
+    if "sim_geracao" not in st.session_state:
+        _nova_geracao(respostas_em_dia(), None)
     geracao = int(st.session_state["sim_geracao"])
-    for coluna in FEATURES:
-        chave = _chave(geracao, coluna)
+    guardadas = st.session_state.get("sim_respostas") or respostas_em_dia()
+    for pergunta in PERGUNTAS:
+        chave = _chave(geracao, pergunta["id"])
         if chave not in st.session_state:
-            st.session_state[chave] = st.session_state["sim_base"][coluna]
-    if "sim_modelo" not in st.session_state:
-        st.session_state["sim_modelo"] = relatorio["referencia"]
+            st.session_state[chave] = bool(guardadas[pergunta["id"]])
 
-    st.markdown("### Simulador do comitê")
-    st.markdown("Tudo aberto. A chance, a faixa e o parecer mudam quando um item muda.")
+    modelos = _modelos_gravados()
+    respostas = _respostas(geracao)
+    linha = aplicar(chaves["em_dia"], chaves["sim"], respostas)
+    _placar(relatorio, linha, respostas, modelos, st.session_state.get("sim_caso"))
 
-    try:
-        modelos = _modelos_gravados()
-    except Exception:
-        st.warning(
-            "Os modelos gravados não abriram nesta instalação. O relato acima continua. "
-            "requirements.txt fixa scikit-learn e xgboost na versão em que eles foram salvos."
-        )
-        return
-
-    linha = _linha_atual(geracao)
-    _placar(relatorio, linha, perfil, modelos)
-
-    b1, b2, b3 = st.columns(3)
-    with b1:
-        calcular = st.button("Calcular / Atualizar diagnóstico", type="primary", width="stretch", key="sim_calcular")
-    with b2:
-        limpar = st.button("Limpar para perfil base", width="stretch", key="sim_limpar")
-    with b3:
-        sortear = st.button("Sortear cliente real do teste", width="stretch", key="sim_sortear")
-    if calcular:
-        st.caption("Diagnóstico atualizado com os itens que estão na tela.")
+    acao1, acao2, acao3 = st.columns(3)
+    with acao1:
+        limpar = st.button("Limpar tudo (perfil em dia)", width="stretch")
+    with acao2:
+        sortear = st.button("Sortear cliente do teste", width="stretch")
+    with acao3:
+        atualizar = st.button("Atualizar diagnóstico", width="stretch")
     if limpar:
-        tipico = {coluna: _valor_tipico(perfil, coluna) for coluna in FEATURES}
-        _nova_geracao(perfil, tipico, None)
+        _nova_geracao(respostas_em_dia(), None)
         st.rerun(scope="fragment")
     if sortear:
         teste = _teste()
-        st.session_state["sim_sorteio"] = int(st.session_state.get("sim_sorteio", 0)) + 1
-        indice = int(np.random.default_rng(st.session_state["sim_sorteio"]).integers(0, len(teste)))
-        row = teste.iloc[indice]
-        bruto = {coluna: row[coluna] for coluna in FEATURES}
-        caso = {
-            "id": str(row["id_cliente"]),
-            "y": int(row["inadimplente_90d"]),
-            "linha": {coluna: _para_modelo(coluna, _widget(coluna, bruto[coluna], perfil)) for coluna in FEATURES},
-        }
-        _nova_geracao(perfil, bruto, caso)
+        row = teste.iloc[int(np.random.default_rng().integers(0, len(teste)))]
+        _nova_geracao(
+            respostas_da_linha(row),
+            {"id": str(row["id_cliente"]), "y": int(row["inadimplente_90d"])},
+        )
+        st.rerun(scope="fragment")
+    if atualizar:
         st.rerun(scope="fragment")
 
-    blocos = relatorio["importancia"]["por_modelo"][relatorio["referencia"]]
-    ordem = [item["bloco"] for item in blocos]
-    primeiros = set(ordem[:3])
-    colunas = st.columns(4)
-    for i, bloco in enumerate(ordem):
-        with colunas[i % 4]:
-            selo = '<p class="olhe">Olhar primeiro</p>' if bloco in primeiros else ""
-            st.markdown(f'<p class="sim-grupo">{BLOCO_NOME[bloco]}</p>{selo}', unsafe_allow_html=True)
-            for coluna in BLOCOS[bloco]:
-                _controle(coluna, perfil, geracao)
+    grupos: dict[str, list[dict]] = {}
+    for pergunta in PERGUNTAS:
+        grupos.setdefault(pergunta["grupo"], []).append(pergunta)
+    colunas = st.columns(3)
+    for indice, (grupo, perguntas) in enumerate(grupos.items()):
+        with colunas[indice % 3]:
+            st.markdown(f'<p class="sim-grupo">{grupo}</p>', unsafe_allow_html=True)
+            for pergunta in perguntas:
+                st.toggle(
+                    pergunta["texto"],
+                    key=_chave(geracao, pergunta["id"]),
+                )
 
 
 def render_relato(ir) -> None:
@@ -530,7 +401,9 @@ def render_relato(ir) -> None:
         st.error("O dossiê ainda não foi gerado. Na raiz do repositório, rode python -m src.credito.pipeline.")
         st.stop()
     relatorio = ler_relatorio()
-    if "itens" not in relatorio.get("importancia", {}) or "combinacoes" not in relatorio:
+    itens = relatorio.get("importancia", {}).get("itens", {})
+    referencia = relatorio.get("referencia")
+    if "chaves" not in relatorio or not itens.get(referencia) or "pct" not in itens[referencia][0]:
         st.error("O dossiê está incompleto. Na raiz do repositório, rode python -m src.credito.pipeline.")
         st.stop()
     _cabecalho(relatorio, ir)

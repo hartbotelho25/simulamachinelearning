@@ -59,7 +59,13 @@ def ranking_itens(importancias: dict[str, float]) -> list[dict]:
                 "queda_auc": round(float(valor), 5),
             }
         )
-    itens.sort(key=lambda item: item["queda_auc"], reverse=True)
+    itens.sort(key=lambda item: (-item["queda_auc"], item["rotulo"]))
+    total = sum(item["queda_auc"] for item in itens) or 1.0
+    for item in itens:
+        item["pct"] = round(100.0 * item["queda_auc"] / total, 1)
+    if itens:
+        folga = round(100.0 - sum(item["pct"] for item in itens), 1)
+        itens[0]["pct"] = round(itens[0]["pct"] + folga, 1)
     return itens
 
 

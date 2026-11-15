@@ -3,7 +3,7 @@
 Portal **Streamlit** com dois estudos, desenvolvido por **Hart Botelho**.
 
 1. **Simula Brasileirão** — Série A 2003–2025, 45 clubes. Treino ao vivo e PDF.
-2. **Comitê de Crédito** — base sintética corporativa de 50.000 clientes e 38 colunas, quatro modelos gravados e simulador ao lado. Não é carteira de banco.
+2. **Comitê de Crédito** — base sintética de 50.000 clientes, sem renda declarada, quatro modelos gravados e simulador na página. Não é carteira de banco.
 
 ## O que o Simula Brasileirão faz
 

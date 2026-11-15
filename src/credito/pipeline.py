@@ -18,6 +18,7 @@ import numpy as np
 import pandas as pd
 
 from .caminhos import ARTEFATOS, CSV_CLIENTES, GRAFICOS
+from .chaves import montar_chaves
 from .combinacoes import medir_combinacoes, sinais_das_colunas
 from .dataset import COLUNAS, conferir_esquema, gerar_base, perfil_controles, salvar_parametros
 from .graficos import combinacoes_barras, gerar_todos
@@ -191,9 +192,8 @@ def main() -> None:
             "taxa": float(df["inadimplente_90d"].mean()),
             "positivos": int(df["inadimplente_90d"].sum()),
             "idade_mediana": float(df["idade"].median()),
-            "renda_mediana": float(df["renda_declarada"].median()),
             "fluxo_mediano": float(df["fluxo_medio_entradas_3m"].median()),
-            "score_mediano": float(df["score_bureau_atual"].median()),
+            "saldo_mediano": float(df["saldo_medio_conta_3m"].median()),
             "n_treino": int(len(y_tr)),
             "n_teste": int(len(y_te)),
             "taxa_teste": float(y_te.mean()),
@@ -214,6 +214,7 @@ def main() -> None:
             "spearman_referencia": rho,
         },
         "combinacoes": combinacoes,
+        "chaves": montar_chaves(df),
         "explicacao": explicacao,
         "textos": textos,
         "figuras": figuras,

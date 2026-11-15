@@ -56,26 +56,26 @@ def _regras() -> list[dict]:
             & (d["qtd_vezes_atraso_cartao_30d_12m"] >= 1),
         },
         {
-            "id": "renda_e_minimo",
-            "titulo": "Renda comprometida e fatura no mínimo",
+            "id": "fluxo_e_minimo",
+            "titulo": "Parcelas pesadas no fluxo e fatura no mínimo",
             "sinais": [
-                "Comprometimento da renda de 40% ou mais",
+                "Parcelas consomem 40% ou mais das entradas da conta",
                 "3 ou mais pagamentos mínimos no ano",
             ],
-            "mascara": lambda d: (d["comprometimento_renda_efetivo"] >= 0.40)
+            "mascara": lambda d: (d["comprometimento_fluxo_entradas"] >= 0.40)
             & (d["qtd_vezes_pagamento_minimo_12m"] >= 3),
         },
         {
-            "id": "atraso_e_bureau",
-            "titulo": "Atraso curto ou FPD com bureau fraco",
+            "id": "atraso_e_restricao",
+            "titulo": "Atraso interno com restrição no mercado",
             "sinais": [
                 "FPD ou ocorrência de 30 a 60 dias",
-                "Score até 550 ou ao menos 1 protesto",
+                "Protesto ou inadimplência em outra instituição",
             ],
             "mascara": lambda d: (
                 (d["flag_historico_fpd"] == 1) | (d["qtd_ocorrencias_atraso_30_60d_12m"] >= 1)
             )
-            & ((d["score_bureau_atual"] <= 550) | (d["qtd_protestos_historico"] >= 1)),
+            & ((d["qtd_protestos_historico"] >= 1) | (d["valor_total_inadimplencia_outros_mercados"] > 0)),
         },
         {
             "id": "trio_cheque_cartao_atraso",

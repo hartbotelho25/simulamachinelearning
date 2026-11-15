@@ -144,7 +144,7 @@ def render_home() -> None:
             "sim",
             "Simule",
             "Simulador de Inadimplência",
-            "23 gatilhos",
+            "23 gatilhos selecionáveis",
             [
                 "Inadimplência e atraso acima de 90 dias",
                 "Quatro modelos lado a lado",

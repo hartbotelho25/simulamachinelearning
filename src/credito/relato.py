@@ -15,7 +15,6 @@ from src.credito.chaves import (
     FILHOS,
     GATILHOS,
     PARES,
-    PRESETS,
     coerente,
     grupos,
     respostas_vazias,
@@ -392,7 +391,6 @@ def _matriz_html(pacote: dict) -> str:
 
 
 _RAIZ = Path(__file__).resolve().parents[2]
-_REPO = "https://github.com/hartbotelho25/simulamachinelearning"
 _MODELOS_CODIGO = (
     ("regressao_logistica", "Regressão logística"),
     ("random_forest", "Random Forest"),
@@ -412,7 +410,6 @@ def _codigo() -> None:
         with st.expander(titulo, expanded=False):
             py = _RAIZ / "notebooks" / f"{slug}.py"
             st.code(py.read_text(encoding="utf-8"), language="python")
-    st.markdown(f"[Repositório]({_REPO})")
 
 
 def _veredito(pergunta: str, prob: float) -> str:
@@ -494,8 +491,8 @@ def _simulador(relatorio: dict, ir) -> None:
             st.session_state[chave] = bool(guardadas[item["id"]])
     _sincronizar(geracao)
 
-    titulo, menu, estudo, modelo, aperto, grave, sortear, limpar = st.columns(
-        [2.15, 0.95, 0.95, 1.55, 0.72, 0.68, 0.78, 1.25],
+    titulo, menu, estudo, modelo, sortear, limpar = st.columns(
+        [2.15, 0.95, 0.95, 1.55, 0.9, 1.35],
         gap="small",
     )
     titulo.markdown('<p class="cockpit-titulo">Simulador de Inadimplência</p>', unsafe_allow_html=True)
@@ -514,12 +511,6 @@ def _simulador(relatorio: dict, ir) -> None:
         key="sim_modelo",
         label_visibility="collapsed",
     )
-    if aperto.button("Aperto", width="stretch", key="preset_aperto"):
-        _nova_geracao({item: True for item in PRESETS[1]["ligar"]}, None)
-        st.rerun(scope="fragment")
-    if grave.button("Grave", width="stretch", key="preset_grave"):
-        _nova_geracao({item: True for item in PRESETS[2]["ligar"]}, None)
-        st.rerun(scope="fragment")
     if sortear.button("Sortear", width="stretch", key="preset_sortear"):
         _sortear()
         st.rerun(scope="fragment")

@@ -202,33 +202,6 @@ for _item in GATILHOS:
 
 PARES = [(item["id"], item["pai"]) for item in GATILHOS if item["pai"]]
 
-PRESETS = [
-    {"id": "limpar", "texto": "Limpar tudo (tudo Não)", "ligar": []},
-    {
-        "id": "aperto",
-        "texto": "Aperto no cartão e no especial",
-        "ligar": [
-            "uso_cheque_especial_mais_3m_em_6m",
-            "rotativo_mais_2x_6m",
-            "cartao_acima_90_mais_3x_6m",
-            "parcelamento_fatura_6m",
-        ],
-    },
-    {
-        "id": "grave",
-        "texto": "Reincidência grave",
-        "ligar": [
-            "mais_de_um_cheque_sem_fundo_12m",
-            "protesto_3_ou_mais",
-            "renegociacao_ativa",
-            "resgate_total_reserva",
-            "queda_vinculo_principal",
-            "pagou_fatura_com_cheque_especial",
-            "adiantamento_emergencial",
-        ],
-    },
-]
-
 
 def respostas_vazias() -> dict[str, bool]:
     return {item["id"]: False for item in GATILHOS}
@@ -270,5 +243,4 @@ def montar_chaves() -> dict:
             }
             for item in GATILHOS
         ],
-        "presets": PRESETS,
     }

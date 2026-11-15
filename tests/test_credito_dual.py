@@ -78,10 +78,12 @@ def test_tela_deixa_a_mesa_recolhida_e_o_simulador_aberto():
         assert frase in texto
     assert "O código" in texto
     assert "Quando os sinais se juntam" not in texto
-    assert "treinar_localmente.py" in texto
-    assert "src/credito/pipeline.py" in texto
-    assert "src/credito/treino.py" in texto
+    assert "Primeira versão" not in texto
+    assert "linha-tempo" not in texto
+    assert "text/csv" not in texto
     assert "st.expander(titulo, expanded=False)" in texto
+    assert 'key=f"dl_py_{slug}"' in texto
+    assert 'key=f"dl_ipynb_{slug}"' in texto
     for nome in (
         "Regressão logística",
         "Random Forest",
@@ -89,6 +91,21 @@ def test_tela_deixa_a_mesa_recolhida_e_o_simulador_aberto():
         "Rede neural MLP",
     ):
         assert nome in texto
+    url = (
+        "https://raw.githubusercontent.com/hartbotelho25/simulamachinelearning/"
+        "main/data/credito/clientes_credito_50k.csv"
+    )
+    for slug in ("regressao_logistica", "random_forest", "gradient_boosting", "rede_neural"):
+        corpo = (RAIZ / "notebooks" / f"{slug}.py").read_text(encoding="utf-8")
+        assert url in corpo
+        assert "roc_auc_score" in corpo
+        assert "confusion_matrix" in corpo
+        assert "train_test_split" in corpo
+    rede = (RAIZ / "notebooks" / "rede_neural.py").read_text(encoding="utf-8")
+    assert 'activation="relu"' in rede
+    assert 'activation="sigmoid"' in rede
+    assert "epochs=" in rede
+    assert "binary_crossentropy" in rede
     assert "@st.fragment" in texto
     simulador = texto.split("@st.fragment", 1)[1]
     assert "st.expander" not in simulador

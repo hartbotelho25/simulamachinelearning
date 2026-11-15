@@ -5,7 +5,6 @@ A mesa explicativa fica recolhida. O simulador ocupa a própria página, sem rol
 
 from __future__ import annotations
 
-import ast
 from pathlib import Path
 
 import numpy as np
@@ -137,16 +136,6 @@ CSS = """
     .lenda p, .insight p { color: #F4F1E8; font-size: 0.84rem; line-height: 1.4; margin: 0.28rem 0 0; }
     .insight .num { color: #E8B923; font-size: 1.8rem; font-weight: 700; line-height: 1; }
     .insight h3 { margin-top: 0.3rem; }
-    .linha-tempo { list-style: none; margin: 0.2rem 0 1rem; padding: 0; }
-    .linha-tempo li {
-        margin: 0 0 0.65rem; padding: 0.05rem 0 0.15rem 0.95rem;
-        border-left: 3px solid #E8B923;
-    }
-    .linha-tempo .marca {
-        color: #E8B923; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.03em;
-    }
-    .linha-tempo strong { display: block; color: #F4F1E8; font-size: 1rem; margin-top: 0.12rem; }
-    .linha-tempo p { color: #F4F1E8; font-size: 0.88rem; line-height: 1.45; margin: 0.22rem 0 0; }
     @media (max-width: 1100px) {
         .matrizes, .lendas { grid-template-columns: 1fr 1fr; }
         .insights { grid-template-columns: 1fr; }
@@ -418,10 +407,10 @@ def _matriz_html(pacote: dict) -> str:
 _RAIZ = Path(__file__).resolve().parents[2]
 _REPO = "https://github.com/hartbotelho25/simulamachinelearning"
 _MODELOS_CODIGO = (
-    ("logistica", "Regressão logística"),
-    ("floresta", "Random Forest"),
-    ("boosting", "Gradient Boosting (XGBoost)"),
-    ("mlp", "Rede neural MLP"),
+    ("regressao_logistica", "Regressão logística"),
+    ("random_forest", "Random Forest"),
+    ("gradient_boosting", "Gradient Boosting (XGBoost)"),
+    ("rede_neural", "Rede neural MLP"),
 )
 
 
@@ -429,105 +418,35 @@ def _ler_arquivo(relativo: str) -> str:
     return (_RAIZ / relativo).read_text(encoding="utf-8")
 
 
-def _trecho_modelo(slug: str) -> str:
-    """Trecho atual de construir(), lido de src/credito/treino.py."""
-    texto = _ler_arquivo("src/credito/treino.py")
-    arvore = ast.parse(texto)
-    for no in arvore.body:
-        if not isinstance(no, ast.FunctionDef) or no.name != "construir":
-            continue
-        for item in no.body:
-            if not isinstance(item, ast.If):
-                continue
-            condicao = ast.get_source_segment(texto, item.test) or ""
-            if f'"{slug}"' in condicao:
-                return ast.get_source_segment(texto, item) or ""
-    return ""
-
-
-def _historico() -> None:
-    st.markdown(
-        """
-        <ol class="linha-tempo">
-          <li>
-            <span class="marca">Primeira versão · 38 colunas</span>
-            <strong>Renda, saldo e bureau</strong>
-            <p>Um único alvo. Logística: AUC 0,863 e acurácia 90,0%.
-            Floresta 0,858 / 89,6%. XGBoost 0,859 / 89,7%. MLP 0,859 / 89,8%.</p>
-          </li>
-          <li>
-            <span class="marca">23 gatilhos · duas respostas</span>
-            <strong>Sim ou Não, inadimplência e acima de 90 dias</strong>
-            <p>A renda saiu. Inadimplência, logística: AUC 0,918 e acurácia 92,2%.
-            Acima de 90 dias: AUC 0,977 e acurácia 96,5%.</p>
-          </li>
-          <li>
-            <span class="marca">Tentativa descartada</span>
-            <strong>Soma manual do comitê na entrada do modelo</strong>
-            <p>Dois gatilhos já empurravam a chance para cerca de 40%, e sete passavam de 99%.
-            A probabilidade deixava de ser o que os dados mostravam.
-            Naquele retreino a logística tinha AUC 0,879 e acurácia 90,2% na inadimplência.</p>
-          </li>
-          <li>
-            <span class="marca">Python 3.14</span>
-            <strong>O arquivo dos modelos abre no Streamlit Cloud</strong>
-            <p>O joblib guardava uma função do projeto e quebrava no Python 3.14.
-            Passou a guardar só estimadores nativos. Se a carga falhar, o simulador treina de novo a partir do CSV.</p>
-          </li>
-          <li>
-            <span class="marca">Versão atual</span>
-            <strong>Os modelos aprendem só o 0/1 de cada gatilho</strong>
-            <p>Inadimplência, logística: AUC 0,763 e acurácia 88,1%.
-            Acima de 90 dias: AUC 0,768 e acurácia 93,9%.
-            O AUC caiu porque a resposta não vem mais embutida numa fórmula.</p>
-          </li>
-        </ol>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
 def _codigo() -> None:
     st.subheader("O código")
-    _historico()
-    st.markdown("**Os quatro modelos**")
-    st.caption("Cada bloco está recolhido e lê o trecho atual de `src/credito/treino.py`.")
+    st.caption(
+        "Cada modelo é um script completo, recolhido. "
+        "Baixe o .py para o VS Code ou o .ipynb para o Google Colab. "
+        "Os dois leem a base direto do GitHub, separam treino e teste, treinam "
+        "e imprimem AUC, acurácia e a matriz de confusão. Não gravam por cima do modelo do site."
+    )
     for slug, titulo in _MODELOS_CODIGO:
         with st.expander(titulo, expanded=False):
-            st.code(_trecho_modelo(slug), language="python")
-    st.markdown("**O script de treino**")
-    st.caption(
-        "Lido agora de `src/credito/pipeline.py`: gera a base, separa treino e teste, "
-        "ajusta os quatro modelos, mede e grava `modelos.joblib`."
-    )
-    st.code(_ler_arquivo("src/credito/pipeline.py"), language="python")
-    st.markdown("**Treinar no seu computador**")
-    st.markdown(
-        f"1. Clone [o repositório]({_REPO}).\n"
-        "2. Instale as dependências.\n"
-        "3. Rode o script. Ele lê o CSV que já está no repositório, treina e imprime AUC e acurácia. "
-        "Não substitui o arquivo que o site abre.\n"
-        "4. Para mudar um hiperparâmetro, edite `construir` em `src/credito/treino.py`. "
-        "Para testar outro algoritmo, inclua um slug em `CATALOGO` e um ramo em `construir`."
-    )
-    st.code(
-        "git clone https://github.com/hartbotelho25/simulamachinelearning.git\n"
-        "cd simulamachinelearning\n"
-        "pip install -r requirements.txt\n"
-        "python treinar_localmente.py",
-        language="bash",
-    )
-    st.markdown(
-        f"[Repositório]({_REPO}) · "
-        f"[treinar_localmente.py]({_REPO}/blob/main/treinar_localmente.py)"
-    )
-    script = _RAIZ / "treinar_localmente.py"
-    st.download_button(
-        "Baixar treinar_localmente.py",
-        data=script.read_bytes(),
-        file_name="treinar_localmente.py",
-        mime="text/x-python",
-    )
+            py = _RAIZ / "notebooks" / f"{slug}.py"
+            ipynb = _RAIZ / "notebooks" / f"{slug}.ipynb"
+            st.code(py.read_text(encoding="utf-8"), language="python")
+            coluna_py, coluna_nb = st.columns(2)
+            coluna_py.download_button(
+                "Baixar .py",
+                data=py.read_bytes(),
+                file_name=py.name,
+                mime="text/x-python",
+                key=f"dl_py_{slug}",
+            )
+            coluna_nb.download_button(
+                "Baixar .ipynb",
+                data=ipynb.read_bytes(),
+                file_name=ipynb.name,
+                mime="application/x-ipynb+json",
+                key=f"dl_ipynb_{slug}",
+            )
+    st.markdown(f"[Repositório]({_REPO})")
 
 
 def _veredito(pergunta: str, prob: float) -> str:

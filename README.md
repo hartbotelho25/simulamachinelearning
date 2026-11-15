@@ -46,6 +46,8 @@ python treinar_localmente.py
 
 O script lê `data/credito/clientes_credito_50k.csv`, treina os quatro modelos nas duas respostas e imprime AUC e acurácia. Não substitui `data/credito/modelos.joblib`. Os hiperparâmetros ficam em `src/credito/treino.py`, na função `construir`. Para gerar a base de novo e gravar o arquivo do site, use `python -m src.credito.pipeline`.
 
+Cada modelo também está sozinho em `notebooks/`, em `.py` e `.ipynb`. Esses arquivos leem o CSV pela URL bruta do GitHub, então abrem no VS Code ou no Google Colab sem clonar o repositório. A rede neural pede TensorFlow (`pip install tensorflow`; no Colab ele já vem instalado). Nenhum deles grava `modelos.joblib`.
+
 ## Publicar no Streamlit Community Cloud (GitHub)
 
 1. O repositório já está no GitHub. O deploy usa a branch `main`.

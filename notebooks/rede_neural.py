@@ -1,0 +1,105 @@
+"""Rede neural para inadimplência.
+
+Script completo: abre no VS Code ou, como notebook, no Google Colab.
+Duas camadas ReLU e uma saída sigmoide. O laço de épocas imprime a perda
+e a acurácia a cada passo. A base vem do GitHub. Não grava modelo no disco.
+
+No Colab o TensorFlow já vem instalado. No VS Code: pip install tensorflow
+"""
+
+import os
+
+os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
+
+import numpy as np
+import pandas as pd
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    confusion_matrix,
+    precision_score,
+    roc_auc_score,
+)
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from tensorflow.keras.layers import Dense, Input
+from tensorflow.keras.models import Sequential
+
+URL = "https://raw.githubusercontent.com/hartbotelho25/simulamachinelearning/main/data/credito/clientes_credito_50k.csv"
+# Troque para "inadimplente_90d" se a pergunta for atraso acima de 90 dias.
+ALVO = "inadimplente"
+
+df = pd.read_csv(URL)
+print("Shape dos dados:", df.shape)
+print("Valores nulos:", int(df.isnull().sum().sum()))
+print("Distribuição do alvo:")
+print(df[ALVO].value_counts())
+print(df.head())
+
+X = df.drop(columns=["id_cliente", "inadimplente", "inadimplente_90d"])
+y = df[ALVO]
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
+print("Treino:", X_train.shape, "Teste:", X_test.shape)
+
+escala = StandardScaler()
+X_train_scaled = escala.fit_transform(X_train)
+X_test_scaled = escala.transform(X_test)
+
+modelo = Sequential(
+    [
+        Input(shape=(X_train_scaled.shape[1],)),
+        Dense(64, activation="relu"),
+        Dense(32, activation="relu"),
+        Dense(1, activation="sigmoid"),
+    ]
+)
+modelo.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
+modelo.summary()
+
+historico = modelo.fit(
+    X_train_scaled,
+    y_train,
+    validation_split=0.2,
+    epochs=15,
+    batch_size=256,
+    verbose=1,
+)
+
+print("Perda e acurácia a cada época:")
+perda = historico.history["loss"]
+acerto = historico.history["accuracy"]
+val_perda = historico.history["val_loss"]
+val_acerto = historico.history["val_accuracy"]
+for epoca, (loss, acc, vloss, vacc) in enumerate(
+    zip(perda, acerto, val_perda, val_acerto), start=1
+):
+    print(
+        f"época {epoca:02d}  loss {loss:.4f}  acurácia {acc:.4f}  "
+        f"val_loss {vloss:.4f}  val_acurácia {vacc:.4f}"
+    )
+
+proba = modelo.predict(X_test_scaled, verbose=0).ravel()
+previsto = (proba >= 0.5).astype(int)
+
+print("AUC:", round(float(roc_auc_score(y_test, proba)), 3))
+print("Acurácia:", round(float(accuracy_score(y_test, previsto)), 3))
+print("Precisão:", round(float(precision_score(y_test, previsto, zero_division=0)), 3))
+print("Matriz de confusão (linha = real, coluna = previsto):")
+print(confusion_matrix(y_test, previsto))
+print(classification_report(y_test, previsto, digits=3, zero_division=0))
+
+entrada = next(
+    camada.get_weights()[0]
+    for camada in modelo.layers
+    if camada.get_weights() and camada.get_weights()[0].shape[0] == X.shape[1]
+)
+primeira = np.abs(entrada).sum(axis=1)
+total = float(primeira.sum())
+ordem = np.argsort(primeira)[::-1]
+print("Importância de cada gatilho (peso absoluto da primeira camada, soma 100%):")
+for indice in ordem:
+    fatia = 100.0 * float(primeira[indice]) / total
+    print(f"  {X.columns[indice]}: {fatia:.1f}%")

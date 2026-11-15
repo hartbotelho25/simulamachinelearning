@@ -64,6 +64,13 @@ def test_tela_deixa_a_mesa_recolhida_e_o_simulador_aberto():
     assert "st.slider" not in texto
     assert "st.number_input" not in texto
     assert len(GATILHOS) == 23
+    estudo = texto.split("def render_estudo", 1)[1].split("def render_simulador", 1)[0]
+    assert "_simulador(" not in estudo
+    app = (RAIZ / "app.py").read_text(encoding="utf-8")
+    assert "Machine Learning Aplicado à Inadimplência" in app
+    assert "Simulador de Inadimplência" in app
+    assert "Simula Brasileirão" in app
+    assert '"ml"' in app and '"simulador"' in app
 
 
 def test_livro_e_pesos_quando_o_pipeline_ja_rodou():

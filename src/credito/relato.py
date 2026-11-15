@@ -1,6 +1,6 @@
-"""Simulador de Inadimplência: duas respostas e gatilhos preventivos.
+"""Estudo de inadimplência e a tela do simulador, em páginas separadas.
 
-A mesa explicativa fica recolhida. O simulador permanece aberto na página.
+A mesa explicativa fica recolhida. O simulador ocupa a própria página, sem rolagem.
 """
 
 from __future__ import annotations
@@ -175,9 +175,14 @@ def _respostas(geracao: int) -> dict[str, bool]:
 
 
 def _cabecalho(relatorio: dict, ir) -> None:
-    if st.button("← Voltar ao menu inicial", key="credito_voltar"):
-        ir("home")
-    st.title("Simulador de Inadimplência")
+    voltar, abrir = st.columns(2)
+    with voltar:
+        if st.button("← Voltar ao menu inicial", key="credito_voltar", width="stretch"):
+            ir("home")
+    with abrir:
+        if st.button("Abrir o Simulador de Inadimplência", key="ir_simulador", type="primary", width="stretch"):
+            ir("simulador")
+    st.title("Machine Learning Aplicado à Inadimplência")
     base = relatorio["base"]
     st.markdown(
         '<div class="sintetico"><strong>Base sintética de 50 mil clientes.</strong> '
@@ -296,60 +301,67 @@ def _combinacoes(relatorio: dict) -> None:
         st.image(str(caminho), width="stretch")
 
 
-def _cartao(pergunta: str, prob: float) -> str:
+def _veredito(pergunta: str, prob: float) -> str:
     faixa, acao = nome_faixa(prob)
     chamada = "SIM" if prob >= CORTE_MATRIZ else "NÃO"
     return (
         f'<article class="veredito">'
         f'<p class="pergunta">{pergunta}</p>'
         f'<p class="grande" style="color:{COR_FAIXA[faixa]}">{_pct(prob)}</p>'
-        f'<p class="chamada" style="color:{COR_FAIXA[faixa]}">{chamada}</p>'
-        f'<p class="chamada" style="color:{COR_FAIXA[faixa]}">{NOME_FAIXA[faixa]} · {acao}</p>'
+        f'<p class="chamada" style="color:{COR_FAIXA[faixa]}">{chamada} · {NOME_FAIXA[faixa]} · {acao}</p>'
         f"</article>"
     )
 
 
-def _placar(relatorio: dict, linha: dict, modelos: dict, caso: dict | None) -> None:
-    slug = st.selectbox(
-        "Modelo em destaque",
-        [modelo["slug"] for modelo in relatorio["alvos"]["inadimplente"]["modelos"]],
-        format_func=lambda item: next(
-            modelo["nome"] for modelo in relatorio["alvos"]["inadimplente"]["modelos"] if modelo["slug"] == item
-        ),
-        key="sim_modelo",
-    )
+def _quadro(relatorio: dict, linha: dict, modelos: dict, caso: dict | None) -> None:
+    slug = st.session_state.get("sim_modelo", "logistica")
     p_inad, p_90 = chances(modelos, slug, linha)
-    st.markdown(
-        '<div class="dupla">'
-        + _cartao("1. Vai ficar inadimplente?", p_inad)
-        + _cartao("2. Vai passar de 90 dias?", p_90)
-        + "</div>",
-        unsafe_allow_html=True,
-    )
-    st.caption(f"Sim e Não usam o corte de {_pct(CORTE_MATRIZ)}, o mesmo da matriz. A faixa de alerta acende antes.")
-    cols = st.columns(4)
-    for col, modelo in zip(cols, relatorio["alvos"]["inadimplente"]["modelos"]):
+    linhas = []
+    for modelo in relatorio["alvos"]["inadimplente"]["modelos"]:
         pi, pg = chances(modelos, modelo["slug"], linha)
         si = "Sim" if pi >= CORTE_MATRIZ else "Não"
         sg = "Sim" if pg >= CORTE_MATRIZ else "Não"
-        col.metric(modelo["nome"], f"{_pct(pi)} · {si}")
-        col.caption(f"90 dias {_pct(pg)} · {sg}")
-    if caso is None:
-        return
-    real_inad = "Sim" if caso["inad"] else "Não"
-    real_90 = "Sim" if caso["d90"] else "Não"
-    acertou_inad = "acertou" if (p_inad >= CORTE_MATRIZ) == bool(caso["inad"]) else "errou"
-    acertou_90 = "acertou" if (p_90 >= CORTE_MATRIZ) == bool(caso["d90"]) else "errou"
-    st.caption(
-        f"Cliente {caso['id']} do teste: inadimplente {real_inad}, acima de 90 dias {real_90}. "
-        f"Este modelo {acertou_inad} na primeira resposta e {acertou_90} na segunda."
+        destaque = " class='destaque'" if modelo["slug"] == slug else ""
+        linhas.append(
+            f"<tr{destaque}><td>{modelo['nome']}</td>"
+            f"<td>{_pct(pi)} · {si}</td><td>{_pct(pg)} · {sg}</td></tr>"
+        )
+    ligados = sum(linha.values())
+    nota = ""
+    if caso is not None:
+        real_inad = "Sim" if caso["inad"] else "Não"
+        real_90 = "Sim" if caso["d90"] else "Não"
+        nota = f"<p class='nota'>Cliente {caso['id']}: inadimplente {real_inad}, acima de 90 dias {real_90}.</p>"
+    st.markdown(
+        '<div class="painel-respostas"><div class="dupla">'
+        + _veredito("Vai ficar inadimplente?", p_inad)
+        + _veredito("Vai passar de 90 dias?", p_90)
+        + "</div>"
+        + "<table class='quadro'><thead><tr><th>Modelo</th><th>Inadimplência</th><th>90 dias</th></tr></thead><tbody>"
+        + "".join(linhas)
+        + "</tbody></table>"
+        + f"<p class='ligados'>{ligados} gatilhos em Sim</p>"
+        + nota
+        + "</div>",
+        unsafe_allow_html=True,
+    )
+
+
+def _sortear() -> None:
+    teste = _amostra_atual()
+    row = teste.iloc[int(np.random.default_rng().integers(0, len(teste)))]
+    _nova_geracao(
+        {item["id"]: bool(int(row[item["id"]])) for item in GATILHOS},
+        {
+            "id": str(row["id_cliente"]),
+            "inad": int(row["inadimplente"]),
+            "d90": int(row["inadimplente_90d"]),
+        },
     )
 
 
 @st.fragment
-def _simulador(relatorio: dict) -> None:
-    st.subheader("Simulador de Inadimplência")
-    st.write("Cada chave é Sim ou Não. As duas respostas mudam na hora.")
+def _simulador(relatorio: dict, ir) -> None:
     if "sim_geracao" not in st.session_state:
         _nova_geracao(respostas_vazias(), None)
     geracao = int(st.session_state["sim_geracao"])
@@ -360,64 +372,62 @@ def _simulador(relatorio: dict) -> None:
             st.session_state[chave] = bool(guardadas[item["id"]])
     _sincronizar(geracao)
 
-    modelos = _modelos_atuais()
-    linha = vetor(_respostas(geracao))
-    _placar(relatorio, linha, modelos, st.session_state.get("sim_caso"))
-
-    botoes = st.columns(4)
-    acoes = list(PRESETS) + [{"id": "sortear", "texto": "Sortear cliente do teste", "ligar": []}]
-    clicados = []
-    for coluna, preset in zip(botoes, acoes):
-        with coluna:
-            clicados.append(st.button(preset["texto"], width="stretch", key=f"preset_{preset['id']}"))
-    if clicados[0]:
-        _nova_geracao(respostas_vazias(), None)
-        st.rerun(scope="fragment")
-    if clicados[1]:
+    titulo, menu, estudo, modelo, aperto, grave, sortear, limpar = st.columns(
+        [2.15, 0.95, 0.95, 1.55, 0.72, 0.68, 0.78, 1.25],
+        gap="small",
+    )
+    titulo.markdown('<p class="cockpit-titulo">Simulador de Inadimplência</p>', unsafe_allow_html=True)
+    if menu.button("Menu inicial", width="stretch", key="sim_menu"):
+        ir("home")
+    if estudo.button("Estudo de ML", width="stretch", key="sim_estudo"):
+        ir("ml")
+    modelo.selectbox(
+        "Modelo principal",
+        [item["slug"] for item in relatorio["alvos"]["inadimplente"]["modelos"]],
+        format_func=lambda item: next(
+            modelo_item["nome"]
+            for modelo_item in relatorio["alvos"]["inadimplente"]["modelos"]
+            if modelo_item["slug"] == item
+        ),
+        key="sim_modelo",
+        label_visibility="collapsed",
+    )
+    if aperto.button("Aperto", width="stretch", key="preset_aperto"):
         _nova_geracao({item: True for item in PRESETS[1]["ligar"]}, None)
         st.rerun(scope="fragment")
-    if clicados[2]:
+    if grave.button("Grave", width="stretch", key="preset_grave"):
         _nova_geracao({item: True for item in PRESETS[2]["ligar"]}, None)
         st.rerun(scope="fragment")
-    if clicados[3]:
-        teste = _amostra_atual()
-        row = teste.iloc[int(np.random.default_rng().integers(0, len(teste)))]
-        _nova_geracao(
-            {item["id"]: bool(int(row[item["id"]])) for item in GATILHOS},
-            {
-                "id": str(row["id_cliente"]),
-                "inad": int(row["inadimplente"]),
-                "d90": int(row["inadimplente_90d"]),
-            },
-        )
+    if sortear.button("Sortear", width="stretch", key="preset_sortear"):
+        _sortear()
+        st.rerun(scope="fragment")
+    if limpar.button("Limpar tudo (Não)", width="stretch", key="preset_limpar"):
+        _nova_geracao(respostas_vazias(), None)
         st.rerun(scope="fragment")
 
-    colunas = st.columns(3)
-    blocos = grupos()
-    distribuicao = [
-        blocos[0:1] + blocos[4:5],
-        blocos[1:2],
-        blocos[2:4],
-    ]
-    for indice, fatia in enumerate(distribuicao):
-        with colunas[indice]:
-            for nome, itens in fatia:
-                st.markdown(f'<p class="sim-grupo">{nome}</p>', unsafe_allow_html=True)
-                for item in itens:
-                    callback = None
-                    if item["pai"]:
-                        callback = _cb_filho(geracao, item["id"], item["pai"])
-                    elif item["id"] in FILHOS:
-                        callback = _cb_pai(geracao, item["id"], FILHOS[item["id"]])
-                    st.toggle(
-                        item["texto"],
-                        key=_chave(geracao, item["id"]),
-                        on_change=callback,
-                    )
+    modelos = _modelos_atuais()
+    linha = vetor(_respostas(geracao))
+    gatilhos, respostas = st.columns([1.75, 1], gap="small")
+    with gatilhos:
+        colunas = st.columns(3, gap="small")
+        blocos = grupos()
+        distribuicao = [blocos[0:1] + blocos[4:5], blocos[1:2], blocos[2:4]]
+        for indice, fatia in enumerate(distribuicao):
+            with colunas[indice]:
+                for nome, itens in fatia:
+                    st.markdown(f'<p class="sim-grupo">{nome}</p>', unsafe_allow_html=True)
+                    for item in itens:
+                        callback = None
+                        if item["pai"]:
+                            callback = _cb_filho(geracao, item["id"], item["pai"])
+                        elif item["id"] in FILHOS:
+                            callback = _cb_pai(geracao, item["id"], FILHOS[item["id"]])
+                        st.toggle(item["texto"], key=_chave(geracao, item["id"]), on_change=callback)
+    with respostas:
+        _quadro(relatorio, linha, modelos, st.session_state.get("sim_caso"))
 
 
-def render_relato(ir) -> None:
-    st.markdown(CSS, unsafe_allow_html=True)
+def _dossie() -> dict:
     if not pronto():
         st.error("O dossiê ainda não foi gerado. Na raiz do repositório, rode python -m src.credito.pipeline.")
         st.stop()
@@ -427,8 +437,101 @@ def render_relato(ir) -> None:
     if "chaves" not in relatorio or not itens.get("logistica") or "pct" not in itens["logistica"][0]:
         st.error("O dossiê está incompleto. Na raiz do repositório, rode python -m src.credito.pipeline.")
         st.stop()
+    return relatorio
+
+
+def render_estudo(ir) -> None:
+    st.markdown(CSS, unsafe_allow_html=True)
+    relatorio = _dossie()
     _cabecalho(relatorio, ir)
     _mesa()
     _metricas(relatorio)
     _combinacoes(relatorio)
-    _simulador(relatorio)
+
+
+COCKPIT_CSS = """
+<style>
+    header[data-testid="stHeader"],
+    [data-testid="stToolbar"],
+    [data-testid="stDecoration"],
+    footer,
+    [data-testid="stSidebar"],
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="collapsedControl"],
+    [data-testid="stExpandSidebarButton"],
+    button[data-testid="stSidebarCollapseButton"] {
+        display: none !important;
+    }
+    [data-testid="stMainBlockContainer"],
+    section.main .block-container {
+        max-width: 100% !important;
+        padding-top: 0.35rem !important;
+        padding-bottom: 0.2rem !important;
+        padding-left: 0.7rem !important;
+        padding-right: 0.7rem !important;
+    }
+    [data-testid="stMain"] [data-testid="stVerticalBlock"] { gap: 0.15rem !important; }
+    [data-testid="stElementContainer"] { margin-bottom: 0 !important; }
+    .cockpit-titulo {
+        color: #F4F1E8; font-size: 1.05rem; font-weight: 700;
+        margin: 0.35rem 0 0; line-height: 1.1; white-space: nowrap;
+    }
+    div[data-testid="stButton"] button {
+        min-height: 2rem !important;
+        padding: 0.15rem 0.35rem !important;
+        font-size: 0.78rem !important;
+    }
+    [data-testid="stSelectbox"] [data-baseweb="select"] { min-height: 2rem; }
+    [data-testid="stSelectbox"] div[data-baseweb="select"] > div { min-height: 2rem; padding-top: 0; padding-bottom: 0; }
+    .sim-grupo {
+        color: #E8B923 !important; font-weight: 700 !important;
+        font-size: 0.68rem !important;
+        letter-spacing: 0.02em; text-transform: uppercase;
+        margin: 0.2rem 0 0.05rem !important; line-height: 1.15 !important;
+        white-space: normal;
+    }
+    [data-testid="stMarkdownContainer"]:has(.sim-grupo) {
+        margin: 0 0 0.12rem !important;
+    }
+    [data-testid="stCheckbox"] { height: auto !important; }
+    [data-testid="stCheckbox"] label { height: auto !important; align-items: flex-start !important; }
+    [data-testid="stCheckbox"] [data-testid="stMarkdownContainer"],
+    [data-testid="stCheckbox"] [data-testid="stMarkdownContainer"] p {
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        font-size: 0.74rem !important;
+        line-height: 1.15 !important;
+        margin: 0 !important;
+        height: auto !important;
+        max-height: none !important;
+    }
+    div[data-testid="stHorizontalBlock"]:has(.painel-respostas) > div[data-testid="stColumn"]:last-child {
+        position: sticky; top: 0.75rem; align-self: start;
+    }
+    .dupla { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; margin: 0 0 0.35rem; }
+    .veredito {
+        background: #163024; border-radius: 10px; padding: 0.4rem 0.5rem 0.35rem;
+        border: 1px solid rgba(244,241,232,0.08);
+    }
+    .veredito .pergunta { color: #c9c3b4; font-size: 0.75rem; margin: 0; line-height: 1.15; }
+    .veredito .grande { font-size: 1.55rem; font-weight: 700; line-height: 1; margin: 0.12rem 0 0; }
+    .veredito .chamada { font-size: 0.78rem; font-weight: 700; margin: 0.12rem 0 0; line-height: 1.15; }
+    .quadro { width: 100%; border-collapse: collapse; margin: 0.1rem 0 0.2rem; }
+    .quadro th, .quadro td {
+        text-align: left; color: #F4F1E8; font-size: 0.72rem;
+        padding: 0.16rem 0.2rem; border-bottom: 1px solid rgba(244,241,232,0.08);
+        line-height: 1.15;
+    }
+    .quadro th { color: #c9c3b4; font-weight: 600; }
+    .quadro tr.destaque td { color: #E8B923; }
+    .ligados { color: #F4F1E8; font-size: 0.8rem; font-weight: 700; margin: 0.2rem 0 0; }
+    .nota { color: #c9c3b4; font-size: 0.7rem; margin: 0.1rem 0 0; line-height: 1.2; }
+</style>
+"""
+
+
+def render_simulador(ir) -> None:
+    st.markdown(COCKPIT_CSS, unsafe_allow_html=True)
+    relatorio = _dossie()
+    _simulador(relatorio, ir)

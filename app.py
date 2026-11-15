@@ -1,4 +1,4 @@
-"""Menu do simulador: Simula Brasileirão e Simulador de Inadimplência."""
+"""Menu: Simula Brasileirão, o estudo de inadimplência e o simulador."""
 
 from __future__ import annotations
 
@@ -24,8 +24,9 @@ MENU_CSS = """
         border: 1px solid rgba(244,241,232,0.08);
     }
     .entry.br { border-top: 3px solid #3dd68c; }
-    .entry.credito { border-top: 3px solid #E8B923; }
-    .entry h2 { color: #F4F1E8; font-size: 1.35rem; margin: 0.45rem 0 0.4rem; }
+    .entry.ml { border-top: 3px solid #E8B923; }
+    .entry.sim { border-top: 3px solid #ff8a65; }
+    .entry h2 { color: #F4F1E8; font-size: 1.28rem; margin: 0.45rem 0 0.4rem; }
     .entry p { color: #c9c3b4; margin: 0; line-height: 1.45; font-size: 0.95rem; }
     .entry ul { margin: 0.75rem 0 0; padding-left: 1.1rem; color: #F4F1E8; }
     .entry li { margin: 0.22rem 0; font-size: 0.9rem; }
@@ -34,11 +35,12 @@ MENU_CSS = """
         font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
     }
     .pill.br { background: rgba(61,214,140,0.14); color: #3dd68c; border: 1px solid rgba(61,214,140,0.45); }
-    .pill.credito { background: rgba(232,185,35,0.12); color: #E8B923; border: 1px solid rgba(232,185,35,0.45); }
+    .pill.ml { background: rgba(232,185,35,0.12); color: #E8B923; border: 1px solid rgba(232,185,35,0.45); }
+    .pill.sim { background: rgba(255,138,101,0.12); color: #ff8a65; border: 1px solid rgba(255,138,101,0.45); }
 </style>
 """
 
-_DESTINOS = {"home", "br", "credito"}
+_DESTINOS = {"home", "br", "ml", "simulador", "credito"}
 
 
 def _estudo() -> str:
@@ -72,12 +74,14 @@ def _cartao(classe: str, selo: str, titulo: str, texto: str, itens: list[str]) -
 def render_home() -> None:
     with st.sidebar:
         st.markdown("**Desenvolvido por Hart Botelho**")
-        st.caption("Dois estudos no mesmo portal.")
+        st.caption("Três entradas no mesmo portal.")
         st.divider()
         st.markdown("**Simula Brasileirão**")
         st.caption("Série A 2003–2025, com treino ao vivo e PDF.")
+        st.markdown("**Machine Learning Aplicado à Inadimplência**")
+        st.caption("Estudo dos quatro modelos nas duas respostas.")
         st.markdown("**Simulador de Inadimplência**")
-        st.caption("50.000 clientes, duas respostas e gatilhos preventivos. Sem renda nem saldo.")
+        st.caption("Vinte e três chaves e as duas chances na mesma tela.")
 
     st.markdown('<p class="credit-top">Desenvolvido por Hart Botelho</p>', unsafe_allow_html=True)
     st.markdown(
@@ -86,17 +90,17 @@ def render_home() -> None:
             <div class="badge">Menu inicial</div>
             <h1>Por onde você entra?</h1>
             <p>
-                Dois caminhos, o mesmo visual. Simula Brasileirão abre a Série A.
-                Simulador de Inadimplência responde se o cliente fica inadimplente
-                e se passa de 90 dias, só com gatilhos preventivos.
+                Três caminhos, o mesmo visual. Simula Brasileirão abre a Série A.
+                Machine Learning Aplicado à Inadimplência abre o estudo.
+                O Simulador de Inadimplência abre as duas respostas na hora.
             </p>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    esquerda, direita = st.columns(2, gap="large")
-    with esquerda:
+    serie, estudo, simulador = st.columns(3, gap="medium")
+    with serie:
         _cartao(
             "br",
             "Série A",
@@ -110,24 +114,38 @@ def render_home() -> None:
         )
         if st.button("Entrar em Simula Brasileirão", type="primary", width="stretch", key="go_br"):
             _ir("br")
-    with direita:
+    with estudo:
         _cartao(
-            "credito",
-            "Base sintética",
-            "Simulador de Inadimplência",
-            "Duas respostas na mesma base sintética de 50.000 clientes: inadimplência e atraso acima de 90 dias.",
+            "ml",
+            "Estudo",
+            "Machine Learning Aplicado à Inadimplência",
+            "Relatório dos quatro modelos nas duas respostas, na base sintética de 50 mil clientes.",
             [
-                "Quatro modelos, entre eles uma rede neural",
-                "Só gatilhos preventivos, em Sim ou Não",
-                "Simulador aberto na página, nas duas respostas",
+                "Mesa de gatilhos preventivos",
+                "Pesos em 100%, do maior para o menor",
+                "Quando os sinais se juntam",
             ],
         )
-        if st.button("Entrar no Simulador de Inadimplência", type="primary", width="stretch", key="go_credito"):
-            _ir("credito")
+        if st.button("Entrar no estudo", type="primary", width="stretch", key="go_ml"):
+            _ir("ml")
+    with simulador:
+        _cartao(
+            "sim",
+            "Ao vivo",
+            "Simulador de Inadimplência",
+            "Vinte e três chaves Sim ou Não e as duas chances na mesma tela.",
+            [
+                "Inadimplência e atraso acima de 90 dias",
+                "Quatro modelos lado a lado",
+                "Volta ao estudo quando quiser",
+            ],
+        )
+        if st.button("Entrar no Simulador de Inadimplência", type="primary", width="stretch", key="go_simulador"):
+            _ir("simulador")
 
     render_chips(
-        "Simulador de Inadimplência",
-        ["Base sintética", "50.000 clientes", "Duas respostas", "Gatilhos preventivos", "Simulador"],
+        "Três entradas",
+        ["Simula Brasileirão", "Estudo de inadimplência", "Simulador ao vivo"],
     )
 
 
@@ -140,11 +158,18 @@ def render_br() -> None:
     br_app.main()
 
 
-def render_credito() -> None:
-    from src.credito.relato import render_relato
+def render_ml() -> None:
+    from src.credito.relato import render_estudo
 
     inject_css()
-    render_relato(_ir)
+    render_estudo(_ir)
+
+
+def render_simulador_pagina() -> None:
+    from src.credito.relato import render_simulador
+
+    inject_css()
+    render_simulador(_ir)
 
 
 def main() -> None:
@@ -152,8 +177,11 @@ def main() -> None:
     if destino == "br":
         render_br()
         return
-    if destino == "credito":
-        render_credito()
+    if destino in {"ml", "credito"}:
+        render_ml()
+        return
+    if destino == "simulador":
+        render_simulador_pagina()
         return
     inject_css()
     st.markdown(MENU_CSS, unsafe_allow_html=True)

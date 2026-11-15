@@ -105,3 +105,42 @@ def medir_combinacoes(
         )
     saida.sort(key=lambda item: item["taxa_inad"], reverse=True)
     return saida
+
+
+# Degraus da carteira de teste. 0, 1 e 2 ficam no chão; o salto
+# aparece a partir de 4 e segue aberto até 11 ou mais.
+DEGRAUS = (
+    ("0", 0, 0),
+    ("1–2", 1, 2),
+    ("3–4", 3, 4),
+    ("5–6", 5, 6),
+    ("7–8", 7, 8),
+    ("9–10", 9, 10),
+    ("11+", 11, 10**9),
+)
+
+
+def medir_escada(sinais, inad, grave) -> list[dict]:
+    """Taxa observada no teste conforme os gatilhos ligados se acumulam."""
+    contagem = np.asarray(sinais, dtype=int)
+    y_inad = np.asarray(inad, dtype=int)
+    y_90 = np.asarray(grave, dtype=int)
+    base_inad = float(y_inad.mean()) if len(y_inad) else 0.0
+    base_90 = float(y_90.mean()) if len(y_90) else 0.0
+    saida = []
+    for rotulo, inicio, fim in DEGRAUS:
+        mascara = (contagem >= inicio) & (contagem <= fim)
+        n = int(mascara.sum())
+        taxa_inad = float(y_inad[mascara].mean()) if n else 0.0
+        taxa_90 = float(y_90[mascara].mean()) if n else 0.0
+        saida.append(
+            {
+                "rotulo": rotulo,
+                "n": n,
+                "taxa_inad": taxa_inad,
+                "taxa_90": taxa_90,
+                "base_inad": base_inad,
+                "base_90": base_90,
+            }
+        )
+    return saida

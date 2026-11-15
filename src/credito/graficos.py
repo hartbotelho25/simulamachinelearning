@@ -243,27 +243,191 @@ def visao_modelo(modelo: dict, y: np.ndarray, proba: np.ndarray, pasta: Path) ->
     return _salvar(fig, pasta, f"visao_{modelo['slug']}.png")
 
 
-def combinacoes_barras(combos: list[dict], pasta: Path, nome_ref: str) -> str:
+_CURTO_COMBO = {
+    "protesto_e_reneg": "Protesto +3 e renegociação",
+    "cheque_e_fatura": "Cheque sem fundo e fatura no especial",
+    "reserva_e_vinculo": "Resgate total e queda de vínculo",
+    "especial_longo_e_rotativo": "Especial >3 meses e rotativo >2×",
+    "teto_e_parcelamento": "Cartão no teto e fatura parcelada",
+    "emergencia_e_novo": "Emergência e empréstimo novo",
+}
+
+
+def _vezes(valor: float, base: float) -> str:
+    if base <= 0:
+        return "—"
+    numero = valor / base
+    texto = f"{numero:.0f}" if numero >= 10 else f"{numero:.1f}"
+    return texto.replace(".", ",") + "×"
+
+
+def _pct_graf(valor: float) -> str:
+    return f"{100 * valor:.1f}%".replace(".", ",")
+
+
+def _bytes(fig) -> bytes:
+    import io
+
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", facecolor=fig.get_facecolor(), bbox_inches="tight", pad_inches=0.28)
+    plt.close(fig)
+    return buf.getvalue()
+
+
+def figura_escada(degraus: list[dict]) -> bytes:
+    fig, ax = _fig(13.6, 6.6)
+    _eixo(ax, "Escada de acúmulo de sinais")
+    if not degraus:
+        return _bytes(fig)
+    x = np.arange(len(degraus))
+    inad = np.array([item["taxa_inad"] * 100 for item in degraus])
+    grave = np.array([item["taxa_90"] * 100 for item in degraus])
+    largura = 0.36
+    ax.bar(x - largura / 2, inad, largura, color=CORAL, label="Inadimplência geral", zorder=2)
+    ax.bar(x + largura / 2, grave, largura, color=OURO, label="Acima de 90 dias", zorder=2)
+    base_inad = degraus[0]["base_inad"] * 100
+    base_90 = degraus[0]["base_90"] * 100
+    ax.axhline(base_inad, color=CORAL, lw=1.1, ls=(0, (4, 3)), zorder=1)
+    ax.axhline(base_90, color=OURO, lw=1.1, ls=(0, (4, 3)), zorder=1)
+    ax.text(
+        1.55,
+        46,
+        f"Média da carteira ({_pct_graf(degraus[0]['base_inad'])} inad. | {_pct_graf(degraus[0]['base_90'])} >90d)",
+        color=CREAM,
+        fontsize=10,
+        ha="left",
+        va="center",
+        bbox={"boxstyle": "round,pad=0.38", "facecolor": "#0B1020", "edgecolor": OURO, "linewidth": 0.8},
+        zorder=3,
+    )
+    for i, item in enumerate(degraus):
+        ax.text(
+            i - largura / 2,
+            _folga(inad[i], base_inad, acima=False),
+            _pct_graf(item["taxa_inad"]),
+            ha="center",
+            va="bottom",
+            color=CORAL,
+            fontsize=12,
+            fontweight="bold",
+        )
+        ax.text(
+            i + largura / 2,
+            _folga(grave[i], base_inad, acima=True),
+            _pct_graf(item["taxa_90"]),
+            ha="center",
+            va="bottom",
+            color=OURO,
+            fontsize=12,
+            fontweight="bold",
+        )
+    rotulos = [
+        f"{item['rotulo']}\n{_milhar(item['n'])} clientes\n{_vezes(item['taxa_inad'], item['base_inad'])} a média"
+        for item in degraus
+    ]
+    ax.set_xticks(x, rotulos, color=CREAM, fontsize=9)
+    ax.set_xlim(-0.6, len(degraus) - 0.4)
+    ax.set_ylim(0, 100)
+    ax.set_ylabel("Taxa no teste", color=CREAM)
+    ax.set_xlabel("Gatilhos preventivos ligados no teste", color=MUDO, fontsize=9)
+    ax.legend(facecolor=PAINEL, edgecolor="#2a4a38", labelcolor=CREAM, fontsize=9, loc="upper left", framealpha=0.95)
+    return _bytes(fig)
+
+
+def _folga(valor: float, linha: float, *, acima: bool) -> float:
+    """Tira o percentual de cima das linhas de média."""
+    if valor < linha + 2:
+        return linha + (8.6 if acima else 4.2)
+    return valor + 1.8
+
+
+def _milhar(valor: int) -> str:
+    return f"{int(valor):,}".replace(",", ".")
+
+
+def figura_salto(combos: list[dict]) -> bytes:
     criticas = [item for item in combos if item.get("critica")] or list(combos)
-    if not criticas:
-        fig, ax = _fig(11.2, 2.2)
-        _eixo(ax, "Nenhuma combinação com amostra suficiente")
-        return _salvar(fig, pasta, "combinacoes.png")
-    fig, ax = _fig(11.6, 0.85 * len(criticas) + 1.8)
+    fig, ax = _fig(13.4, 0.92 * max(len(criticas), 1) + 2.0)
     _eixo(ax, "Salto quando os gatilhos se juntam")
+    if not criticas:
+        ax.set_axis_off()
+        return _bytes(fig)
     y = np.arange(len(criticas))
-    altura = 0.16
-    ax.barh(y + 1.5 * altura, [item["base_inad"] for item in criticas], height=altura, color=MUDO, label="Base · inadimplência")
-    ax.barh(y + 0.5 * altura, [item["taxa_inad"] for item in criticas], height=altura, color=CORAL, label="Observada · inadimplência")
-    ax.barh(y - 0.5 * altura, [item["base_90"] for item in criticas], height=altura, color="#8d887c", label="Base · acima de 90 dias")
-    ax.barh(y - 1.5 * altura, [item["taxa_90"] for item in criticas], height=altura, color=OURO, label="Observada · acima de 90 dias")
-    ax.set_yticks(y, [item["titulo"] for item in criticas], color=CREAM, fontsize=8)
-    ax.set_xlim(0, 1)
-    ax.set_xlabel("Taxa no teste", color=CREAM)
-    ax.legend(facecolor=PAINEL, edgecolor="#2a4a38", labelcolor=CREAM, fontsize=8, loc="lower right")
+    base_inad = criticas[0]["base_inad"]
+    base_90 = criticas[0]["base_90"]
+    ax.barh(y + 0.18, [item["taxa_inad"] * 100 for item in criticas], height=0.32, color=CORAL, zorder=2, label="Inadimplência geral")
+    ax.barh(y - 0.18, [item["taxa_90"] * 100 for item in criticas], height=0.32, color=OURO, zorder=2, label="Acima de 90 dias")
+    ax.axvline(base_inad * 100, color="#F4F1E8", lw=1.15, ls=(0, (4, 3)), zorder=3)
+    ax.axvline(base_90 * 100, color=OURO, lw=1.0, ls=(0, (2, 3)), zorder=3, alpha=0.85)
+    for i, item in enumerate(criticas):
+        ax.text(
+            item["taxa_inad"] * 100 - 1.1,
+            i + 0.18,
+            f"{_pct_graf(item['taxa_inad'])} inadimplentes",
+            ha="right",
+            va="center",
+            color="#1a1208",
+            fontsize=8.5,
+            fontweight="bold",
+            zorder=4,
+        )
+        ax.text(
+            item["taxa_90"] * 100 - 1.1,
+            i - 0.18,
+            f"{_pct_graf(item['taxa_90'])} >90 dias",
+            ha="right",
+            va="center",
+            color="#1a1208",
+            fontsize=8.5,
+            fontweight="bold",
+            zorder=4,
+        )
+        ax.text(
+            103.5,
+            i,
+            f"{_vezes(item['taxa_inad'], item['base_inad'])} a média",
+            ha="left",
+            va="center",
+            color="#0B1020",
+            fontsize=9,
+            fontweight="bold",
+            bbox={"boxstyle": "round,pad=0.28", "facecolor": OURO, "edgecolor": OURO},
+            zorder=4,
+        )
+    nomes = []
+    for item in criticas:
+        titulo = _CURTO_COMBO.get(item["id"], item["titulo"])
+        nomes.append(f"{titulo}\nn = {_milhar(item['n'])} clientes")
+    ax.set_yticks(y, nomes, color=CREAM, fontsize=9)
     ax.invert_yaxis()
-    fig.tight_layout()
-    return _salvar(fig, pasta, "combinacoes.png")
+    ax.set_xlim(0, 128)
+    ax.set_xlabel("Taxa no teste, em %", color=CREAM)
+    nota = (
+        f"Média da carteira ({_pct_graf(base_inad)} inad. | {_pct_graf(base_90)} >90d)\n"
+        "Linha branca tracejada: média de inadimplência. Linha dourada: média acima de 90 dias.\n"
+        "Coral: inadimplência do grupo. Dourado: acima de 90 dias. n = clientes no teste."
+    )
+    ax.text(
+        0.01,
+        -0.16,
+        nota,
+        transform=ax.transAxes,
+        color=CREAM,
+        fontsize=8.5,
+        va="top",
+        ha="left",
+        bbox={"boxstyle": "round,pad=0.45", "facecolor": "#0B1020", "edgecolor": "#E8B923", "linewidth": 0.8},
+    )
+    fig.subplots_adjust(left=0.27, right=0.98, top=0.90, bottom=0.22)
+    return _bytes(fig)
+
+
+def combinacoes_barras(combos: list[dict], pasta: Path, nome_ref: str) -> str:
+    del nome_ref
+    pasta.mkdir(parents=True, exist_ok=True)
+    caminho = pasta / "combinacoes.png"
+    caminho.write_bytes(figura_salto(combos))
+    return str(caminho)
 
 
 def gerar_todos(

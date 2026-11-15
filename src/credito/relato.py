@@ -16,7 +16,6 @@ from src.credito.simulador import (
     assinatura_modelos,
     carregar_modelos,
     chances,
-    figura,
     ler_relatorio,
     pronto,
     resolver_modelos,
@@ -72,9 +71,64 @@ CSS = """
     .veredito .grande { font-size: 2.4rem; font-weight: 700; line-height: 1.05; margin: 0.2rem 0 0; }
     .veredito .chamada { font-size: 1.2rem; font-weight: 700; margin: 0.15rem 0 0; }
     .sim-grupo { color: #E8B923; font-weight: 700; font-size: 0.92rem; margin: 0.35rem 0 0.15rem; }
+    [data-testid="stExpander"] {
+        border: 1px solid #E8B923 !important;
+        border-left: 6px solid #E8B923 !important;
+        border-radius: 14px !important;
+        background: rgba(232, 185, 35, 0.12) !important;
+        margin: 0.35rem 0 1rem !important;
+    }
+    [data-testid="stExpander"]:hover {
+        background: rgba(232, 185, 35, 0.22) !important;
+        box-shadow: 0 0 0 1px #ffe08a;
+    }
+    [data-testid="stExpander"] details summary,
+    [data-testid="stExpander"] summary p,
+    [data-testid="stExpander"] summary span {
+        color: #F4F1E8 !important;
+        font-weight: 700 !important;
+        font-size: 1.02rem !important;
+    }
+    [data-testid="stExpander"] summary svg { fill: #E8B923 !important; }
+    .matrizes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.65rem; margin: 0.35rem 0 0.75rem; }
+    .matriz { background: #10261c; border-radius: 12px; padding: 0.55rem 0.55rem 0.6rem; border: 1px solid rgba(244,241,232,0.08); }
+    .matriz h3 { margin: 0 0 0.4rem; color: #F4F1E8; font-size: 0.92rem; font-weight: 700; }
+    .grade { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; }
+    .cel { border-radius: 8px; padding: 0.42rem 0.45rem 0.4rem; min-height: 86px; }
+    .cel span, .cel em { display: block; color: #F4F1E8; font-size: 0.72rem; line-height: 1.25; font-style: normal; }
+    .cel strong { display: block; color: #F4F1E8; font-size: 1.2rem; line-height: 1.15; margin: 0.12rem 0; }
+    .cel.vn { background: #146c43; }
+    .cel.fp { background: #8a6a12; }
+    .cel.fn { background: #8c3b2c; }
+    .cel.vp { background: #1d4f8a; }
+    .lendas, .insights { display: grid; gap: 0.65rem; margin: 0 0 0.85rem; }
+    .lendas { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .insights { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .lenda, .insight {
+        background: #163024; border-radius: 12px; padding: 0.7rem 0.75rem 0.75rem;
+        border-top: 4px solid #3dd68c;
+    }
+    .lenda.vp, .insight.vp { border-top-color: #6ea8fe; }
+    .lenda.fp, .insight.fp { border-top-color: #E8B923; }
+    .lenda.fn, .insight.fn { border-top-color: #ff8a65; }
+    .lenda strong, .insight h3 { display: block; color: #F4F1E8; font-size: 0.92rem; margin: 0; line-height: 1.3; }
+    .lenda p, .insight p { color: #F4F1E8; font-size: 0.84rem; line-height: 1.4; margin: 0.28rem 0 0; }
+    .insight .num { color: #E8B923; font-size: 1.8rem; font-weight: 700; line-height: 1; }
+    .insight h3 { margin-top: 0.3rem; }
+    @media (max-width: 1100px) {
+        .matrizes, .lendas { grid-template-columns: 1fr 1fr; }
+        .insights { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 700px) {
+        .matrizes, .lendas { grid-template-columns: 1fr; }
+    }
     @media (max-width: 900px) { .dupla { grid-template-columns: 1fr; } }
 </style>
 """
+
+ROTULO_MESA = (
+    "📋 O que a mesa avalia — 23 gatilhos preventivos · Clique para abrir a lista completa"
+)
 
 
 def _pct(valor: float | None) -> str:
@@ -209,7 +263,7 @@ def _cabecalho(relatorio: dict, ir) -> None:
 
 
 def _mesa() -> None:
-    with st.expander("O que a mesa avalia", expanded=False):
+    with st.expander(ROTULO_MESA, expanded=False):
         st.caption(
             "Lista dos gatilhos preventivos. Se uma reincidência fica em Sim, o gatilho base também fica."
         )
@@ -241,7 +295,7 @@ def _acuracia(pacote: dict) -> None:
             f'F1 {_pct(corte["f1"])}</div></div>',
             unsafe_allow_html=True,
         )
-    st.image(str(figura(f"matrizes_{pacote['id']}.png")), width="stretch")
+    st.markdown(_matriz_html(pacote), unsafe_allow_html=True)
 
 
 def _ranking(pacote: dict) -> None:
@@ -275,30 +329,91 @@ def _metricas(relatorio: dict) -> None:
             _ranking(relatorio["alvos"][slug])
 
 
-def _combinacoes(relatorio: dict) -> None:
-    st.subheader("Quando os sinais se juntam")
-    base_inad = relatorio["base"]["taxa_teste_inad"]
-    base_90 = relatorio["base"]["taxa_teste_90"]
-    st.write(
-        f"Medido no teste. A carteira está em {_pct(base_inad)} de inadimplência "
-        f"e {_pct(base_90)} acima de 90 dias. A barra mostra o salto observado."
-    )
-    for combo in relatorio["combinacoes"]:
-        if not combo.get("critica"):
-            continue
-        st.markdown(
-            f'<div class="combo"><h3>{combo["titulo"]}</h3>'
-            f'<p>{" · ".join(combo["sinais"])}</p>'
-            f'<p><strong>{_mil(combo["n"])} clientes</strong> no teste. '
-            f'Inadimplência {_pct(combo["taxa_inad"])} '
-            f'(o modelo apontou {_pct(combo["prev_inad"])}). '
-            f'Acima de 90 dias {_pct(combo["taxa_90"])} '
-            f'(o modelo apontou {_pct(combo["prev_90"])}).</p></div>',
-            unsafe_allow_html=True,
+_QUADS = (
+    ("vn", "tn", "Verdadeiro negativo", "Acerto — bom pagador"),
+    ("fp", "fp", "Falso positivo", "Alarme falso"),
+    ("fn", "fn", "Falso negativo", "Risco que escapou"),
+    ("vp", "tp", "Verdadeiro positivo", "Inadimplente capturado"),
+)
+
+
+def _matriz_html(pacote: dict) -> str:
+    blocos = []
+    for modelo in pacote["modelos"]:
+        corte = modelo["matriz"]
+        celulas = "".join(
+            f'<div class="cel {classe}"><span>{nome}</span>'
+            f"<strong>{_mil(corte[chave])}</strong><em>{curto}</em></div>"
+            for classe, chave, nome, curto in _QUADS
         )
-    caminho = figura("combinacoes.png")
-    if caminho.exists():
-        st.image(str(caminho), width="stretch")
+        blocos.append(f'<article class="matriz"><h3>{modelo["nome"]}</h3><div class="grade">{celulas}</div></article>')
+    lendas = """
+    <div class="lendas">
+      <article class="lenda vn"><strong>Verdadeiro Negativo (Acerto — Bom pagador)</strong>
+        <p>Ficou em dia e o modelo aprovou.</p></article>
+      <article class="lenda vp"><strong>Verdadeiro Positivo (Acerto — Inadimplente capturado)</strong>
+        <p>Atrasou e o modelo alertou antes.</p></article>
+      <article class="lenda fp"><strong>Falso Positivo (Alarme falso)</strong>
+        <p>Ficou em dia, mas o modelo marcou risco.</p></article>
+      <article class="lenda fn"><strong>Falso Negativo (Risco que escapou)</strong>
+        <p>Ficou inadimplente, mas passou sem alerta do modelo.</p></article>
+    </div>
+    """
+    return f'<div class="matrizes">{"".join(blocos)}</div>{lendas}'
+
+
+@st.cache_data(show_spinner=False)
+def _escada_carteira() -> list[dict]:
+    from src.credito.caminhos import CSV_CLIENTES
+    from src.credito.combinacoes import medir_escada
+    from src.credito.dataset import FEATURES
+    from src.credito.treino import fatiar
+
+    df = pd.read_csv(CSV_CLIENTES)
+    _treino, teste_x, _i_tr, i_te = fatiar(df)
+    teste = df.iloc[i_te]
+    return medir_escada(
+        teste_x[FEATURES].sum(axis=1).to_numpy(),
+        teste["inadimplente"].to_numpy(),
+        teste["inadimplente_90d"].to_numpy(),
+    )
+
+
+def _insights(degraus: list[dict], combos: list[dict]) -> str:
+    quietos = [item for item in degraus if item["rotulo"] in {"0", "1–2"}]
+    n_quietos = sum(item["n"] for item in quietos)
+    taxa_quieta = (
+        sum(item["taxa_inad"] * item["n"] for item in quietos) / n_quietos if n_quietos else 0.0
+    )
+    topo = degraus[-1]
+    pior = max(combos, key=lambda item: item["taxa_inad"])
+    vezes = topo["taxa_inad"] / topo["base_inad"] if topo["base_inad"] else 0.0
+    vezes_pior = pior["taxa_inad"] / pior["base_inad"] if pior["base_inad"] else 0.0
+    selo = f"{vezes:.1f}×".replace(".", ",")
+    selo_pior = f"{vezes_pior:.1f}×".replace(".", ",")
+    return (
+        '<div class="insights">'
+        f'<article class="insight"><div class="num">{_pct(taxa_quieta)}</div>'
+        f"<h3>Até 2 gatilhos</h3><p>Inadimplência no teste. "
+        f"A média da carteira é {_pct(topo['base_inad'])}.</p></article>"
+        f'<article class="insight"><div class="num">{selo}</div>'
+        f"<h3>11 ou mais gatilhos</h3><p>{_pct(topo['taxa_inad'])} inadimplentes e "
+        f"{_pct(topo['taxa_90'])} acima de 90 dias.</p></article>"
+        f'<article class="insight"><div class="num">{selo_pior}</div>'
+        f"<h3>{pior['titulo']}</h3><p>{_pct(pior['taxa_inad'])} inadimplentes · "
+        f"{_pct(pior['taxa_90'])} acima de 90 dias · {_mil(pior['n'])} clientes.</p></article>"
+        "</div>"
+    )
+
+
+def _combinacoes(relatorio: dict) -> None:
+    from src.credito.graficos import figura_escada, figura_salto
+
+    st.subheader("Quando os sinais se juntam")
+    degraus = _escada_carteira()
+    st.markdown(_insights(degraus, relatorio["combinacoes"]), unsafe_allow_html=True)
+    st.image(figura_escada(degraus), width="stretch")
+    st.image(figura_salto(relatorio["combinacoes"]), width="stretch")
 
 
 def _veredito(pergunta: str, prob: float) -> str:

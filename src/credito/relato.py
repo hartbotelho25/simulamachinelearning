@@ -49,7 +49,8 @@ CSS = """
     button[data-testid="stSidebarCollapseButton"] {
         display: none !important;
     }
-    section.main .block-container { max-width: 1360px !important; padding-top: 0.8rem; }
+    [data-testid="stMainBlockContainer"],
+    section.main .block-container { max-width: 1360px !important; padding-top: 5.6rem !important; }
     .sintetico {
         border: 1px solid rgba(232,185,35,0.4);
         background: rgba(232,185,35,0.08);
@@ -577,9 +578,6 @@ def render_estudo(ir) -> None:
 
 COCKPIT_CSS = """
 <style>
-    header[data-testid="stHeader"],
-    [data-testid="stToolbar"],
-    [data-testid="stDecoration"],
     footer,
     [data-testid="stSidebar"],
     [data-testid="stSidebarCollapsedControl"],
@@ -591,7 +589,7 @@ COCKPIT_CSS = """
     [data-testid="stMainBlockContainer"],
     section.main .block-container {
         max-width: 100% !important;
-        padding-top: 0.35rem !important;
+        padding-top: 5.6rem !important;
         padding-bottom: 0.2rem !important;
         padding-left: 0.7rem !important;
         padding-right: 0.7rem !important;

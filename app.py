@@ -158,6 +158,15 @@ def render_home() -> None:
 def render_br() -> None:
     from src import br_app
 
+    st.markdown(
+        """
+        <style>
+        [data-testid="stMainBlockContainer"],
+        section.main .block-container { padding-top: 5.6rem !important; }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
     with st.sidebar:
         if st.button("Voltar ao menu", key="voltar_br", width="stretch"):
             _ir("home")

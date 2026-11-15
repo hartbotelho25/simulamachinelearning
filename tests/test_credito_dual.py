@@ -131,7 +131,9 @@ def test_tela_deixa_a_mesa_recolhida_e_o_simulador_aberto():
     app = (RAIZ / "app.py").read_text(encoding="utf-8")
     assert "Machine Learning Aplicado à Inadimplência" in app
     assert "Simulador de Inadimplência" in app
-    assert "Simula Brasileirão" in app
+    assert "Simulador do Brasileirão" in app
+    assert "Por onde você entra?" not in app
+    assert "PDF" not in app
     assert '"ml"' in app and '"simulador"' in app
 
 

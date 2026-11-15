@@ -9,13 +9,13 @@ from __future__ import annotations
 # Classificação lado a lado dos quatro modelos.
 CORTE_MATRIZ = 0.50
 
-# Alerta antecipado. Abaixo do verde: aprovar. Até o amarelo: garantia. Acima: recusar.
-VERDE_MAX = 0.08
-AMARELO_MAX = 0.20
+# Faixa visual da própria probabilidade. O corte de SIM/NÃO continua em 50%.
+VERDE_MAX = 0.20
+AMARELO_MAX = 0.50
 
 FAIXAS = (
     ("verde", "Aprovar", 0.0, VERDE_MAX),
-    ("amarelo", "Exigir garantia", VERDE_MAX, AMARELO_MAX),
+    ("amarelo", "Atenção", VERDE_MAX, AMARELO_MAX),
     ("vermelho", "Recusar", AMARELO_MAX, 1.01),
 )
 
@@ -27,18 +27,8 @@ FRACAO_TESTE = 0.30
 
 
 def nome_faixa(probabilidade: float) -> tuple[str, str]:
+    """Verde abaixo de 20%, amarelo até 50%, vermelho a partir do corte de SIM."""
     for faixa, acao, ini, fim in FAIXAS:
         if ini <= probabilidade < fim:
             return faixa, acao
     return "vermelho", "Recusar"
-
-
-def semaforo(marcador: int, restricao: bool = False) -> tuple[str, str, bool]:
-    """Verde até 10, amarelo até 25, vermelho acima. A restrição externa é Hard Stop."""
-    if marcador <= 10:
-        faixa, postura = "verde", "Baixo risco"
-    elif marcador <= 25:
-        faixa, postura = "amarelo", "Risco moderado"
-    else:
-        faixa, postura = "vermelho", "Alto risco"
-    return faixa, postura, bool(restricao)

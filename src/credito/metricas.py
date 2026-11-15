@@ -36,9 +36,9 @@ def _corte(y: np.ndarray, proba: np.ndarray, corte: float) -> dict:
 
 def avaliar(slug: str, y: np.ndarray, proba: np.ndarray) -> dict:
     meta = next(item for item in CATALOGO if item["slug"] == slug)
-    pontos = roc_curve(y, proba)
+    curva = roc_curve(y, proba)
     # A curva fica leve para o gráfico, sem perder o desenho.
-    fpr, tpr, _ = pontos
+    fpr, tpr, _ = curva
     passo = max(1, len(fpr) // 200)
     return {
         "slug": slug,

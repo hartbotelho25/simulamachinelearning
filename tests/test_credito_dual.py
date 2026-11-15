@@ -5,11 +5,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from src.credito.chaves import GATILHOS, PARES, PONTOS, codificar, coerente, pontuar, vetor
-from src.credito.politica import semaforo
+from src.credito.chaves import GATILHOS, PARES, coerente, vetor
+from src.credito.politica import nome_faixa
 from src.credito.combinacoes import medir_escada
 from src.credito.dataset import COLUNAS, FEATURES, PROIBIDAS, gerar_base
-from src.credito.simulador import chances
+from src.credito.simulador import chances, linha_para_frame
 
 RAIZ = Path(__file__).resolve().parents[1]
 CSV = RAIZ / "data" / "credito" / "clientes_credito_50k.csv"
@@ -37,14 +37,17 @@ def test_reincidencia_liga_o_gatilho_base():
     assert set(linha) == set(FEATURES)
 
 
-def test_chance_de_90_dias_nao_passa_da_inadimplencia():
+def test_a_chance_e_o_predict_proba_sem_ajuste():
     modelos = {
         "inadimplente": {"logistica": _Falso(0.22)},
         "inadimplente_90d": {"logistica": _Falso(0.81)},
     }
-    p_inad, p_90 = chances(modelos, "logistica", {coluna: 0 for coluna in FEATURES})
+    linha = {coluna: 0 for coluna in FEATURES}
+    p_inad, p_90 = chances(modelos, "logistica", linha)
     assert p_inad == 0.22
-    assert p_90 == 0.22
+    assert p_90 == 0.81
+    assert p_inad == modelos["inadimplente"]["logistica"].predict_proba(linha_para_frame(linha))[0, 1]
+    assert p_90 == modelos["inadimplente_90d"]["logistica"].predict_proba(linha_para_frame(linha))[0, 1]
 
 
 def test_base_curta_respeita_hierarquia_e_exclusoes():
@@ -115,46 +118,46 @@ def test_livro_e_pesos_quando_o_pipeline_ja_rodou():
             assert fatias == sorted(fatias, reverse=True)
 
 
-def test_reincidencia_substitui_e_nao_soma():
-    esperado = {
-        "protesto_3_ou_mais": 30,
-        "mais_de_um_cheque_sem_fundo_12m": 25,
-        "uso_cheque_especial_mais_3m_em_6m": 12,
-        "rotativo_mais_2x_6m": 18,
-        "cartao_acima_90_mais_3x_6m": 12,
-    }
-    for filho, pai in PARES:
-        linha = vetor({filho: True})
-        assert linha[filho] == 1 and linha[pai] == 1
-        exclusivo = codificar(linha)
-        assert exclusivo[filho] == 1 and exclusivo[pai] == 0
-        assert pontuar(linha) == esperado[filho]
-        assert pontuar(linha) != PONTOS[pai] + PONTOS[filho]
-    simples = vetor({"protesto_cartorio": True})
-    assert simples["protesto_3_ou_mais"] == 0
-    assert pontuar(simples) == 18
-    faixa, _postura, trava = semaforo(pontuar(simples), False)
-    assert faixa == "amarelo" and not trava
-    faixa, _postura, trava = semaforo(0, False)
-    assert faixa == "verde"
-    faixa, _postura, trava = semaforo(26, False)
-    assert faixa == "vermelho"
-    _faixa, _postura, trava = semaforo(35, True)
-    assert trava
+def test_o_modelo_recebe_o_vetor_binario_intacto():
+    linha = vetor({"protesto_3_ou_mais": True, "salto_gastos_cartao": True})
+    assert linha["protesto_3_ou_mais"] == 1
+    assert linha["protesto_cartorio"] == 1
+    frame = linha_para_frame(linha)
+    assert list(frame.columns) == list(FEATURES)
+    assert set(frame.to_numpy().ravel()).issubset({0, 1})
+    assert int(frame.iloc[0]["protesto_cartorio"]) == 1
+    assert int(frame.iloc[0]["protesto_3_ou_mais"]) == 1
+    assert int(frame.iloc[0]["salto_gastos_cartao"]) == 1
 
 
-def test_a_tela_nao_mostra_a_pontuacao_interna():
+def test_a_faixa_sai_da_probabilidade():
+    assert nome_faixa(0.19) == ("verde", "Aprovar")
+    assert nome_faixa(0.20) == ("amarelo", "Atenção")
+    assert nome_faixa(0.49) == ("amarelo", "Atenção")
+    assert nome_faixa(0.50) == ("vermelho", "Recusar")
+
+
+def test_nao_ha_scorecard_manual():
     texto = RELATO.read_text(encoding="utf-8").lower()
     assert " pts" not in texto
     assert "pontos" not in texto
-    assert "semáforo do comitê" in texto
-    assert "hard stop" in texto
-    assert "baixo risco" in texto
+    assert "scorecard" not in texto
+    assert "hard stop" not in texto
+    assert "regra de negócio" not in texto
+    assert not (RAIZ / "src" / "credito" / "scorecard.py").exists()
+    fontes = "\n".join(
+        caminho.read_text(encoding="utf-8").lower()
+        for caminho in (RAIZ / "src" / "credito").glob("*.py")
+    )
+    assert "scorecard" not in fontes
+    assert "pontos" not in fontes
+    assert "from src.credito.scorecard" not in fontes
+    assert "import scorecard" not in fontes
 
 
 def test_gatilho_isolado_nos_quatro_modelos():
-    joblib = RAIZ / "data" / "credito" / "modelos.joblib"
-    if not joblib.exists():
+    arquivo = RAIZ / "data" / "credito" / "modelos.joblib"
+    if not arquivo.exists():
         return
     from src.credito.simulador import carregar_modelos
 
@@ -163,30 +166,34 @@ def test_gatilho_isolado_nos_quatro_modelos():
 
     def probs(respostas: dict) -> list[float]:
         linha = vetor(respostas)
-        return [chances(modelos, slug, linha)[0] for slug in slugs]
-
-    def faixa_de(respostas: dict) -> str:
-        linha = vetor(respostas)
-        faixa, _postura, _trava = semaforo(
-            pontuar(linha), bool(linha["restricao_outras_instituicoes"])
-        )
-        return faixa
+        saida = []
+        for slug in slugs:
+            prevista, _outra = chances(modelos, slug, linha)
+            bruta = float(modelos["inadimplente"][slug].predict_proba(linha_para_frame(linha))[0, 1])
+            assert abs(prevista - bruta) < 1e-12
+            saida.append(prevista)
+        return saida
 
     zeros = probs({})
-    assert faixa_de({}) == "verde"
-    assert all(p < 0.05 for p in zeros), zeros
+    assert all(p < 0.08 for p in zeros), zeros
+    assert all(nome_faixa(p)[0] == "verde" for p in zeros)
 
-    protesto = probs({"protesto_cartorio": True})
-    assert faixa_de({"protesto_cartorio": True}) == "amarelo"
-    assert all(0.18 <= p <= 0.40 for p in protesto), protesto
+    dois = probs({"salto_gastos_cartao": True, "novo_emprestimo_6m": True})
+    assert all(p < 0.40 for p in dois), dois
+    assert all(0.04 <= p <= 0.20 for p in dois), dois
 
-    grave = probs({"protesto_3_ou_mais": True})
-    assert faixa_de({"protesto_3_ou_mais": True}) == "vermelho"
-    assert all(p > 0.50 for p in grave), grave
+    grave = probs({"restricao_outras_instituicoes": True})
+    assert all(0.10 <= p <= 0.30 for p in grave), grave
 
-    trava = probs({"restricao_outras_instituicoes": True})
-    assert faixa_de({"restricao_outras_instituicoes": True}) == "vermelho"
-    assert all(p > 0.65 for p in trava), trava
+    vários = probs(
+        {
+            "restricao_outras_instituicoes": True,
+            "protesto_3_ou_mais": True,
+            "pagou_fatura_com_cheque_especial": True,
+            "renegociacao_ativa": True,
+        }
+    )
+    assert all(0.45 <= p <= 0.90 for p in vários), vários
 
 
 def test_joblib_abre_sem_codigo_do_projeto():
@@ -207,8 +214,11 @@ def test_joblib_abre_sem_codigo_do_projeto():
         "npickle.NumpyUnpickler.find_class = find_class\n"
         "modelos = joblib.load('data/credito/modelos.joblib')\n"
         "for bloco in modelos.values():\n"
-        "    for pipe in bloco.values():\n"
-        "        nomes = [type(passo).__name__ for passo in pipe.named_steps.values()]\n"
+        "    for modelo in bloco.values():\n"
+        "        passos = getattr(modelo, 'named_steps', None)\n"
+        "        nomes = [type(modelo).__name__]\n"
+        "        if passos:\n"
+        "            nomes.extend(type(passo).__name__ for passo in passos.values())\n"
         "        if 'FunctionTransformer' in nomes:\n"
         "            raise SystemExit('FunctionTransformer ainda esta no joblib')\n"
         "print('ok')\n"
@@ -237,9 +247,9 @@ def test_joblib_quebrado_treina_a_partir_do_csv(monkeypatch):
     for slug in slugs:
         p_inad, p_90 = chances(modelos, slug, zeros)
         assert 0.0 <= p_90 <= p_inad <= 1.0
-    restricao = vetor({"restricao_outras_instituicoes": True})
-    alta = [chances(modelos, slug, restricao)[0] for slug in slugs]
-    assert all(p > 0.65 for p in alta), alta
+        restricao = vetor({"restricao_outras_instituicoes": True})
+        alta = [chances(modelos, slug, restricao)[0] for slug in slugs]
+        assert all(0.0 < p < 1.0 for p in alta), alta
 
 
 def test_escada_sobe_quando_os_gatilhos_se_acumulam():

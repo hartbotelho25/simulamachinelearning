@@ -1,7 +1,7 @@
 {
-  "ruido": 0.15,
-  "centro_inad": 25.5,
-  "inclinacao_inad": 0.152,
-  "centro_90": 32.0,
-  "inclinacao_90": 0.168
+  "ruido": 0.18,
+  "base_inad": -3.84,
+  "inclinacao": 1.619,
+  "base_90": -4.7,
+  "inclinacao_90": 1.62
 }

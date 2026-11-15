@@ -12,14 +12,14 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
 
-from .dataset import FEATURES, aplicar_exclusivo
+from .dataset import FEATURES
 from .politica import FRACAO_TESTE, SEMENTE
 
 CATALOGO = [
     {
         "slug": "logistica",
         "nome": "Regressão logística",
-        "papel": "Baseline e scorecard. O peso de cada variável fica visível.",
+        "papel": "Referência linear. O peso de cada gatilho fica visível.",
         "tecnica": (
             "Modelo linear. Os números entram padronizados e as categorias abrem em colunas. "
             "Cada peso se lê com sinal: empurra para o calote ou afasta dele. "
@@ -32,8 +32,7 @@ CATALOGO = [
         "papel": "Ensemble de árvores, estável diante de relação não linear.",
         "tecnica": (
             "Duzentas árvores. Cada uma vê uma amostra e um subconjunto de colunas. "
-            "A chance é a média dos votos. A floresta não entrega um peso único por variável; "
-            "a leitura dela, aqui, é a curva, a matriz e a importância por permutação."
+            "A chance é a média dos votos. A leitura dela é a curva, a matriz e a importância de cada gatilho."
         ),
     },
     {
@@ -42,8 +41,7 @@ CATALOGO = [
         "papel": "Árvores em sequência, o padrão forte em tabela de crédito.",
         "tecnica": (
             "XGBoost com árvores rasas. A árvore seguinte corrige o erro da anterior. "
-            "Captura não linearidade sem virar uma rede. Os ganhos internos não substituem "
-            "a explicação do scorecard; a comparação com a logística mostra o que a não linearidade acrescenta."
+            "Captura não linearidade sem virar uma rede. A comparação com a logística mostra o que a não linearidade acrescenta."
         ),
     },
     {
@@ -53,37 +51,33 @@ CATALOGO = [
         "tecnica": (
             "Perceptron de duas camadas ocultas, 64 e 32 neurônios, ativação ReLU. "
             "Os números entram padronizados. Dez por cento do treino servem só para parar cedo. "
-            "Os pesos internos não se apresentam ao comitê; a rede entra pela curva, pela matriz e pela permutação."
+            "A rede entra pela curva, pela matriz e pela importância aprendida em cada gatilho."
         ),
     },
 ]
 
 
-def matriz_exclusiva(amostra: pd.DataFrame) -> pd.DataFrame:
-    """Zera a ocorrência única quando a reincidência está ligada. Fica fora do estimador."""
-    colunas = list(FEATURES)
-    return aplicar_exclusivo(amostra[colunas])[colunas]
-
-
-def construir(slug: str) -> Pipeline:
+def construir(slug: str):
+    """Logística e MLP passam por escala. Árvores recebem o 0/1 direto."""
     if slug == "logistica":
-        clf = LogisticRegression(max_iter=800, solver="lbfgs", C=20.0)
-    elif slug == "floresta":
-        clf = RandomForestClassifier(
+        clf = LogisticRegression(max_iter=800, solver="lbfgs", C=1.0)
+        return Pipeline([("prep", StandardScaler()), ("clf", clf)])
+    if slug == "floresta":
+        return RandomForestClassifier(
             n_estimators=200,
-            max_depth=14,
-            min_samples_leaf=20,
+            max_depth=16,
+            min_samples_leaf=10,
             random_state=SEMENTE,
             n_jobs=-1,
         )
-    elif slug == "boosting":
-        clf = XGBClassifier(
+    if slug == "boosting":
+        return XGBClassifier(
             n_estimators=250,
-            max_depth=4,
+            max_depth=3,
             learning_rate=0.07,
             subsample=0.85,
             colsample_bytree=0.85,
-            reg_lambda=1.0,
+            reg_lambda=1.5,
             objective="binary:logistic",
             eval_metric="logloss",
             random_state=SEMENTE,
@@ -91,7 +85,7 @@ def construir(slug: str) -> Pipeline:
             tree_method="hist",
             verbosity=0,
         )
-    elif slug == "mlp":
+    if slug == "mlp":
         clf = MLPClassifier(
             hidden_layer_sizes=(64, 32),
             activation="relu",
@@ -105,9 +99,8 @@ def construir(slug: str) -> Pipeline:
             n_iter_no_change=5,
             random_state=SEMENTE,
         )
-    else:
-        raise KeyError(slug)
-    return Pipeline([("prep", StandardScaler()), ("clf", clf)])
+        return Pipeline([("prep", StandardScaler()), ("clf", clf)])
+    raise KeyError(slug)
 
 
 def fatiar(df: pd.DataFrame):
@@ -123,11 +116,11 @@ def fatiar(df: pd.DataFrame):
     return X.iloc[i_tr], X.iloc[i_te], i_tr, i_te
 
 
-def treinar_todos(X_treino: pd.DataFrame, y_treino: np.ndarray) -> dict[str, Pipeline]:
-    matriz = matriz_exclusiva(X_treino)
+def treinar_todos(X_treino: pd.DataFrame, y_treino: np.ndarray) -> dict:
+    matriz = X_treino[list(FEATURES)]
     modelos = {}
     for item in CATALOGO:
-        pipe = construir(item["slug"])
-        pipe.fit(matriz, y_treino)
-        modelos[item["slug"]] = pipe
+        modelo = construir(item["slug"])
+        modelo.fit(matriz, y_treino)
+        modelos[item["slug"]] = modelo
     return modelos

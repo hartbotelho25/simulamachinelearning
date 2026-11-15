@@ -6,8 +6,27 @@ import numpy as np
 import pandas as pd
 from sklearn.inspection import permutation_importance
 
-from .dataset import BLOCO_NOME, BLOCOS, ROTULOS
+from .dataset import BLOCO_NOME, BLOCOS, FEATURES, ROTULOS
 from .politica import SEMENTE
+
+
+def pesos_do_modelo(modelo) -> dict[str, float]:
+    """Peso aprendido de cada gatilho, já na escala do 0/1."""
+    if hasattr(modelo, "named_steps"):
+        prep = modelo.named_steps["prep"]
+        clf = modelo.named_steps["clf"]
+        nomes = [str(nome) for nome in prep.feature_names_in_]
+        escala = np.asarray(prep.scale_, dtype=float)
+        escala = np.where(escala == 0, 1.0, escala)
+        if hasattr(clf, "coef_"):
+            bruto = np.abs(np.asarray(clf.coef_, dtype=float).ravel()) / escala
+        else:
+            bruto = np.abs(np.asarray(clf.coefs_[0], dtype=float)).sum(axis=1) / escala
+    else:
+        nomes = [str(nome) for nome in modelo.feature_names_in_]
+        bruto = np.asarray(modelo.feature_importances_, dtype=float)
+    mapa = {nome: float(valor) for nome, valor in zip(nomes, bruto)}
+    return {coluna: mapa.get(coluna, 0.0) for coluna in FEATURES}
 
 AMOSTRA = 1600
 REPETICOES = 3

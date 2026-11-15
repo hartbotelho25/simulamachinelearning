@@ -18,10 +18,10 @@ from .chaves import montar_chaves
 from .combinacoes import medir_combinacoes
 from .dataset import COLUNAS, conferir_esquema, gerar_base, salvar_parametros
 from .graficos import combinacoes_barras, matrizes
-from .importancia import pacote_importancia, ranking_blocos, ranking_itens
+from .importancia import pesos_do_modelo, ranking_blocos, ranking_itens
 from .metricas import avaliar, modelo_referencia
 from .politica import AMARELO_MAX, CORTE_MATRIZ, N_CLIENTES, SEMENTE, VERDE_MAX
-from .treino import CATALOGO, fatiar, matriz_exclusiva, treinar_todos
+from .treino import CATALOGO, fatiar, treinar_todos
 
 ALVOS = (
     ("inadimplente", "Inadimplência geral", "Vai ficar inadimplente?"),
@@ -48,29 +48,28 @@ def _gravar_versoes(pasta: Path) -> None:
     )
 
 
-def _pacote_alvo(slug_alvo: str, nome: str, pergunta: str, y_te, probas, modelos, X_te) -> dict:
+def _importancia_aprendida(modelos: dict) -> dict:
+    itens = {}
+    blocos = {}
+    for slug, modelo in modelos.items():
+        pesos = pesos_do_modelo(modelo)
+        itens[slug] = ranking_itens(pesos)
+        blocos[slug] = ranking_blocos(pesos)
+    return {"itens": itens, "blocos": blocos}
+
+
+def _pacote_alvo(slug_alvo: str, nome: str, pergunta: str, y_te, probas, modelos) -> dict:
     avaliados = [avaliar(slug, y_te, probas[slug]) for slug in (item["slug"] for item in CATALOGO)]
     for item in avaliados:
         item.pop("roc", None)
-    importancia = pacote_importancia(modelos, X_te, y_te)
+    importancia = _importancia_aprendida(modelos)
     return {
         "id": slug_alvo,
         "nome": nome,
         "pergunta": pergunta,
         "referencia": modelo_referencia(avaliados),
         "modelos": avaliados,
-        "importancia": {
-            "amostra": importancia["amostra"],
-            "repeticoes": importancia["repeticoes"],
-            "itens": {
-                slug: ranking_itens(pacote["colunas"])
-                for slug, pacote in importancia["medido"].items()
-            },
-            "blocos": {
-                slug: ranking_blocos(pacote["colunas"])
-                for slug, pacote in importancia["medido"].items()
-            },
-        },
+        "importancia": importancia,
     }
 
 
@@ -97,14 +96,11 @@ def main() -> None:
         y_te = teste[slug_alvo].to_numpy(dtype=int)
         modelos = treinar_todos(X_tr, y_tr)
         gravados[slug_alvo] = modelos
-        X_te_modelo = matriz_exclusiva(X_te)
         probas[slug_alvo] = {
-            slug: pipe.predict_proba(X_te_modelo)[:, 1] for slug, pipe in modelos.items()
+            slug: modelo.predict_proba(X_te)[:, 1] for slug, modelo in modelos.items()
         }
         print("  importância", nome, flush=True)
-        pacotes[slug_alvo] = _pacote_alvo(
-            slug_alvo, nome, pergunta, y_te, probas[slug_alvo], modelos, X_te_modelo
-        )
+        pacotes[slug_alvo] = _pacote_alvo(slug_alvo, nome, pergunta, y_te, probas[slug_alvo], modelos)
 
     referencia = pacotes["inadimplente"]["referencia"]
     nome_ref = next(item["nome"] for item in CATALOGO if item["slug"] == referencia)
@@ -160,6 +156,14 @@ def main() -> None:
         encoding="utf-8",
     )
     joblib.dump(gravados, ARTEFATOS / "modelos.joblib", compress=3)
+    importancias = {
+        slug: pacotes[slug]["importancia"]
+        for slug, _nome, _pergunta in ALVOS
+    }
+    (ARTEFATOS / "importancias.json").write_text(
+        json.dumps(importancias, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
     _gravar_versoes(ARTEFATOS)
     base = relatorio["base"]
     print(

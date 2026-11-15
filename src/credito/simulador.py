@@ -10,8 +10,8 @@ import joblib
 import pandas as pd
 
 from .caminhos import ARTEFATOS, CSV_CLIENTES
-from .chaves import codificar
 from .dataset import ALVOS, FEATURES, ler_parametros
+from .importancia import pesos_do_modelo, ranking_itens
 from .treino import fatiar, treinar_todos
 
 
@@ -170,8 +170,7 @@ def parametros_gerador() -> dict:
 
 
 def linha_para_frame(linha: dict) -> pd.DataFrame:
-    exclusivo = codificar(linha)
-    return pd.DataFrame([{coluna: exclusivo[coluna] for coluna in FEATURES}])
+    return pd.DataFrame([{coluna: int(linha.get(coluna, 0)) for coluna in FEATURES}])
 
 
 def chance(modelo, linha: dict) -> float:
@@ -179,10 +178,23 @@ def chance(modelo, linha: dict) -> float:
 
 
 def chances(modelos: dict, slug: str, linha: dict) -> tuple[float, float]:
-    """A chance de passar de 90 dias nunca supera a de ficar inadimplente."""
+    """As duas chances são o predict_proba de cada modelo, sem ajuste posterior."""
     p_inad = chance(modelos["inadimplente"][slug], linha)
     p_90 = chance(modelos["inadimplente_90d"][slug], linha)
-    return p_inad, min(p_90, p_inad)
+    return p_inad, p_90
+
+
+def ler_importancias() -> dict:
+    caminho = ARTEFATOS / "importancias.json"
+    if not caminho.exists():
+        return {}
+    return json.loads(caminho.read_text(encoding="utf-8"))
+
+
+def pesos_do_slug(modelos: dict, slug: str) -> dict[str, float]:
+    """Percentual aprendido pelo modelo carregado. A mesma conta vai para importancias.json."""
+    tabela = ranking_itens(pesos_do_modelo(modelos["inadimplente"][slug]))
+    return {item["variavel"]: float(item["pct"]) for item in tabela}
 
 
 def figura(nome: str) -> Path:

@@ -10,34 +10,68 @@ from .dataset import BLOCO_NOME, BLOCOS, FEATURES, ROTULOS
 from .politica import SEMENTE
 
 
-def _modelo_base(modelo):
-    """Tira a calibração e o congelamento, e fica com o estimador que aprendeu os gatilhos."""
+def _pelar(modelo):
+    """Sai de CalibratedClassifierCV e de FrozenEstimator até o estimador treinado."""
     atual = modelo
-    if hasattr(atual, "calibrated_classifiers_"):
-        atual = atual.calibrated_classifiers_[0].estimator
-    if atual.__class__.__name__ == "FrozenEstimator":
-        atual = atual.estimator
+    for _ in range(8):
+        nome = type(atual).__name__
+        if nome == "CalibratedClassifierCV":
+            grupo = list(getattr(atual, "calibrated_classifiers_", None) or [])
+            if not grupo:
+                break
+            atual = grupo[0].estimator
+            continue
+        if nome in {"FrozenEstimator", "_CalibratedClassifier"}:
+            proximo = getattr(atual, "estimator", None)
+            if proximo is None or proximo is atual:
+                break
+            atual = proximo
+            continue
+        break
     return atual
+
+
+def estimadores_base(modelo) -> list:
+    """Um estimador por fatia calibrada. A média deles é o peso do modelo gravado."""
+    if type(modelo).__name__ == "CalibratedClassifierCV":
+        grupo = list(getattr(modelo, "calibrated_classifiers_", None) or [])
+        if grupo:
+            return [_pelar(item.estimator) for item in grupo]
+    return [_pelar(modelo)]
+
+
+def _vetor(modelo) -> tuple[list[str], np.ndarray]:
+    passos = getattr(modelo, "steps", None)
+    if passos:
+        mapa = dict(passos)
+        prep = mapa.get("prep", passos[0][1])
+        clf = mapa.get("clf", passos[-1][1])
+        nomes = [str(nome) for nome in prep.feature_names_in_]
+        escala = np.asarray(getattr(prep, "scale_", np.ones(len(nomes))), dtype=float)
+        escala = np.where(escala == 0, 1.0, escala)
+        coef = getattr(clf, "coef_", None)
+        if coef is not None:
+            bruto = np.abs(np.asarray(coef, dtype=float).ravel()) / escala
+        else:
+            bruto = np.abs(np.asarray(clf.coefs_[0], dtype=float)).sum(axis=1) / escala
+        return nomes, bruto
+    nomes = [str(nome) for nome in modelo.feature_names_in_]
+    bruto = np.asarray(modelo.feature_importances_, dtype=float)
+    return nomes, bruto
 
 
 def pesos_do_modelo(modelo) -> dict[str, float]:
     """Peso aprendido de cada gatilho, já na escala do 0/1."""
-    modelo = _modelo_base(modelo)
-    if hasattr(modelo, "named_steps"):
-        prep = modelo.named_steps["prep"]
-        clf = modelo.named_steps["clf"]
-        nomes = [str(nome) for nome in prep.feature_names_in_]
-        escala = np.asarray(prep.scale_, dtype=float)
-        escala = np.where(escala == 0, 1.0, escala)
-        if hasattr(clf, "coef_"):
-            bruto = np.abs(np.asarray(clf.coef_, dtype=float).ravel()) / escala
-        else:
-            bruto = np.abs(np.asarray(clf.coefs_[0], dtype=float)).sum(axis=1) / escala
-    else:
-        nomes = [str(nome) for nome in modelo.feature_names_in_]
-        bruto = np.asarray(modelo.feature_importances_, dtype=float)
-    mapa = {nome: float(valor) for nome, valor in zip(nomes, bruto)}
+    vetores = []
+    nomes: list[str] | None = None
+    for base in estimadores_base(modelo):
+        nomes_base, bruto = _vetor(base)
+        nomes = nomes_base
+        vetores.append(bruto)
+    medio = np.mean(np.vstack(vetores), axis=0)
+    mapa = {nome: float(valor) for nome, valor in zip(nomes or [], medio)}
     return {coluna: mapa.get(coluna, 0.0) for coluna in FEATURES}
+
 
 AMOSTRA = 1600
 REPETICOES = 3
@@ -148,8 +182,10 @@ def ranking_blocos(importancias: dict[str, float]) -> list[dict]:
 
 
 def explicar_logistica(pipe) -> list[dict]:
-    prep = pipe.named_steps["prep"]
-    clf = pipe.named_steps["clf"]
+    pipe = estimadores_base(pipe)[0]
+    passos = dict(getattr(pipe, "steps", []) or [])
+    prep = passos["prep"]
+    clf = passos["clf"]
     nomes = list(prep.get_feature_names_out())
     coefs = clf.coef_.ravel()
     numericos: list[tuple[str, float]] = []

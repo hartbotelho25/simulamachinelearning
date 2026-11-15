@@ -11,7 +11,7 @@ import pandas as pd
 
 from .caminhos import ARTEFATOS, CSV_CLIENTES
 from .dataset import ALVOS, FEATURES, ler_parametros
-from .importancia import pesos_do_modelo, ranking_itens
+from .importancia import estimadores_base, pesos_do_modelo, ranking_itens
 from .treino import fatiar, treinar_todos
 
 
@@ -64,8 +64,14 @@ def assinatura_modelos() -> str:
 
 
 def colunas_do_modelo(modelo) -> set[str] | None:
-    prep = modelo.named_steps.get("prep") if hasattr(modelo, "named_steps") else None
-    nomes = getattr(prep, "feature_names_in_", None)
+    base = estimadores_base(modelo)[0]
+    passos = getattr(base, "steps", None)
+    nomes = None
+    if passos:
+        prep = dict(passos).get("prep", passos[0][1])
+        nomes = getattr(prep, "feature_names_in_", None)
+    if nomes is None:
+        nomes = getattr(base, "feature_names_in_", None)
     if nomes is None:
         nomes = getattr(modelo, "feature_names_in_", None)
     if nomes is None:

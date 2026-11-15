@@ -299,6 +299,50 @@ def test_joblib_quebrado_treina_a_partir_do_csv(monkeypatch):
         assert all(0.0 < p < 1.0 for p in alta), alta
 
 
+def test_joblib_calibrado_abre_pesos_e_o_simulador():
+    import joblib
+    from streamlit.testing.v1 import AppTest
+
+    from src.credito.importancia import pesos_do_modelo, ranking_itens
+    from src.credito.simulador import pesos_do_slug
+
+    arquivo = RAIZ / "data" / "credito" / "modelos.joblib"
+    modelos = joblib.load(arquivo)
+    slugs = ("logistica", "floresta", "boosting", "mlp")
+    for alvo in ("inadimplente", "inadimplente_90d"):
+        for slug in slugs:
+            assert type(modelos[alvo][slug]).__name__ == "CalibratedClassifierCV"
+            itens = ranking_itens(pesos_do_modelo(modelos[alvo][slug]))
+            pcts = [item["pct"] for item in itens]
+            assert pcts, (alvo, slug)
+            assert abs(sum(pcts) - 100.0) < 0.05, (alvo, slug, sum(pcts))
+            assert pcts == sorted(pcts, reverse=True), (alvo, slug, pcts)
+            fatia = pesos_do_slug(modelos, slug)
+            assert abs(sum(fatia.values()) - 100.0) < 0.05, (slug, sum(fatia.values()))
+
+    app = AppTest.from_file(str(RAIZ / "app.py"), default_timeout=90)
+    app.query_params["estudo"] = "simulador"
+    app.run()
+    assert not app.exception, app.exception
+    for slug in slugs:
+        app.selectbox[0].set_value(slug).run()
+        assert not app.exception, app.exception
+    for indice in range(4):
+        app.toggle[indice].set_value(True).run()
+        assert not app.exception, app.exception
+    cartao = " ".join(getattr(bloco, "value", "") for bloco in app.markdown)
+    assert "Predição do modelo" in cartao
+    assert "Vai ficar inadimplente?" in cartao
+    assert "Vai passar de 90 dias?" in cartao
+
+    estudo = AppTest.from_file(str(RAIZ / "app.py"), default_timeout=90)
+    estudo.query_params["estudo"] = "ml"
+    estudo.run()
+    assert not estudo.exception, estudo.exception
+    titulos = [getattr(bloco, "value", "") for bloco in estudo.subheader]
+    assert "O código" in titulos
+
+
 def test_escada_sobe_quando_os_gatilhos_se_acumulam():
     sinais = np.array([0, 0, 2, 4, 6, 8, 11, 12])
     inad = np.array([0, 0, 0, 0, 1, 1, 1, 1])

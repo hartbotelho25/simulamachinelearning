@@ -76,6 +76,19 @@ def test_tela_deixa_a_mesa_recolhida_e_o_simulador_aberto():
         "Ficou inadimplente, mas passou sem alerta do modelo.",
     ):
         assert frase in texto
+    assert "O código" in texto
+    assert "Quando os sinais se juntam" not in texto
+    assert "treinar_localmente.py" in texto
+    assert "src/credito/pipeline.py" in texto
+    assert "src/credito/treino.py" in texto
+    assert "st.expander(titulo, expanded=False)" in texto
+    for nome in (
+        "Regressão logística",
+        "Random Forest",
+        "Gradient Boosting (XGBoost)",
+        "Rede neural MLP",
+    ):
+        assert nome in texto
     assert "@st.fragment" in texto
     simulador = texto.split("@st.fragment", 1)[1]
     assert "st.expander" not in simulador

@@ -35,6 +35,17 @@ streamlit run app.py
 
 Arquivo principal: `app.py`.
 
+## Treinar os modelos de inadimplência na sua máquina
+
+```bash
+git clone https://github.com/hartbotelho25/simulamachinelearning.git
+cd simulamachinelearning
+pip install -r requirements.txt
+python treinar_localmente.py
+```
+
+O script lê `data/credito/clientes_credito_50k.csv`, treina os quatro modelos nas duas respostas e imprime AUC e acurácia. Não substitui `data/credito/modelos.joblib`. Os hiperparâmetros ficam em `src/credito/treino.py`, na função `construir`. Para gerar a base de novo e gravar o arquivo do site, use `python -m src.credito.pipeline`.
+
 ## Publicar no Streamlit Community Cloud (GitHub)
 
 1. O repositório já está no GitHub. O deploy usa a branch `main`.

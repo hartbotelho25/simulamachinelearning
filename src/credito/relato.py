@@ -1,6 +1,6 @@
-"""Simulador de Inadimplência: relato estático e simulador na mesma página.
+"""Simulador de Inadimplência: duas respostas e gatilhos preventivos.
 
-O placar muda com os controles. Não há gaveta, aba nem formulário congelado.
+A mesa explicativa fica recolhida. O simulador permanece aberto na página.
 """
 
 from __future__ import annotations
@@ -9,13 +9,13 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-from src.credito.chaves import PERGUNTAS, aplicar, respostas_da_linha, respostas_em_dia
+from src.credito.chaves import FILHOS, GATILHOS, PARES, PRESETS, coerente, grupos, respostas_vazias, vetor
 from src.credito.politica import CORTE_MATRIZ, nome_faixa
 from src.credito.simulador import (
     amostra_teste,
     assinatura_modelos,
     carregar_modelos,
-    chance,
+    chances,
     figura,
     ler_relatorio,
     pronto,
@@ -23,40 +23,9 @@ from src.credito.simulador import (
     resolver_teste,
 )
 
-MESA = [
-    {
-        "titulo": "Histórico de atrasos no banco",
-        "alerta": "Acende com atraso de 30 a 60 dias, atraso na 1ª parcela ou renegociação ativa.",
-        "blocos": ["regua"],
-    },
-    {
-        "titulo": "Uso do cartão de crédito",
-        "alerta": "Acende com pagamento no mínimo, atraso, saque no crédito ou fatura paga no cheque especial.",
-        "blocos": ["cartao"],
-    },
-    {
-        "titulo": "Conta corrente e cheque especial",
-        "alerta": "Acende com cheque devolvido, uso contínuo do especial ou saldo e fluxo fracos.",
-        "blocos": ["cheque", "fluxo"],
-    },
-    {
-        "titulo": "Empréstimos e peso das parcelas",
-        "alerta": "Acende quando as parcelas comem fatia alta das entradas ou o contrato é novo ou atrasado.",
-        "blocos": ["endividamento"],
-    },
-    {
-        "titulo": "Restrições no mercado",
-        "alerta": "Acende com protesto em cartório ou inadimplência em outra instituição.",
-        "blocos": ["bureau"],
-    },
-    {
-        "titulo": "Perfil de relacionamento",
-        "alerta": "Acende em cliente recente ou sem imóvel próprio.",
-        "blocos": ["cadastral"],
-    },
-]
 COR_FAIXA = {"verde": "#3dd68c", "amarelo": "#E8B923", "vermelho": "#ff8a65"}
 NOME_FAIXA = {"verde": "Verde", "amarelo": "Amarelo", "vermelho": "Vermelho"}
+ORDEM_ALVOS = ("inadimplente", "inadimplente_90d")
 
 CSS = """
 <style>
@@ -75,18 +44,6 @@ CSS = """
         padding: 0.7rem 0.9rem; margin: 0.2rem 0 0.8rem; line-height: 1.45;
     }
     .sintetico strong { color: #E8B923; }
-    .grade-grupos { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin: 0.3rem 0 0.6rem; }
-    .grupo {
-        background: #163024; border-radius: 14px; padding: 0.75rem 0.9rem 0.55rem;
-        border-top: 3px solid #2a4a38;
-    }
-    .grupo.primeiro { border-top-color: #E8B923; }
-    .grupo h3 { margin: 0.15rem 0 0.4rem; color: #F4F1E8; font-size: 1.02rem; }
-    .grupo ul { margin: 0; padding: 0; }
-    .grupo .alerta { margin: 0; color: #c9c3b4; font-size: 0.9rem; line-height: 1.4; }
-    .olhe { color: #E8B923; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
-    .tec { color: #8d887c; font-size: 0.74rem; margin-left: 0.3rem; }
-    .ponto { color: #E8B923; margin-right: 0.25rem; }
     .acc {
         background: #163024; border-radius: 14px; padding: 0.75rem 0.8rem 0.65rem;
         border-top: 3px solid #2a4a38; min-height: 168px;
@@ -106,14 +63,16 @@ CSS = """
     .combo h3 { margin: 0 0 0.35rem; color: #F4F1E8; font-size: 1rem; }
     .combo p { margin: 0.15rem 0; color: #c9c3b4; font-size: 0.88rem; }
     .combo strong { color: #F4F1E8; }
-    .placar {
-        background: #163024; border-radius: 16px; padding: 0.9rem 1rem 0.75rem;
-        border: 1px solid rgba(244,241,232,0.08); margin-bottom: 0.6rem;
+    .dupla { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin-bottom: 0.6rem; }
+    .veredito {
+        background: #163024; border-radius: 16px; padding: 0.85rem 1rem 0.75rem;
+        border: 1px solid rgba(244,241,232,0.08);
     }
-    .placar .grande { font-size: 2.6rem; font-weight: 700; line-height: 1; }
-    .placar .parecer { font-size: 1.25rem; font-weight: 700; margin-top: 0.15rem; }
-    .sim-grupo { color: #E8B923; font-weight: 700; font-size: 0.92rem; margin: 0.2rem 0 0.15rem; }
-    @media (max-width: 900px) { .grade-grupos { grid-template-columns: 1fr; } }
+    .veredito .pergunta { color: #c9c3b4; font-size: 0.92rem; margin: 0; }
+    .veredito .grande { font-size: 2.4rem; font-weight: 700; line-height: 1.05; margin: 0.2rem 0 0; }
+    .veredito .chamada { font-size: 1.2rem; font-weight: 700; margin: 0.15rem 0 0; }
+    .sim-grupo { color: #E8B923; font-weight: 700; font-size: 0.92rem; margin: 0.35rem 0 0.15rem; }
+    @media (max-width: 900px) { .dupla { grid-template-columns: 1fr; } }
 </style>
 """
 
@@ -132,9 +91,12 @@ def _mil(valor: float) -> str:
     return f"{int(round(valor)):,}".replace(",", ".")
 
 
+def _pp(valor: float) -> str:
+    return f"{valor:.1f}%".replace(".", ",")
+
+
 @st.cache_resource(show_spinner=False)
 def _modelos_gravados(assinatura: str):
-    # `assinatura` entra na chave. Sem argumento o processo entrega o joblib antigo.
     if not assinatura:
         raise RuntimeError("assinatura vazia")
     return carregar_modelos()
@@ -165,101 +127,103 @@ def _amostra_atual() -> pd.DataFrame:
     )
 
 
-
-def _reais(valor: float) -> str:
-    texto = f"{valor:,.0f}".replace(",", ".")
-    return f"R$ {texto}"
-
-
 def _chave(geracao: int, ident: str) -> str:
     return f"g{geracao}_{ident}"
-
-
-def _respostas(geracao: int) -> dict[str, bool]:
-    return {pergunta["id"]: bool(st.session_state[_chave(geracao, pergunta["id"])]) for pergunta in PERGUNTAS}
 
 
 def _nova_geracao(respostas: dict[str, bool], caso: dict | None) -> None:
     geracao = int(st.session_state.get("sim_geracao", 0)) + 1
     st.session_state["sim_geracao"] = geracao
-    st.session_state["sim_respostas"] = respostas
+    st.session_state["sim_respostas"] = coerente(respostas)
     st.session_state["sim_caso"] = caso
 
 
-def _sins_que_puxam(relatorio: dict, slug: str, respostas: dict[str, bool]) -> list[str]:
-    ranking = {item["variavel"]: item["pct"] for item in relatorio["importancia"]["itens"][slug]}
-    sims = relatorio["chaves"]["sim"]
-    acesos = []
-    for pergunta in PERGUNTAS:
-        ident = pergunta["id"]
-        if ident == "imovel":
-            if respostas.get(ident, True):
-                continue
-            colunas = ["possui_imovel_proprio"]
-        elif not respostas.get(ident):
-            continue
-        else:
-            colunas = list(sims[ident])
-        peso = max((ranking.get(coluna, 0.0) for coluna in colunas), default=0.0)
-        acesos.append((peso, pergunta["texto"]))
-    acesos.sort(key=lambda par: par[0], reverse=True)
-    return [texto for _, texto in acesos[:6]]
+def _sincronizar(geracao: int) -> None:
+    for filho, pai in PARES:
+        chave_filho = _chave(geracao, filho)
+        chave_pai = _chave(geracao, pai)
+        if st.session_state.get(chave_filho) and chave_pai in st.session_state:
+            st.session_state[chave_pai] = True
+    for pai, filhos in FILHOS.items():
+        chave_pai = _chave(geracao, pai)
+        if chave_pai in st.session_state and not st.session_state[chave_pai]:
+            for filho in filhos:
+                chave_filho = _chave(geracao, filho)
+                if chave_filho in st.session_state:
+                    st.session_state[chave_filho] = False
+
+
+def _cb_filho(geracao: int, filho: str, pai: str):
+    def _fn() -> None:
+        if st.session_state[_chave(geracao, filho)]:
+            st.session_state[_chave(geracao, pai)] = True
+
+    return _fn
+
+
+def _cb_pai(geracao: int, pai: str, filhos: list[str]):
+    def _fn() -> None:
+        if not st.session_state[_chave(geracao, pai)]:
+            for filho in filhos:
+                st.session_state[_chave(geracao, filho)] = False
+
+    return _fn
+
+
+def _respostas(geracao: int) -> dict[str, bool]:
+    return {item["id"]: bool(st.session_state[_chave(geracao, item["id"])]) for item in GATILHOS}
 
 
 def _cabecalho(relatorio: dict, ir) -> None:
     if st.button("← Voltar ao menu inicial", key="credito_voltar"):
         ir("home")
     st.title("Simulador de Inadimplência")
+    base = relatorio["base"]
     st.markdown(
-        '<div class="sintetico"><strong>Base sintética.</strong> '
-        "Não é carteira de banco. O modelo não usa renda declarada: o banco quase nunca "
-        "vê a renda verdadeira, porque o cliente pode omitir, ter outra conta ou receber fora do banco."
+        '<div class="sintetico"><strong>Base sintética de 50 mil clientes.</strong> '
+        "O estudo responde duas perguntas com os mesmos quatro modelos: "
+        "vai ficar inadimplente, e vai passar de 90 dias. "
+        "Quem passa de 90 dias já está inadimplente. "
+        "Não entra renda declarada, saldo, fluxo de caixa nem atraso que já se instalou. "
+        "A mesa olha só gatilhos preventivos."
         "</div>",
         unsafe_allow_html=True,
     )
-    base = relatorio["base"]
     kpis = [
         ("Clientes", _mil(base["n"])),
-        ("Inadimplência em 90 dias", _pct(base["taxa"])),
-        ("Fluxo mediano de entradas", _reais(base["fluxo_mediano"])),
-        ("Maior acurácia", _pct(max(m["matriz"]["acuracia"] for m in relatorio["modelos"]))),
+        ("Inadimplência", _pct(base["taxa_inadimplente"])),
+        ("Acima de 90 dias", _pct(base["taxa_90d"])),
+        ("Gatilhos preventivos", _mil(base["n_gatilhos"])),
     ]
     cols = st.columns(4)
     for col, (nome, valor) in zip(cols, kpis):
-        col.markdown(f'<div class="kpi"><div class="label">{nome}</div><div class="value">{valor}</div></div>', unsafe_allow_html=True)
-
-
-def _grupos(relatorio: dict) -> None:
-    st.subheader("O que a mesa avalia")
-    st.write("A mesa olha o comportamento na conta. Cada cartão diz, numa linha, o que acende alerta.")
-    fatia = {
-        item["bloco"]: item["fatia"]
-        for item in relatorio["importancia"]["por_modelo"][relatorio["referencia"]]
-    }
-    ordem = sorted(MESA, key=lambda card: sum(fatia.get(bloco, 0) for bloco in card["blocos"]), reverse=True)
-    primeiro = sum(fatia.get(bloco, 0) for bloco in ordem[0]["blocos"])
-    partes = []
-    for card in ordem:
-        peso = sum(fatia.get(bloco, 0) for bloco in card["blocos"])
-        classe = "grupo primeiro" if peso == primeiro else "grupo"
-        selo = '<p class="olhe">Olhar primeiro</p>' if peso == primeiro else ""
-        partes.append(
-            f'<article class="{classe}">{selo}<h3>{card["titulo"]}</h3>'
-            f'<p class="alerta">{card["alerta"]}</p></article>'
+        col.markdown(
+            f'<div class="kpi"><div class="label">{nome}</div><div class="value">{valor}</div></div>',
+            unsafe_allow_html=True,
         )
-    st.markdown(f'<div class="grade-grupos">{"".join(partes)}</div>', unsafe_allow_html=True)
 
 
-def _acuracia(relatorio: dict) -> None:
-    st.subheader("Acurácia dos quatro modelos")
+def _mesa() -> None:
+    with st.expander("O que a mesa avalia", expanded=False):
+        st.caption(
+            "Lista dos gatilhos preventivos. Se uma reincidência fica em Sim, o gatilho base também fica."
+        )
+        linhas = []
+        for nome, itens in grupos():
+            linhas.append(f"**{nome}**")
+            linhas.extend(f"- {item['texto']}" for item in itens)
+            linhas.append("")
+        st.markdown("\n".join(linhas))
+
+
+def _acuracia(pacote: dict) -> None:
     st.write(
-        f"No teste de {_mil(relatorio['base']['n_teste'])} clientes, o acerto é quem o modelo "
-        f"classifica certo com corte em {_pct(CORTE_MATRIZ)}. "
-        "Marcar todo mundo como em dia já acertaria a maioria, porque o calote é minoria."
+        f"No teste, o acerto usa corte de {_pct(CORTE_MATRIZ)}. "
+        "A classe em dia é a maioria, então a acurácia sozinha não conta a história."
     )
-    melhor = max(relatorio["modelos"], key=lambda modelo: modelo["matriz"]["acuracia"])["slug"]
+    melhor = max(pacote["modelos"], key=lambda modelo: modelo["matriz"]["acuracia"])["slug"]
     cols = st.columns(4)
-    for col, modelo in zip(cols, relatorio["modelos"]):
+    for col, modelo in zip(cols, pacote["modelos"]):
         corte = modelo["matriz"]
         classe = "acc melhor" if modelo["slug"] == melhor else "acc"
         selo = '<div class="selo">Maior acurácia</div>' if modelo["slug"] == melhor else ""
@@ -272,56 +236,59 @@ def _acuracia(relatorio: dict) -> None:
             f'F1 {_pct(corte["f1"])}</div></div>',
             unsafe_allow_html=True,
         )
-    st.image(str(figura("matrizes_confusao.png")), width="stretch")
+    st.image(str(figura(f"matrizes_{pacote['id']}.png")), width="stretch")
 
 
-def _itens_por_modelo(relatorio: dict) -> None:
-    st.subheader("O que cada modelo aponta para o calote")
-    st.write(
-        "Cada barra é a fatia do peso que puxa a inadimplência. "
-        "Em cada modelo as fatias de todos os fatores somam 100%, do maior para o menor."
-    )
-    nomes = [modelo["slug"] for modelo in relatorio["modelos"]]
-    rotulo = {modelo["slug"]: modelo["nome"] for modelo in relatorio["modelos"]}
+def _ranking(pacote: dict) -> None:
+    st.markdown("**O que cada modelo aponta, em percentual dentro de 100%**")
+    st.caption("Do maior para o menor. A lista inteira de cada modelo soma 100%.")
+    nomes = [modelo["slug"] for modelo in pacote["modelos"]]
+    rotulo = {modelo["slug"]: modelo["nome"] for modelo in pacote["modelos"]}
     for linha in (nomes[:2], nomes[2:]):
         cols = st.columns(2)
         for col, slug in zip(cols, linha):
             with col:
                 st.markdown(f"**{rotulo[slug]}**")
-                ranking = sorted(relatorio["importancia"]["itens"][slug], key=lambda item: item["pct"], reverse=True)
-                top = ranking[:8]
-                soma = sum(item["pct"] for item in top)
-                maior = top[0]["pct"] if top else 1
-                for item in top:
+                ranking = sorted(pacote["importancia"]["itens"][slug], key=lambda item: item["pct"], reverse=True)
+                maior = ranking[0]["pct"] if ranking else 1
+                for item in ranking:
                     largura = 100.0 * item["pct"] / maior if maior else 0
-                    texto = f"{item['pct']:.1f}%".replace(".", ",")
                     st.markdown(
-                        f'<div class="rank-nome">{item["rotulo"]} <strong style="color:#E8B923">{texto}</strong></div>'
+                        f'<div class="rank-nome">{item["rotulo"]} '
+                        f'<strong style="color:#E8B923">{_pp(item["pct"])}</strong></div>'
                         f'<div class="rank-barra"><span style="width:{largura:.1f}%"></span></div>',
                         unsafe_allow_html=True,
                     )
-                soma_txt = f"{soma:.1f}".replace(".", ",")
-                st.caption(
-                    f"Estes 8, do maior para o menor, somam {soma_txt}% do peso. O restante fecha os 100%."
-                )
+
+
+def _metricas(relatorio: dict) -> None:
+    st.subheader("Os quatro modelos, nas duas respostas")
+    abas = st.tabs(["Inadimplência geral", "Acima de 90 dias"])
+    for aba, slug in zip(abas, ORDEM_ALVOS):
+        with aba:
+            _acuracia(relatorio["alvos"][slug])
+            _ranking(relatorio["alvos"][slug])
 
 
 def _combinacoes(relatorio: dict) -> None:
     st.subheader("Quando os sinais se juntam")
-    criticas = [item for item in relatorio["combinacoes"] if item.get("critica")]
-    base = criticas[0]["taxa_base"] if criticas else 0.0
+    base_inad = relatorio["base"]["taxa_teste_inad"]
+    base_90 = relatorio["base"]["taxa_teste_90"]
     st.write(
-        "Medido no teste, não no treino. A barra coral é o que aconteceu. "
-        "A dourada é o que a regressão logística previu para as mesmas pessoas."
+        f"Medido no teste. A carteira está em {_pct(base_inad)} de inadimplência "
+        f"e {_pct(base_90)} acima de 90 dias. A barra mostra o salto observado."
     )
-    for combo in criticas:
+    for combo in relatorio["combinacoes"]:
+        if not combo.get("critica"):
+            continue
         st.markdown(
             f'<div class="combo"><h3>{combo["titulo"]}</h3>'
             f'<p>{" · ".join(combo["sinais"])}</p>'
             f'<p><strong>{_mil(combo["n"])} clientes</strong> no teste. '
-            f'A base do teste está em {_pct(base)}. '
-            f'Neste recorte, {_pct(combo["taxa_observada"])} ficaram inadimplentes '
-            f'e o modelo apontou {_pct(combo["prevista_referencia"])}.</p></div>',
+            f'Inadimplência {_pct(combo["taxa_inad"])} '
+            f'(o modelo apontou {_pct(combo["prev_inad"])}). '
+            f'Acima de 90 dias {_pct(combo["taxa_90"])} '
+            f'(o modelo apontou {_pct(combo["prev_90"])}).</p></div>',
             unsafe_allow_html=True,
         )
     caminho = figura("combinacoes.png")
@@ -329,96 +296,124 @@ def _combinacoes(relatorio: dict) -> None:
         st.image(str(caminho), width="stretch")
 
 
-def _placar(relatorio: dict, linha: dict, respostas: dict[str, bool], modelos: dict, caso: dict | None) -> None:
+def _cartao(pergunta: str, prob: float) -> str:
+    faixa, acao = nome_faixa(prob)
+    chamada = "SIM" if prob >= CORTE_MATRIZ else "NÃO"
+    return (
+        f'<article class="veredito">'
+        f'<p class="pergunta">{pergunta}</p>'
+        f'<p class="grande" style="color:{COR_FAIXA[faixa]}">{_pct(prob)}</p>'
+        f'<p class="chamada" style="color:{COR_FAIXA[faixa]}">{chamada}</p>'
+        f'<p class="chamada" style="color:{COR_FAIXA[faixa]}">{NOME_FAIXA[faixa]} · {acao}</p>'
+        f"</article>"
+    )
+
+
+def _placar(relatorio: dict, linha: dict, modelos: dict, caso: dict | None) -> None:
     slug = st.selectbox(
-        "Modelo do parecer",
-        [modelo["slug"] for modelo in relatorio["modelos"]],
-        format_func=lambda item: next(modelo["nome"] for modelo in relatorio["modelos"] if modelo["slug"] == item),
+        "Modelo em destaque",
+        [modelo["slug"] for modelo in relatorio["alvos"]["inadimplente"]["modelos"]],
+        format_func=lambda item: next(
+            modelo["nome"] for modelo in relatorio["alvos"]["inadimplente"]["modelos"] if modelo["slug"] == item
+        ),
         key="sim_modelo",
     )
-    prob = chance(modelos[slug], linha)
-    faixa, acao = nome_faixa(prob)
-    probs = [(modelo["slug"], chance(modelos[modelo["slug"]], linha)) for modelo in relatorio["modelos"]]
+    p_inad, p_90 = chances(modelos, slug, linha)
     st.markdown(
-        f'<div class="placar"><div class="grande" style="color:{COR_FAIXA[faixa]}">{_pct(prob)}</div>'
-        f'<div class="parecer" style="color:{COR_FAIXA[faixa]}">{NOME_FAIXA[faixa]} · {acao}</div>'
-        f'<p style="color:#c9c3b4;margin:0.35rem 0 0">Chance de inadimplência em 90 dias, na hora.</p></div>',
+        '<div class="dupla">'
+        + _cartao("1. Vai ficar inadimplente?", p_inad)
+        + _cartao("2. Vai passar de 90 dias?", p_90)
+        + "</div>",
         unsafe_allow_html=True,
     )
+    st.caption(f"Sim e Não usam o corte de {_pct(CORTE_MATRIZ)}, o mesmo da matriz. A faixa de alerta acende antes.")
     cols = st.columns(4)
-    for col, (nome, valor) in zip(cols, probs):
-        nome_modelo = next(modelo["nome"] for modelo in relatorio["modelos"] if modelo["slug"] == nome)
-        col.metric(nome_modelo, _pct(valor))
-    puxam = _sins_que_puxam(relatorio, slug, respostas)
-    if puxam:
-        st.markdown("**O que mais puxou o risco, entre os Sim marcados**")
-        for texto in puxam:
-            st.markdown(f"- {texto}")
-    else:
-        st.caption("Nenhum Sim de risco marcado. O perfil está em dia.")
+    for col, modelo in zip(cols, relatorio["alvos"]["inadimplente"]["modelos"]):
+        pi, pg = chances(modelos, modelo["slug"], linha)
+        si = "Sim" if pi >= CORTE_MATRIZ else "Não"
+        sg = "Sim" if pg >= CORTE_MATRIZ else "Não"
+        col.metric(modelo["nome"], f"{_pct(pi)} · {si}")
+        col.caption(f"90 dias {_pct(pg)} · {sg}")
     if caso is None:
         return
-    real = "inadimplente" if caso["y"] else "em dia"
-    previsto = "inadimplente" if prob >= CORTE_MATRIZ else "em dia"
-    acertou = "acertou" if (prob >= CORTE_MATRIZ) == bool(caso["y"]) else "errou"
+    real_inad = "Sim" if caso["inad"] else "Não"
+    real_90 = "Sim" if caso["d90"] else "Não"
+    acertou_inad = "acertou" if (p_inad >= CORTE_MATRIZ) == bool(caso["inad"]) else "errou"
+    acertou_90 = "acertou" if (p_90 >= CORTE_MATRIZ) == bool(caso["d90"]) else "errou"
     st.caption(
-        f"Cliente {caso['id']} do teste estava {real}. "
-        f"Com corte em {_pct(CORTE_MATRIZ)}, este modelo {acertou}: previu {previsto}."
+        f"Cliente {caso['id']} do teste: inadimplente {real_inad}, acima de 90 dias {real_90}. "
+        f"Este modelo {acertou_inad} na primeira resposta e {acertou_90} na segunda."
     )
 
 
 @st.fragment
 def _simulador(relatorio: dict) -> None:
-    st.subheader("Simulador")
-    st.write("Cada chave é Sim ou Não. A chance muda na hora, sem abrir gaveta.")
-    chaves = relatorio["chaves"]
+    st.subheader("Simulador de Inadimplência")
+    st.write("Cada chave é Sim ou Não. As duas respostas mudam na hora.")
     if "sim_geracao" not in st.session_state:
-        _nova_geracao(respostas_em_dia(), None)
+        _nova_geracao(respostas_vazias(), None)
     geracao = int(st.session_state["sim_geracao"])
-    guardadas = st.session_state.get("sim_respostas") or respostas_em_dia()
-    for pergunta in PERGUNTAS:
-        chave = _chave(geracao, pergunta["id"])
+    guardadas = coerente(st.session_state.get("sim_respostas") or respostas_vazias())
+    for item in GATILHOS:
+        chave = _chave(geracao, item["id"])
         if chave not in st.session_state:
-            st.session_state[chave] = bool(guardadas[pergunta["id"]])
+            st.session_state[chave] = bool(guardadas[item["id"]])
+    _sincronizar(geracao)
 
     modelos = _modelos_atuais()
-    respostas = _respostas(geracao)
-    linha = aplicar(chaves["em_dia"], chaves["sim"], respostas)
-    _placar(relatorio, linha, respostas, modelos, st.session_state.get("sim_caso"))
+    linha = vetor(_respostas(geracao))
+    _placar(relatorio, linha, modelos, st.session_state.get("sim_caso"))
 
-    acao1, acao2, acao3 = st.columns(3)
-    with acao1:
-        limpar = st.button("Limpar tudo (perfil em dia)", width="stretch")
-    with acao2:
-        sortear = st.button("Sortear cliente do teste", width="stretch")
-    with acao3:
-        atualizar = st.button("Atualizar diagnóstico", width="stretch")
-    if limpar:
-        _nova_geracao(respostas_em_dia(), None)
+    botoes = st.columns(4)
+    acoes = list(PRESETS) + [{"id": "sortear", "texto": "Sortear cliente do teste", "ligar": []}]
+    clicados = []
+    for coluna, preset in zip(botoes, acoes):
+        with coluna:
+            clicados.append(st.button(preset["texto"], width="stretch", key=f"preset_{preset['id']}"))
+    if clicados[0]:
+        _nova_geracao(respostas_vazias(), None)
         st.rerun(scope="fragment")
-    if sortear:
+    if clicados[1]:
+        _nova_geracao({item: True for item in PRESETS[1]["ligar"]}, None)
+        st.rerun(scope="fragment")
+    if clicados[2]:
+        _nova_geracao({item: True for item in PRESETS[2]["ligar"]}, None)
+        st.rerun(scope="fragment")
+    if clicados[3]:
         teste = _amostra_atual()
         row = teste.iloc[int(np.random.default_rng().integers(0, len(teste)))]
         _nova_geracao(
-            respostas_da_linha(row),
-            {"id": str(row["id_cliente"]), "y": int(row["inadimplente_90d"])},
+            {item["id"]: bool(int(row[item["id"]])) for item in GATILHOS},
+            {
+                "id": str(row["id_cliente"]),
+                "inad": int(row["inadimplente"]),
+                "d90": int(row["inadimplente_90d"]),
+            },
         )
         st.rerun(scope="fragment")
-    if atualizar:
-        st.rerun(scope="fragment")
 
-    grupos: dict[str, list[dict]] = {}
-    for pergunta in PERGUNTAS:
-        grupos.setdefault(pergunta["grupo"], []).append(pergunta)
     colunas = st.columns(3)
-    for indice, (grupo, perguntas) in enumerate(grupos.items()):
-        with colunas[indice % 3]:
-            st.markdown(f'<p class="sim-grupo">{grupo}</p>', unsafe_allow_html=True)
-            for pergunta in perguntas:
-                st.toggle(
-                    pergunta["texto"],
-                    key=_chave(geracao, pergunta["id"]),
-                )
+    blocos = grupos()
+    distribuicao = [
+        blocos[0:1] + blocos[4:5],
+        blocos[1:2],
+        blocos[2:4],
+    ]
+    for indice, fatia in enumerate(distribuicao):
+        with colunas[indice]:
+            for nome, itens in fatia:
+                st.markdown(f'<p class="sim-grupo">{nome}</p>', unsafe_allow_html=True)
+                for item in itens:
+                    callback = None
+                    if item["pai"]:
+                        callback = _cb_filho(geracao, item["id"], item["pai"])
+                    elif item["id"] in FILHOS:
+                        callback = _cb_pai(geracao, item["id"], FILHOS[item["id"]])
+                    st.toggle(
+                        item["texto"],
+                        key=_chave(geracao, item["id"]),
+                        on_change=callback,
+                    )
 
 
 def render_relato(ir) -> None:
@@ -427,14 +422,13 @@ def render_relato(ir) -> None:
         st.error("O dossiê ainda não foi gerado. Na raiz do repositório, rode python -m src.credito.pipeline.")
         st.stop()
     relatorio = ler_relatorio()
-    itens = relatorio.get("importancia", {}).get("itens", {})
-    referencia = relatorio.get("referencia")
-    if "chaves" not in relatorio or not itens.get(referencia) or "pct" not in itens[referencia][0]:
+    alvos = relatorio.get("alvos") or {}
+    itens = alvos.get("inadimplente", {}).get("importancia", {}).get("itens", {})
+    if "chaves" not in relatorio or not itens.get("logistica") or "pct" not in itens["logistica"][0]:
         st.error("O dossiê está incompleto. Na raiz do repositório, rode python -m src.credito.pipeline.")
         st.stop()
     _cabecalho(relatorio, ir)
-    _grupos(relatorio)
-    _acuracia(relatorio)
-    _itens_por_modelo(relatorio)
+    _mesa()
+    _metricas(relatorio)
     _combinacoes(relatorio)
     _simulador(relatorio)

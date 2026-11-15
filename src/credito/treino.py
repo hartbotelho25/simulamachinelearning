@@ -10,10 +10,10 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
 
-from .dataset import CATEGORICAS, ESCOLARIDADES, FEATURES, NUMERICAS, OCUPACOES, PAGAMENTOS
+from .dataset import FEATURES
 from .politica import FRACAO_TESTE, SEMENTE
 
 CATALOGO = [
@@ -61,20 +61,7 @@ CATALOGO = [
 
 
 def _preparo() -> ColumnTransformer:
-    return ColumnTransformer(
-        [
-            ("num", StandardScaler(), NUMERICAS),
-            (
-                "cat",
-                OneHotEncoder(
-                    categories=[OCUPACOES, ESCOLARIDADES, PAGAMENTOS],
-                    handle_unknown="ignore",
-                    sparse_output=False,
-                ),
-                CATEGORICAS,
-            ),
-        ]
-    )
+    return ColumnTransformer([("num", StandardScaler(), list(FEATURES))])
 
 
 def construir(slug: str) -> Pipeline:
@@ -122,16 +109,17 @@ def construir(slug: str) -> Pipeline:
     return Pipeline([("prep", _preparo()), ("clf", clf)])
 
 
-def fatiar(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, np.ndarray, np.ndarray]:
+def fatiar(df: pd.DataFrame):
+    classe = df["inadimplente"].to_numpy(dtype=int) + df["inadimplente_90d"].to_numpy(dtype=int)
     X = df[FEATURES]
-    y = df["inadimplente_90d"].to_numpy(dtype=int)
-    return train_test_split(
-        X,
-        y,
+    indice = np.arange(len(df))
+    i_tr, i_te = train_test_split(
+        indice,
         test_size=FRACAO_TESTE,
-        stratify=y,
+        stratify=classe,
         random_state=SEMENTE,
     )
+    return X.iloc[i_tr], X.iloc[i_te], i_tr, i_te
 
 
 def treinar_todos(X_treino: pd.DataFrame, y_treino: np.ndarray) -> dict[str, Pipeline]:

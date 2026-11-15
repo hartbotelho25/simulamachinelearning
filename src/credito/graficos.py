@@ -107,7 +107,7 @@ def metricas_barras(modelos: list[dict], pasta: Path) -> str:
     return _salvar(fig, pasta, "metricas_modelos.png")
 
 
-def matrizes(modelos: list[dict], pasta: Path) -> str:
+def matrizes(modelos: list[dict], pasta: Path, arquivo: str = "matrizes_confusao.png") -> str:
     fig, eixos = plt.subplots(1, 4, figsize=(12.4, 3.6), dpi=140)
     fig.patch.set_facecolor(BG)
     for ax, modelo in zip(eixos, modelos):
@@ -125,7 +125,7 @@ def matrizes(modelos: list[dict], pasta: Path) -> str:
         ax.tick_params(length=0)
         ax.grid(False)
     fig.suptitle("Matrizes no corte 0,50", color=CREAM, fontsize=12, x=0.02, ha="left")
-    return _salvar(fig, pasta, "matrizes_confusao.png")
+    return _salvar(fig, pasta, arquivo)
 
 
 def roc(modelos: list[dict], pasta: Path) -> str:
@@ -249,21 +249,20 @@ def combinacoes_barras(combos: list[dict], pasta: Path, nome_ref: str) -> str:
         fig, ax = _fig(11.2, 2.2)
         _eixo(ax, "Nenhuma combinação com amostra suficiente")
         return _salvar(fig, pasta, "combinacoes.png")
-    fig, ax = _fig(11.2, 0.72 * len(criticas) + 1.6)
-    _eixo(ax, "Inadimplência quando a combinação aparece")
+    fig, ax = _fig(11.6, 0.85 * len(criticas) + 1.8)
+    _eixo(ax, "Salto quando os gatilhos se juntam")
     y = np.arange(len(criticas))
-    altura = 0.24
-    base = [item["taxa_base"] for item in criticas]
-    observada = [item["taxa_observada"] for item in criticas]
-    prevista = [item["prevista_referencia"] for item in criticas]
-    ax.barh(y + altura, base, height=altura, color=MUDO, label="Base do teste")
-    ax.barh(y, observada, height=altura, color=CORAL, label="Observada na combinação")
-    ax.barh(y - altura, prevista, height=altura, color=OURO, label=f"Prevista · {nome_ref}")
+    altura = 0.16
+    ax.barh(y + 1.5 * altura, [item["base_inad"] for item in criticas], height=altura, color=MUDO, label="Base · inadimplência")
+    ax.barh(y + 0.5 * altura, [item["taxa_inad"] for item in criticas], height=altura, color=CORAL, label="Observada · inadimplência")
+    ax.barh(y - 0.5 * altura, [item["base_90"] for item in criticas], height=altura, color="#8d887c", label="Base · acima de 90 dias")
+    ax.barh(y - 1.5 * altura, [item["taxa_90"] for item in criticas], height=altura, color=OURO, label="Observada · acima de 90 dias")
     ax.set_yticks(y, [item["titulo"] for item in criticas], color=CREAM, fontsize=8)
     ax.set_xlim(0, 1)
-    ax.set_xlabel("Taxa", color=CREAM)
+    ax.set_xlabel("Taxa no teste", color=CREAM)
     ax.legend(facecolor=PAINEL, edgecolor="#2a4a38", labelcolor=CREAM, fontsize=8, loc="lower right")
     ax.invert_yaxis()
+    fig.tight_layout()
     return _salvar(fig, pasta, "combinacoes.png")
 
 

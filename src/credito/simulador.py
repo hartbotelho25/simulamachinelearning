@@ -7,13 +7,11 @@ import json
 from pathlib import Path
 
 import joblib
-import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
 
 from .caminhos import ARTEFATOS, CSV_CLIENTES
-from .dataset import FEATURES, gerar_cliente, ler_parametros
-from .politica import FRACAO_TESTE, SEMENTE
+from .dataset import ALVOS, FEATURES, ler_parametros
+from .treino import fatiar
 
 
 class ModelosIncompativeis(RuntimeError):
@@ -28,18 +26,23 @@ def ler_relatorio() -> dict:
     return json.loads((ARTEFATOS / "relatorio.json").read_text(encoding="utf-8"))
 
 
-def ler_perfil() -> dict:
-    return json.loads((ARTEFATOS / "perfil.json").read_text(encoding="utf-8"))
+def _pipelines(modelos: dict) -> list:
+    if not isinstance(modelos, dict):
+        return []
+    if "inadimplente" in modelos and isinstance(modelos.get("inadimplente"), dict):
+        saida = []
+        for bloco in modelos.values():
+            if isinstance(bloco, dict):
+                saida.extend(bloco.values())
+        return saida
+    return list(modelos.values())
 
 
 def _conferir(modelos: dict) -> None:
-    perfil = ler_perfil()
-    linha = {}
-    for coluna in FEATURES:
-        info = perfil[coluna]
-        linha[coluna] = info["moda"] if info["tipo"] == "categoria" else info["mediana"]
-    frame = linha_para_frame(linha)
-    for modelo in modelos.values():
+    if not compativel(modelos):
+        raise ValueError("columns are missing")
+    frame = linha_para_frame({coluna: 0 for coluna in FEATURES})
+    for modelo in _pipelines(modelos):
         saida = modelo.predict_proba(frame)
         if getattr(saida, "shape", None) != (1, 2):
             raise ValueError("um modelo gravado não devolveu chance para duas classes")
@@ -72,17 +75,23 @@ def colunas_do_modelo(modelo) -> set[str] | None:
 def compativel(modelos: dict) -> bool:
     if not isinstance(modelos, dict) or not modelos:
         return False
+    blocos = [modelos.get(alvo) for alvo in ALVOS]
+    if any(not isinstance(bloco, dict) or not bloco for bloco in blocos):
+        return False
     esperadas = set(FEATURES)
-    for modelo in modelos.values():
-        vistas = colunas_do_modelo(modelo)
-        if vistas is None or vistas != esperadas:
-            return False
-    return True
+    vistos = 0
+    for bloco in blocos:
+        for modelo in bloco.values():
+            vistas = colunas_do_modelo(modelo)
+            if vistas is None or vistas != esperadas:
+                return False
+            vistos += 1
+    return vistos >= 8
 
 
 def teste_compativel(df: pd.DataFrame) -> bool:
     colunas = set(df.columns)
-    return set(FEATURES) <= colunas and {"id_cliente", "inadimplente_90d"} <= colunas
+    return set(FEATURES) <= colunas and {"id_cliente", *ALVOS} <= colunas
 
 
 def resolver_modelos(obter, limpar, recarregar) -> dict:
@@ -138,12 +147,11 @@ def chance(modelo, linha: dict) -> float:
     return float(modelo.predict_proba(linha_para_frame(linha))[0, 1])
 
 
-def cliente_novo(seed: int) -> dict:
-    serie = gerar_cliente(seed, parametros_gerador())
-    dados = {coluna: serie[coluna] for coluna in FEATURES}
-    dados["id_cliente"] = str(serie["id_cliente"])
-    dados["inadimplente_90d"] = int(serie["inadimplente_90d"])
-    return dados
+def chances(modelos: dict, slug: str, linha: dict) -> tuple[float, float]:
+    """A chance de passar de 90 dias nunca supera a de ficar inadimplente."""
+    p_inad = chance(modelos["inadimplente"][slug], linha)
+    p_90 = chance(modelos["inadimplente_90d"][slug], linha)
+    return p_inad, min(p_90, p_inad)
 
 
 def figura(nome: str) -> Path:
@@ -152,12 +160,5 @@ def figura(nome: str) -> Path:
 
 def amostra_teste() -> pd.DataFrame:
     df = pd.read_csv(CSV_CLIENTES)
-    y = df["inadimplente_90d"].to_numpy(dtype=int)
-    indice = np.arange(len(df))
-    _, indice_teste = train_test_split(
-        indice,
-        test_size=FRACAO_TESTE,
-        stratify=y,
-        random_state=SEMENTE,
-    )
-    return df.iloc[indice_teste].reset_index(drop=True)
+    _x_tr, _x_te, _i_tr, i_te = fatiar(df)
+    return df.iloc[i_te].reset_index(drop=True)

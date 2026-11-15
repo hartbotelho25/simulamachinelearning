@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.inspection import permutation_importance
 
-from .dataset import BLOCO_NOME, BLOCOS, ROTULOS, SINAL_BLOCO, SINAL_GERADOR, sinal_plantado_por_bloco
+from .dataset import BLOCO_NOME, BLOCOS, ROTULOS
 from .politica import SEMENTE
 
 AMOSTRA = 1600
@@ -147,14 +147,10 @@ def pacote_importancia(modelos: dict, X_teste: pd.DataFrame, y_teste: np.ndarray
             "colunas": {k: round(v, 5) for k, v in sorted(colunas.items(), key=lambda kv: -kv[1])},
             "blocos": por_bloco(colunas),
         }
-    plantado = sinal_plantado_por_bloco()
     return {
         "amostra": AMOSTRA,
         "repeticoes": REPETICOES,
         "medido": medido,
-        "plantado": plantado,
-        "sinal_gerador": {nome: float(beta) for nome, beta in SINAL_GERADOR.items()},
-        "sinal_bloco": SINAL_BLOCO,
     }
 
 

@@ -3,7 +3,7 @@
 Portal **Streamlit** com dois estudos, desenvolvido por **Hart Botelho**.
 
 1. **Simula Brasileirão** — Série A 2003–2025, 45 clubes. Treino ao vivo e PDF.
-2. **Simulador de Inadimplência** — base sintética de 50.000 clientes, sem renda declarada, quatro modelos gravados e simulador na página. Não é carteira de banco.
+2. **Simulador de Inadimplência** — base sintética de 50.000 clientes e dois alvos (inadimplência e atraso acima de 90 dias). Quatro modelos e simulador de gatilhos preventivos na página. Não é carteira de banco. Não há download da base.
 
 ## O que o Simula Brasileirão faz
 
@@ -15,7 +15,7 @@ Portal **Streamlit** com dois estudos, desenvolvido por **Hart Botelho**.
 
 ## O que o Simulador de Inadimplência faz
 
-O menu abre o relato estático (grupos, acurácia, itens de cada modelo e combinações críticas) e, na mesma página, o simulador com a chance ao vivo. A página não oferece download da base.
+O menu abre o relato dos quatro modelos nas duas respostas e, na mesma página, o simulador com as duas chances ao vivo. A página não oferece download da base.
 
 O CSV completo está em `data/credito/clientes_credito_50k.csv`. Para gerá-lo de novo e retreinar, na raiz do repositório:
 

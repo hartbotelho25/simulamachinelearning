@@ -1,11 +1,8 @@
-"""Gera a base, treina os quatro modelos e grava o dossiê.
+"""Gera a base, treina os quatro modelos nos dois alvos e grava o dossiê.
 
 Na raiz do repositório:
 
     python -m src.credito.pipeline
-
-O CSV completo fica em data/credito/dataset_sintetico.csv e não entra no Git.
-O app publicado usa o relatório, as figuras, a amostra e os modelos já gravados.
 """
 
 from __future__ import annotations
@@ -15,17 +12,21 @@ from pathlib import Path
 
 import joblib
 import numpy as np
-import pandas as pd
 
 from .caminhos import ARTEFATOS, CSV_CLIENTES, GRAFICOS
 from .chaves import montar_chaves
-from .combinacoes import medir_combinacoes, sinais_das_colunas
-from .dataset import COLUNAS, conferir_esquema, gerar_base, perfil_controles, salvar_parametros
-from .graficos import combinacoes_barras, gerar_todos
-from .importancia import explicar_logistica, pacote_importancia, ranking_itens, spearman_blocos
-from .metricas import avaliar, faixas_alerta, leituras, modelo_referencia
+from .combinacoes import medir_combinacoes
+from .dataset import COLUNAS, conferir_esquema, gerar_base, salvar_parametros
+from .graficos import combinacoes_barras, matrizes
+from .importancia import pacote_importancia, ranking_itens
+from .metricas import avaliar, modelo_referencia
 from .politica import AMARELO_MAX, CORTE_MATRIZ, N_CLIENTES, SEMENTE, VERDE_MAX
 from .treino import CATALOGO, fatiar, treinar_todos
+
+ALVOS = (
+    ("inadimplente", "Inadimplência geral", "Vai ficar inadimplente?"),
+    ("inadimplente_90d", "Acima de 90 dias", "Vai passar de 90 dias?"),
+)
 
 
 def _gravar_versoes(pasta: Path) -> None:
@@ -47,135 +48,79 @@ def _gravar_versoes(pasta: Path) -> None:
     )
 
 
-def _pct(valor: float) -> str:
-    return f"{100 * valor:.1f}%".replace(".", ",")
-
-
-def _num(valor: float, casas: int = 3) -> str:
-    return f"{valor:.{casas}f}".replace(".", ",")
-
-
-def _com_artigo(nome: str) -> str:
-    chave = nome.lower()
-    if chave.startswith("regress"):
-        return "a regressão logística"
-    if chave.startswith("rede"):
-        return "a rede neural"
-    if chave.startswith("random"):
-        return "a Random Forest"
-    if chave.startswith("gradient"):
-        return "o Gradient Boosting"
-    return nome
-
-
-def _textos(modelos: list[dict], faixas: list[dict], blocos_ref: list[dict], plantado: list[dict], rho: float, nome_ref: str) -> dict:
-    por_auc = max(modelos, key=lambda m: m["roc_auc"])
-    por_recall = max(modelos, key=lambda m: m["matriz"]["recall"])
-    por_precisao = max(modelos, key=lambda m: m["matriz"]["precisao"])
-    taxas = [f["taxa_observada"] for f in faixas]
-    if all(t is not None for t in taxas) and taxas[0] < taxas[1] < taxas[2]:
-        frase_faixa = (
-            f"No teste, a inadimplência realizada sobe com a faixa d{_com_artigo(nome_ref)}: "
-            f"verde {_pct(taxas[0])}, amarelo {_pct(taxas[1])}, vermelho {_pct(taxas[2])}."
-        )
-    else:
-        pedacos = ", ".join(
-            f"{f['faixa']} {'sem cliente' if f['taxa_observada'] is None else _pct(f['taxa_observada'])}"
-            for f in faixas
-        )
-        frase_faixa = f"No teste, as taxas realizadas por faixa do {nome_ref} foram: {pedacos}."
+def _pacote_alvo(slug_alvo: str, nome: str, pergunta: str, y_te, probas, modelos, X_te) -> dict:
+    avaliados = [avaliar(slug, y_te, probas[slug]) for slug in (item["slug"] for item in CATALOGO)]
+    for item in avaliados:
+        item.pop("roc", None)
+    importancia = pacote_importancia(modelos, X_te, y_te)
     return {
-        "auc": (
-            f"{por_auc['nome']} teve o maior ROC AUC no teste: {_num(por_auc['roc_auc'])}."
-        ),
-        "corte": (
-            f"No corte 0,50, {por_recall['nome']} captura {_pct(por_recall['matriz']['recall'])} "
-            f"dos inadimplentes do teste. {por_precisao['nome']} acerta "
-            f"{_pct(por_precisao['matriz']['precisao'])} dos alarmes que dispara."
-        ),
-        "faixas": frase_faixa,
-        "blocos": (
-            f"N{_com_artigo(nome_ref)}, o bloco de maior peso medido foi {blocos_ref[0]['nome']} "
-            f"({_pct(blocos_ref[0]['fatia'])} da importância positiva). "
-            f"No processo gerador, a maior fatia de sinal plantado está em {plantado[0]['nome']} "
-            f"({_pct(plantado[0]['fatia'])}). "
-            f"Spearman entre as duas ordens de bloco, neste modelo: {_num(rho, 2)}."
-        ),
+        "id": slug_alvo,
+        "nome": nome,
+        "pergunta": pergunta,
+        "referencia": modelo_referencia(avaliados),
+        "modelos": avaliados,
+        "importancia": {
+            "amostra": importancia["amostra"],
+            "repeticoes": importancia["repeticoes"],
+            "itens": {
+                slug: ranking_itens(pacote["colunas"])
+                for slug, pacote in importancia["medido"].items()
+            },
+        },
     }
 
 
 def main() -> None:
     ARTEFATOS.mkdir(parents=True, exist_ok=True)
+    GRAFICOS.mkdir(parents=True, exist_ok=True)
     print("gerando base", flush=True)
     df, parametros = gerar_base(N_CLIENTES, SEMENTE)
-    conferir_esquema(df)
-    if len(df) != N_CLIENTES:
-        raise SystemExit(f"a base saiu com {len(df)} linhas")
-    livro = df.copy()
-    for coluna in livro.columns:
-        if coluna != "id_cliente" and pd.api.types.is_float_dtype(livro[coluna]):
-            livro[coluna] = livro[coluna].round(4)
-    livro.to_csv(CSV_CLIENTES, index=False)
-    livro.head(200).to_csv(ARTEFATOS / "amostra_clientes.csv", index=False)
+    conferir_esquema(df, checar_taxas=True)
+    df.to_csv(CSV_CLIENTES, index=False)
+    df.head(200).to_csv(ARTEFATOS / "amostra_clientes.csv", index=False)
     salvar_parametros(ARTEFATOS / "gerador.json", parametros)
-    (ARTEFATOS / "perfil.json").write_text(
-        json.dumps(perfil_controles(df), ensure_ascii=False),
-        encoding="utf-8",
-    )
 
     print("treinando", flush=True)
-    X_tr, X_te, y_tr, y_te = fatiar(df)
-    modelos = treinar_todos(X_tr, y_tr)
-    probas = {slug: pipe.predict_proba(X_te)[:, 1] for slug, pipe in modelos.items()}
-    avaliados = [avaliar(slug, y_te, probas[slug]) for slug in (item["slug"] for item in CATALOGO)]
-    referencia = modelo_referencia(avaliados)
-    faixas = faixas_alerta(y_te, probas[referencia])
+    X_tr, X_te, i_tr, i_te = fatiar(df)
+    treino = df.iloc[i_tr]
+    teste = df.iloc[i_te]
+    gravados = {}
+    pacotes = {}
+    probas = {}
+    for slug_alvo, nome, pergunta in ALVOS:
+        print(" ", nome, flush=True)
+        y_tr = treino[slug_alvo].to_numpy(dtype=int)
+        y_te = teste[slug_alvo].to_numpy(dtype=int)
+        modelos = treinar_todos(X_tr, y_tr)
+        gravados[slug_alvo] = modelos
+        probas[slug_alvo] = {slug: pipe.predict_proba(X_te)[:, 1] for slug, pipe in modelos.items()}
+        print("  importância", nome, flush=True)
+        pacotes[slug_alvo] = _pacote_alvo(slug_alvo, nome, pergunta, y_te, probas[slug_alvo], modelos, X_te)
 
-    print("importância", flush=True)
-    importancia = pacote_importancia(modelos, X_te, y_te)
-    importancia["ordem_modelos"] = [{"slug": item["slug"], "nome": item["nome"]} for item in CATALOGO]
-    explicacao = explicar_logistica(modelos["logistica"])
-    rho = spearman_blocos(importancia["plantado"], importancia["medido"][referencia]["blocos"])
-    textos = _textos(
-        avaliados,
-        faixas,
-        importancia["medido"][referencia]["blocos"],
-        importancia["plantado"],
-        rho,
-        next(m["nome"] for m in avaliados if m["slug"] == referencia),
-    )
-
+    referencia = pacotes["inadimplente"]["referencia"]
+    nome_ref = next(item["nome"] for item in CATALOGO if item["slug"] == referencia)
     print("combinações", flush=True)
-    combinacoes = medir_combinacoes(X_te, y_te, probas, referencia)
+    combinacoes = medir_combinacoes(
+        X_te,
+        teste["inadimplente"].to_numpy(dtype=int),
+        teste["inadimplente_90d"].to_numpy(dtype=int),
+        probas["inadimplente"][referencia],
+        np.minimum(probas["inadimplente_90d"][referencia], probas["inadimplente"][referencia]),
+    )
     for combo in combinacoes:
         print(
-            combo["id"],
-            combo["n"],
-            f"obs {combo['taxa_observada']:.3f}",
-            f"prev {combo['prevista_referencia']:.3f}",
-            "critica" if combo["critica"] else "abaixo",
+            f"  {combo['id']} n={combo['n']} inad {combo['taxa_inad']:.3f} "
+            f"90 {combo['taxa_90']:.3f} {'critica' if combo['critica'] else 'abaixo'}",
             flush=True,
         )
-    sinais = sinais_das_colunas(X_te, y_te)
 
     print("gráficos", flush=True)
-    figuras = gerar_todos(
-        avaliados,
-        probas,
-        y_te,
-        faixas,
-        importancia,
-        explicacao,
-        referencia,
-        GRAFICOS,
-    )
-    nome_ref = next(m["nome"] for m in avaliados if m["slug"] == referencia)
+    figuras = {}
+    for slug_alvo, _nome, _pergunta in ALVOS:
+        arquivo = f"matrizes_{slug_alvo}.png"
+        matrizes(pacotes[slug_alvo]["modelos"], GRAFICOS, arquivo)
+        figuras[slug_alvo] = arquivo
     figuras["combinacoes"] = Path(combinacoes_barras(combinacoes, GRAFICOS, nome_ref)).name
-    for item in avaliados:
-        item.pop("roc", None)
-
-    mlp = modelos["mlp"].named_steps["clf"]
-    epocas = int(np.max(mlp.n_iter_)) if getattr(mlp, "n_iter_", None) is not None else None
 
     relatorio = {
         "sintetico": True,
@@ -185,55 +130,41 @@ def main() -> None:
         "verde_max": VERDE_MAX,
         "amarelo_max": AMARELO_MAX,
         "referencia": referencia,
-        "mlp_epocas": epocas,
         "base": {
             "n": int(len(df)),
             "n_colunas": int(df.shape[1]),
-            "taxa": float(df["inadimplente_90d"].mean()),
-            "positivos": int(df["inadimplente_90d"].sum()),
-            "idade_mediana": float(df["idade"].median()),
-            "fluxo_mediano": float(df["fluxo_medio_entradas_3m"].median()),
-            "saldo_mediano": float(df["saldo_medio_conta_3m"].median()),
-            "n_treino": int(len(y_tr)),
-            "n_teste": int(len(y_te)),
-            "taxa_teste": float(y_te.mean()),
-            "positivos_teste": int(y_te.sum()),
+            "n_gatilhos": int(len(COLUNAS) - 3),
+            "taxa_inadimplente": float(df["inadimplente"].mean()),
+            "taxa_90d": float(df["inadimplente_90d"].mean()),
+            "n_treino": int(len(i_tr)),
+            "n_teste": int(len(i_te)),
+            "taxa_teste_inad": float(teste["inadimplente"].mean()),
+            "taxa_teste_90": float(teste["inadimplente_90d"].mean()),
         },
-        "modelos": avaliados,
-        "faixas": faixas,
-        "importancia": {
-            "amostra": importancia["amostra"],
-            "repeticoes": importancia["repeticoes"],
-            "por_modelo": {slug: pacote["blocos"] for slug, pacote in importancia["medido"].items()},
-            "itens": {
-                slug: ranking_itens(pacote["colunas"])
-                for slug, pacote in importancia["medido"].items()
-            },
-            "sinais": sinais,
-            "plantado": importancia["plantado"],
-            "spearman_referencia": rho,
-        },
+        "alvos": {slug: pacotes[slug] for slug, _nome, _pergunta in ALVOS},
         "combinacoes": combinacoes,
-        "chaves": montar_chaves(df),
-        "explicacao": explicacao,
-        "textos": textos,
+        "chaves": montar_chaves(),
         "figuras": figuras,
-        "leituras": leituras(avaliados, faixas, referencia),
     }
     (ARTEFATOS / "relatorio.json").write_text(
         json.dumps(relatorio, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
-    joblib.dump(modelos, ARTEFATOS / "modelos.joblib", compress=3)
+    joblib.dump(gravados, ARTEFATOS / "modelos.joblib", compress=3)
     _gravar_versoes(ARTEFATOS)
-    print("referência", referencia)
-    for item in avaliados:
-        m = item["matriz"]
-        print(
-            f"{item['slug']:10} auc {item['roc_auc']:.3f}  prec {m['precisao']:.3f}  "
-            f"rec {m['recall']:.3f}  f1 {m['f1']:.3f}  acc {m['acuracia']:.3f}"
-        )
-    print("taxa", f"{relatorio['base']['taxa']:.3f}", "spearman", f"{rho:.2f}")
+    base = relatorio["base"]
+    print(
+        f"taxas inad {base['taxa_inadimplente']:.3%}  90d {base['taxa_90d']:.3%}",
+        flush=True,
+    )
+    for slug_alvo, nome, _pergunta in ALVOS:
+        print(nome, flush=True)
+        for item in pacotes[slug_alvo]["modelos"]:
+            corte = item["matriz"]
+            print(
+                f"  {item['slug']:10} auc {item['roc_auc']:.3f}  prec {corte['precisao']:.3f}  "
+                f"rec {corte['recall']:.3f}  f1 {corte['f1']:.3f}  acc {corte['acuracia']:.3f}"
+            )
     print("gravado em", ARTEFATOS)
 
 

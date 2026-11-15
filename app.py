@@ -77,7 +77,7 @@ def render_home() -> None:
         st.markdown("**Simula Brasileirão**")
         st.caption("Série A 2003–2025, com treino ao vivo e PDF.")
         st.markdown("**Simulador de Inadimplência**")
-        st.caption("Base sintética de 50.000 clientes, sem renda declarada. Relatório e simulador.")
+        st.caption("50.000 clientes, duas respostas e gatilhos preventivos. Sem renda nem saldo.")
 
     st.markdown('<p class="credit-top">Desenvolvido por Hart Botelho</p>', unsafe_allow_html=True)
     st.markdown(
@@ -87,8 +87,8 @@ def render_home() -> None:
             <h1>Por onde você entra?</h1>
             <p>
                 Dois caminhos, o mesmo visual. Simula Brasileirão abre a Série A.
-                Simulador de Inadimplência abre o relatório em base sintética de 50.000 clientes,
-                sem renda declarada, e um simulador ao lado.
+                Simulador de Inadimplência responde se o cliente fica inadimplente
+                e se passa de 90 dias, só com gatilhos preventivos.
             </p>
         </div>
         """,
@@ -115,11 +115,11 @@ def render_home() -> None:
             "credito",
             "Base sintética",
             "Simulador de Inadimplência",
-            "Relatório lido de cima a baixo. A base sintética tem 50.000 clientes e não usa renda declarada.",
+            "Duas respostas na mesma base sintética de 50.000 clientes: inadimplência e atraso acima de 90 dias.",
             [
                 "Quatro modelos, entre eles uma rede neural",
-                "Matriz, ROC, blocos e faixas de alerta",
-                "Simulador ao lado: chance e cliente novo",
+                "Só gatilhos preventivos, em Sim ou Não",
+                "Simulador aberto na página, nas duas respostas",
             ],
         )
         if st.button("Entrar no Simulador de Inadimplência", type="primary", width="stretch", key="go_credito"):
@@ -127,7 +127,7 @@ def render_home() -> None:
 
     render_chips(
         "Simulador de Inadimplência",
-        ["Base sintética", "50.000 clientes", "Sem renda declarada", "Quatro modelos", "Simulador"],
+        ["Base sintética", "50.000 clientes", "Duas respostas", "Gatilhos preventivos", "Simulador"],
     )
 
 

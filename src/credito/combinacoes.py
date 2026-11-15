@@ -1,139 +1,107 @@
-"""Pares e trios medidos no teste, com a chance que os modelos deram."""
+"""Combinações de gatilhos preventivos medidas no teste."""
 
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
 
-from .dataset import CATEGORICAS
-
-
-def sinais_das_colunas(X: pd.DataFrame, y: np.ndarray) -> dict:
-    """Sentido em que o item acompanha o calote no teste."""
-    alvo = pd.Series(np.asarray(y), index=X.index)
-    base = float(alvo.mean())
-    saida = {}
-    for coluna in X.columns:
-        if coluna in CATEGORICAS:
-            taxas = alvo.groupby(X[coluna], observed=True).mean()
-            nivel = str(taxas.idxmax())
-            saida[coluna] = {
-                "sentido": "categoria",
-                "nivel": nivel,
-                "taxa": round(float(taxas.max()), 4),
-                "acima_da_base": bool(float(taxas.max()) > base * 1.15),
-            }
-            continue
-        serie = X[coluna].to_numpy(dtype=float)
-        if float(np.std(serie)) == 0:
-            corr = 0.0
-        else:
-            corr = float(np.corrcoef(serie, alvo.to_numpy(dtype=float))[0, 1])
-        saida[coluna] = {"sentido": "sobe" if corr >= 0 else "desce", "corr": round(corr, 4)}
-    return saida
-
 
 def _regras() -> list[dict]:
     return [
         {
-            "id": "cheque_sem_fundo",
-            "titulo": "Cheque devolvido e uso contínuo do especial",
+            "id": "especial_longo_e_rotativo",
+            "titulo": "Especial por meses e rotativo frequente",
             "sinais": [
-                "Ao menos 1 cheque devolvido em 12 meses",
-                "60 dias ou mais no cheque especial no ano",
+                "Cheque especial por mais de 3 meses",
+                "Rotativo mais de 2 vezes",
             ],
-            "mascara": lambda d: (d["qtd_cheques_devolvidos_12m"] >= 1)
-            & (d["dias_utilizando_cheque_especial_12m"] >= 60),
+            "mascara": lambda d: (d["uso_cheque_especial_mais_3m_em_6m"] == 1)
+            & (d["rotativo_mais_2x_6m"] == 1),
         },
         {
-            "id": "cartao_pago_com_especial",
-            "titulo": "Cartão pago com cheque especial e atraso recente",
+            "id": "cheque_e_fatura",
+            "titulo": "Mais de um cheque sem fundo e fatura paga com o especial",
             "sinais": [
-                "Pagou a fatura com cheque especial",
-                "Ao menos 1 atraso de 30 dias no cartão",
+                "Mais de 1 cheque sem fundo",
+                "Pagou a fatura com o cheque especial",
             ],
-            "mascara": lambda d: (d["flag_pagamento_cartao_com_cheque_especial"] == 1)
-            & (d["qtd_vezes_atraso_cartao_30d_12m"] >= 1),
+            "mascara": lambda d: (d["mais_de_um_cheque_sem_fundo_12m"] == 1)
+            & (d["pagou_fatura_com_cheque_especial"] == 1),
         },
         {
-            "id": "fluxo_e_minimo",
-            "titulo": "Parcelas pesadas no fluxo e fatura no mínimo",
+            "id": "protesto_e_reneg",
+            "titulo": "Três protestos ou mais e renegociação ativa",
             "sinais": [
-                "Parcelas consomem 40% ou mais das entradas da conta",
-                "3 ou mais pagamentos mínimos no ano",
+                "3 ou mais protestos",
+                "Renegociação ativa",
             ],
-            "mascara": lambda d: (d["comprometimento_fluxo_entradas"] >= 0.40)
-            & (d["qtd_vezes_pagamento_minimo_12m"] >= 3),
+            "mascara": lambda d: (d["protesto_3_ou_mais"] == 1) & (d["renegociacao_ativa"] == 1),
         },
         {
-            "id": "atraso_e_restricao",
-            "titulo": "Atraso interno com restrição no mercado",
+            "id": "reserva_e_vinculo",
+            "titulo": "Resgate total da reserva e queda de vínculo",
             "sinais": [
-                "FPD ou ocorrência de 30 a 60 dias",
-                "Protesto ou inadimplência em outra instituição",
+                "Zerou a reserva no banco",
+                "Queda do vínculo principal",
             ],
-            "mascara": lambda d: (
-                (d["flag_historico_fpd"] == 1) | (d["qtd_ocorrencias_atraso_30_60d_12m"] >= 1)
-            )
-            & ((d["qtd_protestos_historico"] >= 1) | (d["valor_total_inadimplencia_outros_mercados"] > 0)),
+            "mascara": lambda d: (d["resgate_total_reserva"] == 1) & (d["queda_vinculo_principal"] == 1),
         },
         {
-            "id": "trio_cheque_cartao_atraso",
-            "titulo": "Cheque sem fundo, cartão no especial e atraso de 30 a 60 dias",
+            "id": "teto_e_parcelamento",
+            "titulo": "Cartão no teto repetido e fatura parcelada",
             "sinais": [
-                "Ao menos 1 cheque devolvido",
-                "Pagou a fatura com cheque especial",
-                "Ao menos 1 ocorrência de 30 a 60 dias",
+                "Cartão acima de 90% mais de 3 vezes",
+                "Parcelou a fatura",
             ],
-            "mascara": lambda d: (d["qtd_cheques_devolvidos_12m"] >= 1)
-            & (d["flag_pagamento_cartao_com_cheque_especial"] == 1)
-            & (d["qtd_ocorrencias_atraso_30_60d_12m"] >= 1),
+            "mascara": lambda d: (d["cartao_acima_90_mais_3x_6m"] == 1) & (d["parcelamento_fatura_6m"] == 1),
         },
         {
-            "id": "especial_e_minimo",
-            "titulo": "Especial estourado e mínimo recorrente",
+            "id": "emergencia_e_novo",
+            "titulo": "Crédito emergencial e empréstimo novo",
             "sinais": [
-                "Uso atual do cheque especial de 60% ou mais",
-                "4 ou mais pagamentos mínimos no ano",
+                "Adiantamento emergencial",
+                "Novo empréstimo em 6 meses",
             ],
-            "mascara": lambda d: (d["utilizacao_cheque_especial_atual"] >= 0.60)
-            & (d["qtd_vezes_pagamento_minimo_12m"] >= 4),
+            "mascara": lambda d: (d["adiantamento_emergencial"] == 1) & (d["novo_emprestimo_6m"] == 1),
         },
     ]
 
 
 def medir_combinacoes(
     X: pd.DataFrame,
-    y: np.ndarray,
-    probas: dict[str, np.ndarray],
-    referencia: str,
+    y_inad: np.ndarray,
+    y_90: np.ndarray,
+    prob_inad: np.ndarray,
+    prob_90: np.ndarray,
 ) -> list[dict]:
-    alvo = np.asarray(y).astype(int)
-    base = float(alvo.mean()) if len(alvo) else 0.0
+    inad = np.asarray(y_inad).astype(int)
+    grave = np.asarray(y_90).astype(int)
+    base_inad = float(inad.mean()) if len(inad) else 0.0
+    base_90 = float(grave.mean()) if len(grave) else 0.0
     saida = []
     for regra in _regras():
         mascara = np.asarray(regra["mascara"](X), dtype=bool)
         n = int(mascara.sum())
         if n < 40:
             continue
-        observada = float(alvo[mascara].mean())
-        previstas = {
-            slug: round(float(np.asarray(probas[slug])[mascara].mean()), 4)
-            for slug in probas
-        }
-        piso = max(base * 1.8, 0.25)
+        taxa_inad = float(inad[mascara].mean())
+        taxa_90 = float(grave[mascara].mean())
+        piso_inad = max(base_inad * 1.8, 0.22)
+        piso_90 = max(base_90 * 1.8, 0.10)
         saida.append(
             {
                 "id": regra["id"],
                 "titulo": regra["titulo"],
                 "sinais": regra["sinais"],
                 "n": n,
-                "taxa_base": round(base, 4),
-                "taxa_observada": round(observada, 4),
-                "previstas": previstas,
-                "prevista_referencia": previstas[referencia],
-                "critica": bool(observada >= piso),
+                "base_inad": round(base_inad, 4),
+                "base_90": round(base_90, 4),
+                "taxa_inad": round(taxa_inad, 4),
+                "taxa_90": round(taxa_90, 4),
+                "prev_inad": round(float(np.asarray(prob_inad)[mascara].mean()), 4),
+                "prev_90": round(float(np.asarray(prob_90)[mascara].mean()), 4),
+                "critica": bool(taxa_inad >= piso_inad or taxa_90 >= piso_90),
             }
         )
-    saida.sort(key=lambda item: item["taxa_observada"], reverse=True)
+    saida.sort(key=lambda item: item["taxa_inad"], reverse=True)
     return saida

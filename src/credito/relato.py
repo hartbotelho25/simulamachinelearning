@@ -407,12 +407,7 @@ def _ler_arquivo(relativo: str) -> str:
 
 def _codigo() -> None:
     st.subheader("O código")
-    st.caption(
-        "Cada modelo é um script completo, recolhido. "
-        "O ícone no canto do código copia o script. "
-        "Ele lê a base direto do GitHub, separa treino e teste, treina "
-        "e imprime AUC, acurácia e a matriz de confusão. Não grava por cima do modelo do site."
-    )
+    st.caption("Os códigos utilizados estão disponíveis abaixo.")
     for slug, titulo in _MODELOS_CODIGO:
         with st.expander(titulo, expanded=False):
             py = _RAIZ / "notebooks" / f"{slug}.py"

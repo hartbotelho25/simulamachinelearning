@@ -76,7 +76,9 @@ def test_tela_deixa_a_mesa_recolhida_e_o_simulador_aberto():
         "Ficou inadimplente, mas passou sem alerta do modelo.",
     ):
         assert frase in texto
-    assert "O código" in texto
+    assert texto.count('st.subheader("O código")') == 1
+    assert "Os códigos utilizados estão disponíveis abaixo." in texto
+    assert "Cada modelo é um script completo" not in texto
     assert "Quando os sinais se juntam" not in texto
     assert "Primeira versão" not in texto
     assert "linha-tempo" not in texto
@@ -344,7 +346,9 @@ def test_joblib_calibrado_abre_pesos_e_o_simulador():
     estudo.run()
     assert not estudo.exception, estudo.exception
     titulos = [getattr(bloco, "value", "") for bloco in estudo.subheader]
-    assert "O código" in titulos
+    assert titulos.count("O código") == 1
+    legendas = [getattr(bloco, "value", "") for bloco in estudo.caption]
+    assert legendas.count("Os códigos utilizados estão disponíveis abaixo.") == 1
 
 
 def test_escada_sobe_quando_os_gatilhos_se_acumulam():

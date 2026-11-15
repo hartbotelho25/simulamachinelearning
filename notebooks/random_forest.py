@@ -2,14 +2,18 @@
 
 Script completo: abre no VS Code ou, como notebook, no Google Colab.
 A base vem do GitHub. A floresta recebe o 0/1 de cada gatilho, sem escala.
+A chance final passa por regressão isotônica numa fatia que o ajuste não viu.
 Não grava modelo nenhum no disco.
 """
 
 import numpy as np
 import pandas as pd
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.frozen import FrozenEstimator
 from sklearn.metrics import (
     accuracy_score,
+    brier_score_loss,
     classification_report,
     confusion_matrix,
     precision_score,
@@ -34,7 +38,10 @@ y = df[ALVO]
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
-print("Treino:", X_train.shape, "Teste:", X_test.shape)
+X_fit, X_cal, y_fit, y_cal = train_test_split(
+    X_train, y_train, test_size=0.2, random_state=42, stratify=y_train
+)
+print("Ajuste:", X_fit.shape, "Calibração:", X_cal.shape, "Teste:", X_test.shape)
 
 modelo = RandomForestClassifier(
     n_estimators=200,
@@ -43,9 +50,24 @@ modelo = RandomForestClassifier(
     random_state=42,
     n_jobs=-1,
 )
-modelo.fit(X_train, y_train)
+modelo.fit(X_fit, y_fit)
+calibrado = CalibratedClassifierCV(FrozenEstimator(modelo), method="isotonic")
+calibrado.fit(X_cal, y_cal)
 
-proba = modelo.predict_proba(X_test)[:, 1]
+bruta = modelo.predict_proba(X_test)[:, 1]
+proba = calibrado.predict_proba(X_test)[:, 1]
+print(
+    "Brier antes/depois:",
+    round(float(brier_score_loss(y_test, bruta)), 3),
+    round(float(brier_score_loss(y_test, proba)), 3),
+)
+print(
+    "Média prevista antes/depois:",
+    round(float(bruta.mean()), 3),
+    round(float(proba.mean()), 3),
+    "observada",
+    round(float(y_test.mean()), 3),
+)
 previsto = (proba >= 0.5).astype(int)
 
 print("AUC:", round(float(roc_auc_score(y_test, proba)), 3))

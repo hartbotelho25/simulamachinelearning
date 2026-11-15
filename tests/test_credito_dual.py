@@ -102,6 +102,10 @@ def test_tela_deixa_a_mesa_recolhida_e_o_simulador_aberto():
         assert "roc_auc_score" in corpo
         assert "confusion_matrix" in corpo
         assert "train_test_split" in corpo
+        if slug == "rede_neural":
+            assert "IsotonicRegression" in corpo
+        else:
+            assert 'method="isotonic"' in corpo
     rede = (RAIZ / "notebooks" / "rede_neural.py").read_text(encoding="utf-8")
     assert 'activation="relu"' in rede
     assert 'activation="sigmoid"' in rede
@@ -114,6 +118,8 @@ def test_tela_deixa_a_mesa_recolhida_e_o_simulador_aberto():
     assert "early_stopping=True" in treino
     assert "compute_sample_weight" in treino
     assert 'class_weight="balanced"' in treino
+    assert "CalibratedClassifierCV" in treino
+    assert 'method="isotonic"' in treino
     assert "@st.fragment" in texto
     simulador = texto.split("@st.fragment", 1)[1]
     assert "st.expander" not in simulador
@@ -213,29 +219,28 @@ def test_gatilho_isolado_nos_quatro_modelos():
         return saida
 
     zeros = probs({})
-    assert all(p < 0.08 for p in zeros[:3]), zeros
-    assert zeros[3] < 0.20, zeros
+    assert all(p < 0.08 for p in zeros), zeros
+    assert max(zeros) - min(zeros) < 0.06, zeros
     assert all(nome_faixa(p)[0] == "verde" for p in zeros)
 
     dois = probs({"salto_gastos_cartao": True, "novo_emprestimo_6m": True})
-    assert all(p < 0.40 for p in dois[:3]), dois
-    assert all(0.04 <= p <= 0.20 for p in dois[:3]), dois
-    assert 0.20 <= dois[3] < 0.50, dois
+    assert all(p < 0.30 for p in dois), dois
 
     grave = probs({"restricao_outras_instituicoes": True})
-    assert all(0.10 <= p <= 0.30 for p in grave[:3]), grave
-    assert 0.50 <= grave[3] <= 0.85, grave
+    assert all(0.10 <= p <= 0.40 for p in grave), grave
+
+    protesto = probs({"protesto_cartorio": True})
+    assert all(p < 0.25 for p in protesto), protesto
 
     vários = probs(
         {
             "restricao_outras_instituicoes": True,
             "protesto_3_ou_mais": True,
-            "pagou_fatura_com_cheque_especial": True,
             "renegociacao_ativa": True,
         }
     )
-    assert all(0.45 <= p <= 0.90 for p in vários[:3]), vários
-    assert 0.85 <= vários[3] <= 0.98, vários
+    assert all(0.35 <= p <= 0.80 for p in vários), vários
+    assert max(vários) - min(vários) < 0.25, vários
 
 
 def test_joblib_abre_sem_codigo_do_projeto():

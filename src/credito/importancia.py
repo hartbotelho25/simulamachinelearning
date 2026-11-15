@@ -10,8 +10,19 @@ from .dataset import BLOCO_NOME, BLOCOS, FEATURES, ROTULOS
 from .politica import SEMENTE
 
 
+def _modelo_base(modelo):
+    """Tira a calibração e o congelamento, e fica com o estimador que aprendeu os gatilhos."""
+    atual = modelo
+    if hasattr(atual, "calibrated_classifiers_"):
+        atual = atual.calibrated_classifiers_[0].estimator
+    if atual.__class__.__name__ == "FrozenEstimator":
+        atual = atual.estimator
+    return atual
+
+
 def pesos_do_modelo(modelo) -> dict[str, float]:
     """Peso aprendido de cada gatilho, já na escala do 0/1."""
+    modelo = _modelo_base(modelo)
     if hasattr(modelo, "named_steps"):
         prep = modelo.named_steps["prep"]
         clf = modelo.named_steps["clf"]
@@ -63,6 +74,24 @@ def permutar(modelo, X: pd.DataFrame, y: np.ndarray) -> dict[str, float]:
     return {coluna: float(valor) for coluna, valor in zip(Xs.columns, bruto.importances_mean)}
 
 
+def _percentuais(valores: list[float]) -> list[float]:
+    """Uma casa decimal, soma 100, e a ordem segue o valor exato."""
+    total = sum(valores) or 1.0
+    exatos = [100.0 * valor / total for valor in valores]
+    base = [int(np.floor(valor * 10 + 1e-8)) for valor in exatos]
+    sobra = int(round(1000 - sum(base)))
+    resto = [exato * 10 - inteiro for exato, inteiro in zip(exatos, base)]
+    if sobra > 0:
+        ordem = sorted(range(len(base)), key=lambda i: resto[i], reverse=True)
+        for indice in ordem[:sobra]:
+            base[indice] += 1
+    elif sobra < 0:
+        ordem = sorted(range(len(base)), key=lambda i: resto[i])
+        for indice in ordem[: -sobra]:
+            base[indice] -= 1
+    return [inteiro / 10.0 for inteiro in base]
+
+
 def ranking_itens(importancias: dict[str, float]) -> list[dict]:
     itens = []
     for coluna, valor in importancias.items():
@@ -79,12 +108,10 @@ def ranking_itens(importancias: dict[str, float]) -> list[dict]:
             }
         )
     itens.sort(key=lambda item: (-item["queda_auc"], item["rotulo"]))
-    total = sum(item["queda_auc"] for item in itens) or 1.0
-    for item in itens:
-        item["pct"] = round(100.0 * item["queda_auc"] / total, 1)
-    if itens:
-        folga = round(100.0 - sum(item["pct"] for item in itens), 1)
-        itens[0]["pct"] = round(itens[0]["pct"] + folga, 1)
+    percentuais = _percentuais([item["queda_auc"] for item in itens])
+    for item, pct in zip(itens, percentuais):
+        item["pct"] = pct
+    itens.sort(key=lambda item: (-item["pct"], -item["queda_auc"], item["rotulo"]))
     return itens
 
 
@@ -111,14 +138,12 @@ def por_bloco(importancias: dict[str, float]) -> list[dict]:
 
 def ranking_blocos(importancias: dict[str, float]) -> list[dict]:
     bruto = por_bloco(importancias)
+    percentuais = _percentuais([item["fatia"] for item in bruto])
     itens = [
-        {"bloco": item["bloco"], "nome": item["nome"], "pct": round(100.0 * item["fatia"], 1)}
-        for item in bruto
+        {"bloco": item["bloco"], "nome": item["nome"], "pct": pct}
+        for item, pct in zip(bruto, percentuais)
     ]
     itens.sort(key=lambda item: item["pct"], reverse=True)
-    if itens:
-        folga = round(100.0 - sum(item["pct"] for item in itens), 1)
-        itens[0]["pct"] = round(itens[0]["pct"] + folga, 1)
     return itens
 
 

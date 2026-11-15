@@ -3,6 +3,7 @@
 Script completo: abre no VS Code ou, como notebook, no Google Colab.
 Duas camadas ReLU e uma saída sigmoide. A classe rara pesa mais no treino.
 A parada antecipada devolve os coeficientes da melhor validação.
+A chance final passa por regressão isotônica numa fatia que o ajuste não viu.
 O laço de épocas imprime a perda e a acurácia a cada passo.
 A base vem do GitHub. Não grava modelo no disco.
 
@@ -15,11 +16,14 @@ os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
 
 import numpy as np
 import pandas as pd
+from sklearn.isotonic import IsotonicRegression
 from sklearn.metrics import (
     accuracy_score,
+    brier_score_loss,
     classification_report,
     confusion_matrix,
     precision_score,
+    recall_score,
     roc_auc_score,
 )
 from sklearn.model_selection import train_test_split
@@ -46,15 +50,19 @@ y = df[ALVO]
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
-print("Treino:", X_train.shape, "Teste:", X_test.shape)
+X_fit, X_cal, y_fit, y_cal = train_test_split(
+    X_train, y_train, test_size=0.2, random_state=42, stratify=y_train
+)
+print("Ajuste:", X_fit.shape, "Calibração:", X_cal.shape, "Teste:", X_test.shape)
 
 escala = StandardScaler()
-X_train_scaled = escala.fit_transform(X_train)
+X_fit_scaled = escala.fit_transform(X_fit)
+X_cal_scaled = escala.transform(X_cal)
 X_test_scaled = escala.transform(X_test)
 
 modelo = Sequential(
     [
-        Input(shape=(X_train_scaled.shape[1],)),
+        Input(shape=(X_fit_scaled.shape[1],)),
         Dense(64, activation="relu"),
         Dense(32, activation="relu"),
         Dense(1, activation="sigmoid"),
@@ -64,14 +72,14 @@ modelo.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"
 modelo.summary()
 
 classes = np.array([0, 1])
-bruto = compute_class_weight(class_weight="balanced", classes=classes, y=y_train)
+bruto = compute_class_weight(class_weight="balanced", classes=classes, y=y_fit)
 peso_classe = {int(classe): float(valor) for classe, valor in zip(classes, bruto)}
 print("Peso de cada classe:", peso_classe)
 
 parada = EarlyStopping(monitor="val_loss", patience=5, restore_best_weights=True)
 historico = modelo.fit(
-    X_train_scaled,
-    y_train,
+    X_fit_scaled,
+    y_fit,
     validation_split=0.2,
     epochs=40,
     batch_size=256,
@@ -95,7 +103,27 @@ for epoca, (loss, acc, vloss, vacc) in enumerate(
         f"val_loss {vloss:.4f}  val_acurácia {vacc:.4f}"
     )
 
-proba = modelo.predict(X_test_scaled, verbose=0).ravel()
+bruta = modelo.predict(X_test_scaled, verbose=0).ravel()
+iso = IsotonicRegression(out_of_bounds="clip")
+iso.fit(modelo.predict(X_cal_scaled, verbose=0).ravel(), y_cal)
+proba = iso.predict(bruta)
+print(
+    "Brier antes/depois:",
+    round(float(brier_score_loss(y_test, bruta)), 3),
+    round(float(brier_score_loss(y_test, proba)), 3),
+)
+print(
+    "Média prevista antes/depois:",
+    round(float(bruta.mean()), 3),
+    round(float(proba.mean()), 3),
+    "observada",
+    round(float(y_test.mean()), 3),
+)
+print(
+    "Recall no corte 0,5 antes/depois:",
+    round(float(recall_score(y_test, bruta >= 0.5, zero_division=0)), 3),
+    round(float(recall_score(y_test, proba >= 0.5, zero_division=0)), 3),
+)
 previsto = (proba >= 0.5).astype(int)
 
 print("AUC:", round(float(roc_auc_score(y_test, proba)), 3))

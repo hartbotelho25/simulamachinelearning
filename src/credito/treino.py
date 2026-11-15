@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.frozen import FrozenEstimator
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
@@ -24,7 +26,8 @@ CATALOGO = [
         "tecnica": (
             "Modelo linear. Os números entram padronizados e as categorias abrem em colunas. "
             "Cada peso se lê com sinal: empurra para o calote ou afasta dele. "
-            "É a peça que o comitê consegue auditar variável a variável."
+            "Uma fatia separada do treino recalibra a chance com regressão isotônica, "
+            "para ela acompanhar a taxa observada."
         ),
     },
     {
@@ -33,7 +36,8 @@ CATALOGO = [
         "papel": "Ensemble de árvores, estável diante de relação não linear.",
         "tecnica": (
             "Duzentas árvores. Cada uma vê uma amostra e um subconjunto de colunas. "
-            "A chance é a média dos votos. A leitura dela é a curva, a matriz e a importância de cada gatilho."
+            "A chance é a média dos votos. Uma fatia separada do treino recalibra essa chance "
+            "com regressão isotônica, para ela acompanhar a taxa observada."
         ),
     },
     {
@@ -42,7 +46,8 @@ CATALOGO = [
         "papel": "Árvores em sequência, o padrão forte em tabela de crédito.",
         "tecnica": (
             "XGBoost com árvores rasas. A árvore seguinte corrige o erro da anterior. "
-            "Captura não linearidade sem virar uma rede. A comparação com a logística mostra o que a não linearidade acrescenta."
+            "Captura não linearidade sem virar uma rede. Uma fatia separada do treino "
+            "recalibra a chance com regressão isotônica, para ela acompanhar a taxa observada."
         ),
     },
     {
@@ -52,9 +57,9 @@ CATALOGO = [
         "tecnica": (
             "Perceptron de duas camadas ocultas, 64 e 32 neurônios, ativação ReLU. "
             "Os números entram padronizados. A classe rara pesa mais no treino, "
-            "na proporção inversa da frequência. Dez por cento do treino servem só para parar cedo, "
-            "e a rede volta aos coeficientes da melhor validação. "
-            "A rede entra pela curva, pela matriz e pela importância aprendida em cada gatilho."
+            "na proporção inversa da frequência, e a rede volta aos coeficientes da melhor validação. "
+            "Uma fatia separada recalibra a chance com regressão isotônica, "
+            "para ela acompanhar a taxa observada. A faixa de cor sai dessa chance calibrada."
         ),
     },
 ]
@@ -119,16 +124,30 @@ def fatiar(df: pd.DataFrame):
     return X.iloc[i_tr], X.iloc[i_te], i_tr, i_te
 
 
+FRACA_CALIBRACAO = 0.20
+
+
+def _ajustar(slug: str, X: pd.DataFrame, y: np.ndarray):
+    """Ajusta no grosso do treino e recalibra a chance numa fatia que o ajuste não viu."""
+    X_fit, X_cal, y_fit, y_cal = train_test_split(
+        X,
+        y,
+        test_size=FRACA_CALIBRACAO,
+        stratify=y,
+        random_state=SEMENTE,
+    )
+    modelo = construir(slug)
+    if slug == "mlp":
+        # MLPClassifier não tem class_weight. O peso por linha é o equivalente.
+        pesos = compute_sample_weight(class_weight="balanced", y=y_fit)
+        modelo.fit(X_fit, y_fit, clf__sample_weight=pesos)
+    else:
+        modelo.fit(X_fit, y_fit)
+    calibrado = CalibratedClassifierCV(FrozenEstimator(modelo), method="isotonic")
+    calibrado.fit(X_cal, y_cal)
+    return calibrado
+
+
 def treinar_todos(X_treino: pd.DataFrame, y_treino: np.ndarray) -> dict:
     matriz = X_treino[list(FEATURES)]
-    modelos = {}
-    for item in CATALOGO:
-        modelo = construir(item["slug"])
-        if item["slug"] == "mlp":
-            # MLPClassifier não tem class_weight. O peso por linha é o equivalente.
-            pesos = compute_sample_weight(class_weight="balanced", y=y_treino)
-            modelo.fit(matriz, y_treino, clf__sample_weight=pesos)
-        else:
-            modelo.fit(matriz, y_treino)
-        modelos[item["slug"]] = modelo
-    return modelos
+    return {item["slug"]: _ajustar(item["slug"], matriz, y_treino) for item in CATALOGO}
